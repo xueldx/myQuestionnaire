@@ -1,13 +1,13 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react'
-import { Modal, message } from 'antd'
+import { Modal, message, Select } from 'antd'
 import LottieAnimation from '@/components/Common/LottieAnimation'
 import ai from '@/assets/lottie/ai.json'
-import { Input, Button, Skeleton } from 'antd'
+import { Input, Button, Skeleton, Tooltip } from 'antd'
 import apis from '@/apis'
 import ReactMarkdown from 'react-markdown'
 import { throttle } from '@/utils'
 import regexp from '@/utils/regexp'
-import { PlusOutlined } from '@ant-design/icons'
+import { PlusOutlined, RobotOutlined } from '@ant-design/icons'
 
 interface GenerateDialogProps {
   isOpen: boolean // 控制对话框显示/隐藏
@@ -45,6 +45,22 @@ const GenerateDialog = (props: GenerateDialogProps) => {
   const [isGenerating, setIsGenerating] = useState(false) // 是否正在生成问卷
   const [formattedContent, setFormattedContent] = useState('') // 格式化后的问卷内容
   const [currentQuestions, setCurrentQuestions] = useState<any[]>([]) // 当前生成的题目数组
+  const [modelList, setModelList] = useState<any[]>([]) // 可用模型列表
+  const [selectedModel, setSelectedModel] = useState<string>('') // 当前选择的模型
+
+  // 弹窗打开时获取可用模型列表
+  useEffect(() => {
+    if (isOpen && modelList.length === 0) {
+      apis.aiApi.getModelList().then((res: any) => {
+        if (res.code === 1 && res.data) {
+          setModelList(res.data)
+          if (res.data.length > 0 && !selectedModel) {
+            setSelectedModel(res.data[0].value)
+          }
+        }
+      })
+    }
+  }, [isOpen])
 
   const markdownRef = useRef<HTMLDivElement>(null) // Markdown 容器的引用
 
@@ -124,7 +140,11 @@ ${question.props?.description ? `- 题目说明：${question.props.description}`
   const handleButtonClick = () => {
     isFirstOpen = false
     setIsGenerating(true)
-    const { eventSource, onMessage, onError, close } = apis.aiApi.generateQuestionnaire(theme)
+    const { eventSource, onMessage, onError, close } = apis.aiApi.generateQuestionnaire(
+      theme,
+      10,
+      selectedModel || undefined
+    )
     setTheme('')
     setFormattedContent('')
 
@@ -208,22 +228,31 @@ ${question.props?.description ? `- 题目说明：${question.props.description}`
     >
       <div className="w-full h-[600px]">
         {/* 顶部操作区域 */}
-        <div className="flex mb-4 items-center justify-end">
+        <div className="flex mb-4 items-center justify-end gap-3">
+          <Tooltip title="选择AI模型">
+            <Select
+              className="w-52"
+              value={selectedModel}
+              onChange={val => setSelectedModel(val)}
+              placeholder="选择模型"
+              suffixIcon={<RobotOutlined />}
+              disabled={isGenerating}
+              options={modelList.map(m => ({
+                value: m.value,
+                label: m.label
+              }))}
+            />
+          </Tooltip>
           <Input
             className="w-48"
             value={theme}
             onChange={e => setTheme(e.target.value)}
             placeholder="输入主题"
           />
-          <Button
-            className="ml-4"
-            type="primary"
-            onClick={handleButtonClick}
-            loading={isGenerating}
-          >
+          <Button type="primary" onClick={handleButtonClick} loading={isGenerating}>
             生成问卷
           </Button>
-          <Button className="ml-4" type="default" onClick={onCancel}>
+          <Button type="default" onClick={onCancel}>
             取消生成
           </Button>
         </div>

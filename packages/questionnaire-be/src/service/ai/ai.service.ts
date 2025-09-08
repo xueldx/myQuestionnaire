@@ -6,6 +6,7 @@ import { AnswerService } from '@/service/answer/answer.service';
 import { EditorService } from '@/service/editor/editor.service';
 
 enum Model {
+  Glm4Flash = 'glm-4-flash',
   QwenMax = 'qwen-max',
   QwenPlus = 'qwen-plus',
   DeepseekV3 = 'deepseek-v3',
@@ -21,7 +22,7 @@ interface ModelInfo {
 export class AiService {
   // OpenAI 客户端实例
   private readonly openai: OpenAI;
-  private readonly defaultModel: Model = Model.QwenMax;
+  private readonly defaultModel: Model = Model.Glm4Flash;
 
   constructor(
     private readonly answerService: AnswerService,
@@ -38,6 +39,11 @@ export class AiService {
   getAvailableModels(): ModelInfo[] {
     // 返回配置中定义的所有模型及描述
     return [
+      {
+        value: Model.Glm4Flash,
+        label: 'GLM-4-Flash (免费)',
+        description: '智谱AI免费模型，速度快，适合日常使用',
+      },
       {
         value: Model.QwenMax,
         label: '通义千问Max',
@@ -143,7 +149,14 @@ export class AiService {
       client.chat.completions
         .create(
           {
-            messages: [{ role: 'system', content: description }],
+            messages: [
+              {
+                role: 'system',
+                content:
+                  '你是一个专业的问卷设计专家，请根据用户的需求生成问卷。',
+              },
+              { role: 'user', content: description },
+            ],
             model: configuration().openai[useModel].model,
             stream: true, // 启用流式响应
           },
@@ -261,7 +274,14 @@ export class AiService {
       client.chat.completions
         .create(
           {
-            messages: [{ role: 'system', content: prompt }],
+            messages: [
+              {
+                role: 'system',
+                content:
+                  '你是一位数据分析专家，请根据用户提供的问卷数据进行分析。',
+              },
+              { role: 'user', content: prompt },
+            ],
             model: configuration().openai[useModel].model,
             stream: true, // 启用流式响应
           },

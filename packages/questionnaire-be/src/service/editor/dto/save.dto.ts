@@ -1,5 +1,12 @@
 import { QuestionComponent } from '@/common/schemas/question-detail.schema';
-import { IsNotEmpty, IsNumber, Min, IsArray, IsString } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  Min,
+  IsArray,
+  IsString,
+  IsOptional,
+} from 'class-validator';
 
 export class SaveDto {
   @IsNotEmpty()
@@ -14,7 +21,6 @@ export class SaveDto {
   @IsString()
   creator: string;
 
-  @IsNotEmpty()
   @IsString()
   description: string;
 
@@ -27,7 +33,6 @@ export class SaveDto {
   @Min(1)
   version: number;
 
-  @IsNotEmpty()
   @IsString()
   footer_text: string;
 }

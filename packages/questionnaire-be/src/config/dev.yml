@@ -14,7 +14,7 @@ db:
     username: 'root'
     password: '12345678'
     database: 'questionnaire_db'
-    port: 3306
+    port: 33306
     synchronize: true
     autoLoadEntities: true
     keepConnectionAlive: true
@@ -24,12 +24,16 @@ db:
     uri: 'redis://localhost:6379'
 # 邮件配置
 mailer:
-  user: 'XMquestionnaire@163.com'
-  pass: 'HS35qYhKHX8UF5kE'
+  user: 'xueldx@163.com'
+  pass: 'WZZs2sbAfbnCd2B6'
   host: 'smtp.163.com'
   port: 465
 # 大模型 API 配置
 openai:
+  glm-4-flash:
+    model: 'glm-4-flash'
+    apiKey: '77e64eded6804e4eade10f6ca4b97d25.KOwag7tZmgPL2VyW'
+    baseURL: 'https://open.bigmodel.cn/api/paas/v4'
   qwen-max:
     model: 'qwen-max'
     apiKey: 'sk-746e24bbb3d14fc7bced0a4d35453a41'

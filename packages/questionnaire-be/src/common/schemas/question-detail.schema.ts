@@ -27,10 +27,10 @@ export class QuestionnaireDetail extends Document {
   @Prop({ required: true })
   creator: string; // 问卷创建者
 
-  @Prop({ required: true })
+  @Prop({ default: '' })
   description: string; // 问卷描述
 
-  @Prop({ required: true })
+  @Prop({ default: '' })
   footer_text: string; // 问卷底部文本
 
   @Prop({
