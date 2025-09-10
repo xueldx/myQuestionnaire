@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { Form, Input, InputNumber, Switch, Button, message, Select } from 'antd'
+import { Form, Input, InputNumber, Switch, Button, Select, App } from 'antd'
 import { SaveOutlined } from '@ant-design/icons'
 import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '@/store'
@@ -11,6 +11,7 @@ interface RatingConfigProps {
 }
 
 const RatingConfig: React.FC<RatingConfigProps> = ({ componentId }) => {
+  const { message } = App.useApp()
   const dispatch = useDispatch()
   const [form] = Form.useForm()
 

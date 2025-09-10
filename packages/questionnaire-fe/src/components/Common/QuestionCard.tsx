@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { Button, Divider, Popconfirm, Space, Tag } from 'antd'
+import { Button, Divider, Popconfirm, Space, Tag, Tooltip } from 'antd'
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
@@ -113,116 +113,134 @@ const QuestionCard: React.FC<PropsType> = (props: PropsType) => {
   }
 
   return (
-    <div className="my-3 p-3 rounded-md bg-white duration-300 hover:shadow-md">
-      <div className="flex">
-        <div className="flex-1">
-          <Link to={`${QUESTION_DETAIL_PATH}/${id}`}>
-            <Space>
-              <span className="inline-block w-4">
-                {isFavorated && <StarOutlined className="text-custom-yellow" />}
-              </span>
-              {id}:{title}
-            </Space>
-          </Link>
+    <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm hover:shadow border border-white/60 p-5 flex flex-col transition-all duration-300 relative group overflow-hidden">
+      <div className="flex gap-4 mb-4 relative z-10">
+        <div className="shrink-0 w-12 h-14 bg-[#4B847A] rounded-lg flex flex-col items-center justify-center text-white shadow-inner">
+          <div className="w-6 h-1.5 bg-white/40 rounded-full mb-1"></div>
+          <div className="flex items-center gap-1 mb-1">
+            <div className="w-2 h-2 rounded-full border border-white/60 flex items-center justify-center">
+              <div className="w-1 h-1 bg-white rounded-full"></div>
+            </div>
+            <div className="w-3 h-0.5 bg-white rounded-full"></div>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full border border-white/60 flex items-center justify-center">
+              <div className="w-1 h-1 bg-white rounded-full"></div>
+            </div>
+            <div className="w-3 h-0.5 bg-white rounded-full"></div>
+          </div>
         </div>
-        <div className="flex-1 text-right text-xs">
-          <Space>
+
+        <div className="flex-1 w-0">
+          <div className="flex items-center justify-between mb-2">
+            <div className="font-semibold text-gray-800 truncate pr-2 text-[15px]">
+              <Link
+                to={`${QUESTION_DETAIL_PATH}/${id}`}
+                className="hover:text-[#26a69a] text-inherit"
+              >
+                {title}
+              </Link>
+            </div>
             {isPublished ? (
-              <Tag color="cyan" icon={<CheckCircleOutlined />}>
+              <span className="shrink-0 px-2.5 py-0.5 bg-[#26a69a] text-white text-[11px] rounded-full">
                 已发布
-              </Tag>
+              </span>
             ) : (
-              <Tag icon={<ClockCircleOutlined />}>未发布</Tag>
+              <span className="shrink-0 px-2.5 py-0.5 bg-[#B8D5D0] text-[#26a69a] text-[11px] rounded-full">
+                未发布
+              </span>
             )}
-            <Tag color="gold">作者: {author}</Tag>
-            <Tag color="gold">答卷: {answerCount}</Tag>
-            <Tag bordered={false} icon={<FieldTimeOutlined />} color="lime">
-              创建于: {dayjs(createdAt).format('YYYY-MM-DD HH:mm:ss')}
-            </Tag>
-            <Tag bordered={false} icon={<FieldTimeOutlined />} color="lime">
-              更新于: {dayjs(updatedAt).format('YYYY-MM-DD HH:mm:ss')}
-            </Tag>
-          </Space>
+          </div>
+
+          <div className="text-[12px] text-gray-400 space-y-1">
+            <div>创建时间: {dayjs(createdAt).format('YYYY-MM-DD HH:mm:ss')}</div>
+            <div>更新日期: {dayjs(updatedAt).format('YYYY-MM-DD')}</div>
+          </div>
         </div>
       </div>
-      <Divider className="my-3" />
-      <div className="flex">
-        <div className="flex-1">
-          {editable && (
-            <Space>
-              <Button
-                type="text"
-                size="small"
-                icon={<EditOutlined />}
-                onClick={() => {
-                  nav(`${QUESTION_EDIT_PATH}/${id}`)
-                }}
-                disabled={!editable}
-              >
-                编辑问卷
-              </Button>
-              <Button
-                type="text"
-                size="small"
-                icon={<LineChartOutlined />}
-                onClick={() => {
-                  nav(`${QUESTION_STAT_PATH}/${id}`)
-                }}
-                disabled={!isPublished || !editable || !answerCount}
-              >
-                问卷统计
-              </Button>
-            </Space>
-          )}
-        </div>
-        <div className="flex-1 text-right">
-          <Space>
-            {isPublished && (
-              <Button type="text" size="small" onClick={checkQrcode} icon={<QrcodeOutlined />}>
-                查看答题二维码
-              </Button>
-            )}
-            <Button type="text" size="small" icon={<StarOutlined />} onClick={handleFavorate}>
-              {isFavorated ? '取消星标' : '星标问卷'}
-            </Button>
+
+      <div className="h-[1px] bg-gray-200/60 w-full mb-3 relative z-10"></div>
+
+      <div className="flex items-center justify-around relative z-10">
+        {editable && (
+          <Tooltip title="编辑问卷">
+            <Button
+              type="text"
+              size="small"
+              className="text-gray-500 hover:!text-[#26a69a] hover:!bg-transparent"
+              icon={<EditOutlined className="text-[16px]" />}
+              onClick={() => nav(`${QUESTION_EDIT_PATH}/${id}`)}
+              disabled={!editable}
+            />
+          </Tooltip>
+        )}
+        {editable && (
+          <Tooltip title="统计">
+            <Button
+              type="text"
+              size="small"
+              className="text-gray-500 hover:!text-[#26a69a] hover:!bg-transparent"
+              icon={<LineChartOutlined className="text-[16px]" />}
+              onClick={() => nav(`${QUESTION_STAT_PATH}/${id}`)}
+              disabled={!isPublished || !editable || !answerCount}
+            />
+          </Tooltip>
+        )}
+        <Tooltip title={isFavorated ? '取消星标' : '星标'}>
+          <Button
+            type="text"
+            size="small"
+            className={`${
+              isFavorated ? 'text-yellow-500' : 'text-gray-500'
+            } hover:!bg-transparent hover:!text-yellow-500`}
+            icon={<StarOutlined className="text-[16px]" />}
+            onClick={handleFavorate}
+          />
+        </Tooltip>
+        <Tooltip title="复制">
+          <Popconfirm
+            title="确定复制该问卷？"
+            onConfirm={duplicate}
+            okButtonProps={{ style: { backgroundColor: '#26A69A' } }}
+          >
+            <Button
+              type="text"
+              size="small"
+              className="text-gray-500 hover:!text-[#26a69a] hover:!bg-transparent"
+              icon={<CopyOutlined className="text-[16px]" />}
+            />
+          </Popconfirm>
+        </Tooltip>
+
+        {isPublished && (
+          <Tooltip title="答题链接/二维码">
+            <Button
+              type="text"
+              size="small"
+              className="text-gray-500 hover:!text-[#26a69a] hover:!bg-transparent"
+              onClick={checkQrcode}
+              icon={<QrcodeOutlined className="text-[16px]" />}
+            />
+          </Tooltip>
+        )}
+        {editable && (
+          <Tooltip title="删除">
             <Popconfirm
-              title="确定复制该问卷？"
-              okText="确定"
-              cancelText="取消"
-              onConfirm={duplicate}
+              title="确定删除该问卷？"
+              okType="danger"
+              onConfirm={del}
+              okButtonProps={{ style: { backgroundColor: '#fe5a55' } }}
+              icon={<QuestionCircleOutlined className="text-custom-red" />}
             >
-              <Button type="text" size="small" icon={<CopyOutlined />}>
-                复制
-              </Button>
+              <Button
+                type="text"
+                size="small"
+                className="text-gray-500 hover:!text-red-500 hover:!bg-transparent"
+                icon={<DeleteOutlined className="text-[16px]" />}
+              />
             </Popconfirm>
-            {editable && (
-              <Popconfirm
-                title="确定发布该问卷？"
-                okText="确定"
-                cancelText="取消"
-                onConfirm={publish}
-              >
-                <Button type="text" size="small" icon={<CopyOutlined />}>
-                  {isPublished ? '取消发布' : '发布'}
-                </Button>
-              </Popconfirm>
-            )}
-            {editable && (
-              <Popconfirm
-                title="确定删除该问卷？"
-                okText="确定"
-                okType="danger"
-                cancelText="取消"
-                onConfirm={del}
-                icon={<QuestionCircleOutlined className="text-custom-red" />}
-              >
-                <Button type="text" size="small" icon={<DeleteOutlined />}>
-                  删除
-                </Button>
-              </Popconfirm>
-            )}
-          </Space>
-        </div>
+          </Tooltip>
+        )}
       </div>
     </div>
   )

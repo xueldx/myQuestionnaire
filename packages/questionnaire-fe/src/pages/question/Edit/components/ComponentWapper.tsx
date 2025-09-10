@@ -49,63 +49,41 @@ const ComponentWapper: React.FC<ComponentWapperProps> = ({
   return (
     <div
       className={clsx(
-        'p-4 pt-12 bg-custom-bg-300 rounded-lg mb-2 border-2 border-transparent transition-all duration-200 hover:border-custom-primary-300 relative shadow-sm',
-        selectedId === fe_id && '!border-custom-primary-300 shadow-md',
-        isDragging && 'opacity-90 border-dashed border-custom-primary-200 shadow-lg rotate-1'
+        'group p-4 bg-white rounded-lg mb-4 border border-transparent transition-all duration-200 hover:border-custom-primary-100 relative shadow-sm hover:shadow',
+        selectedId === fe_id && '!border-custom-primary-100 shadow-md',
+        isDragging && 'opacity-90 border-dashed border-custom-primary-100 shadow-lg rotate-1'
       )}
       onClick={handleClick}
     >
       {/* 拖拽手柄 - 使用自定义事件监听，确保拖拽可以触发 */}
-      <div
-        ref={dragHandleRef}
-        {...dragHandleProps}
-        onMouseDown={e => {
-          console.log(`拖拽手柄 (${fe_id}) 鼠标按下事件触发`)
-          if (dragHandleProps?.onMouseDown) {
-            dragHandleProps.onMouseDown(e)
-          }
-        }}
-        className={clsx(
-          'absolute left-0 top-0 w-full h-10 px-3 flex items-center bg-gradient-to-r from-custom-primary-300 to-custom-bg-400 cursor-grab active:cursor-grabbing transition-all duration-200 rounded-t-md group',
-          isDragging &&
-            'cursor-grabbing bg-gradient-to-r from-custom-primary-300 to-custom-primary-200 shadow-inner'
-        )}
-        style={{
-          cursor: isDragging ? 'grabbing' : 'grab'
-        }}
-      >
-        <MenuOutlined
-          className={clsx(
-            'text-custom-primary-100 group-hover:text-custom-primary-200 transition-all',
-            isDragging && 'text-custom-primary-300'
-          )}
-        />
-        <span
-          className={clsx(
-            'text-xs ml-2 text-custom-primary-100 font-medium group-hover:text-custom-primary-100 flex items-center',
-            isDragging && 'text-custom-primary-100'
-          )}
-        >
-          <span className="transform transition-transform group-hover:translate-y-[-1px] group-hover:translate-x-[-1px] inline-block mr-1">
-            ↕️
-          </span>
-          拖拽调整位置
-        </span>
-
-        {/* 右侧状态标签 */}
+      <Tooltip title="拖拽排序" placement="top" mouseEnterDelay={0.5}>
         <div
+          ref={dragHandleRef}
+          {...dragHandleProps}
+          onMouseDown={e => {
+            console.log(`拖拽手柄 (${fe_id}) 鼠标按下事件触发`)
+            if (dragHandleProps?.onMouseDown) {
+              dragHandleProps.onMouseDown(e)
+            }
+          }}
           className={clsx(
-            'ml-auto text-xs px-2 py-1 rounded transition-all',
-            isDragging
-              ? 'bg-custom-primary-300 text-custom-primary-100'
-              : selectedId === fe_id
-              ? 'bg-custom-primary-300 text-custom-accent-200'
-              : 'bg-custom-bg-200 text-custom-text-200 group-hover:bg-custom-bg-100'
+            'absolute right-0 top-0 h-8 px-2.5 flex items-center justify-center bg-custom-bg-100 text-custom-text-200 cursor-grab active:cursor-grabbing transition-all duration-200 rounded-bl-lg rounded-tr-md opacity-0 group-hover:opacity-100',
+            selectedId === fe_id && 'opacity-100 bg-custom-primary-100 text-white',
+            isDragging &&
+              'opacity-100 cursor-grabbing bg-custom-primary-100 text-white shadow-inner'
           )}
+          style={{
+            cursor: isDragging ? 'grabbing' : 'grab'
+          }}
         >
-          {isDragging ? '拖拽中...' : selectedId === fe_id ? '编辑中' : '点击编辑'}
+          <MenuOutlined className="text-[14px]" />
         </div>
-      </div>
+      </Tooltip>
+
+      {/* 左侧状态标识横条 */}
+      {selectedId === fe_id && !isDragging && (
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-custom-primary-100 rounded-l-lg shadow-[1px_0_4px_rgba(38,166,154,0.3)]"></div>
+      )}
 
       {/* 组件内容 */}
       <div className={clsx('transition-all', isDragging && 'transform scale-[0.98] opacity-90')}>

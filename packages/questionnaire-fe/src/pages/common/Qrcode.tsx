@@ -1,9 +1,10 @@
 import React, { useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import { QRCode, Button, message, Tooltip } from 'antd'
+import { QRCode, Button, Tooltip, App } from 'antd'
 import { CopyOutlined, QrcodeOutlined } from '@ant-design/icons'
 
 const Qrcode = () => {
+  const { message } = App.useApp()
   const { id } = useParams()
   const url = `${window.location.origin}/client?id=${id}`
   const qrRef = useRef<HTMLDivElement>(null)

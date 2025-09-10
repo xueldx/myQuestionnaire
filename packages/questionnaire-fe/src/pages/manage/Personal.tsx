@@ -92,40 +92,57 @@ const List: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex justify-between items-center">
-        <div className="p-2">
-          <Title level={3}>我的问卷</Title>
-        </div>
-        <div className="p-2">
+    <div className="flex flex-col h-full bg-transparent w-full">
+      <div className="flex justify-between items-center px-6 pt-6 pb-2 shrink-0">
+        <Typography.Text className="text-[20px] font-semibold text-gray-800 tracking-wide">
+          我的问卷
+        </Typography.Text>
+        <div className="w-64">
           <ListSearch searchChange={searchChange} />
         </div>
       </div>
-      <div className="px-2 overflow-y-scroll" ref={questionListRef}>
+      <div className="flex-1 px-6 pb-6 overflow-y-auto custom-no-scrollbar" ref={questionListRef}>
         {/* 问卷列表 */}
         {questionList.length > 0 ? (
-          questionList.map((item: any) => (
-            <QuestionCard
-              key={item.id}
-              id={item.id}
-              title={item.title}
-              isPublished={item.is_published}
-              isFavorated={item.is_favorated}
-              author={item.author}
-              editable={editable(item)}
-              answerCount={item.answer_count}
-              createdAt={item.create_time}
-              updatedAt={item.update_time}
-              onRefresh={getQuestionItem}
-              onDelete={() => deleteQuestion(item.id)}
-            />
-          ))
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 content-start">
+            {questionList.map((item: any) => (
+              <QuestionCard
+                key={item.id}
+                id={item.id}
+                title={item.title}
+                isPublished={item.is_published}
+                isFavorated={item.is_favorated}
+                author={item.author}
+                editable={editable(item)}
+                answerCount={item.answer_count}
+                createdAt={item.create_time}
+                updatedAt={item.update_time}
+                onRefresh={getQuestionItem}
+                onDelete={() => deleteQuestion(item.id)}
+              />
+            ))}
+          </div>
         ) : (
           <Empty className="mt-40" description="暂无问卷" />
         )}
         <FloatButton.BackTop target={targetFn} visibilityHeight={120} />
-        <div ref={bottomRef} className="h-14 text-sm text-center text-custom-text-100">
-          {questionList.length >= total && total ? '🎉duang! 到底喽!🎉' : ''}
+        <div
+          ref={bottomRef}
+          className="py-6 text-sm text-center text-gray-500 flex items-center justify-center gap-2"
+        >
+          {questionList.length >= total && total ? (
+            <>
+              <span role="img" aria-label="cone">
+                📣
+              </span>
+              <span>duang! 到底啦!</span>
+              <span role="img" aria-label="cone">
+                📣
+              </span>
+            </>
+          ) : (
+            ''
+          )}
         </div>
       </div>
     </div>

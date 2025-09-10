@@ -80,40 +80,40 @@ const router = createBrowserRouter([
         )
       },
       {
-        path: '/manage',
-        element: <ManageLayout />,
-        children: [
-          {
-            path: MANAGE_MARKET_PATH,
-            element: (
-              <Suspense>
-                <Market />
-              </Suspense>
-            )
-          },
-          {
-            path: MANAGE_PERSONAL_PATH,
-            element: (
-              <Suspense>
-                <Personal />
-              </Suspense>
-            )
-          },
-          {
-            path: MANAGE_STAR_PATH,
-            element: (
-              <Suspense>
-                <Star />
-              </Suspense>
-            )
-          }
-        ]
-      },
-      {
         path: '*',
         element: (
           <Suspense>
             <NotFound />
+          </Suspense>
+        )
+      }
+    ]
+  },
+  {
+    path: '/manage',
+    element: <ManageLayout />,
+    children: [
+      {
+        path: MANAGE_MARKET_PATH,
+        element: (
+          <Suspense>
+            <Market />
+          </Suspense>
+        )
+      },
+      {
+        path: MANAGE_PERSONAL_PATH,
+        element: (
+          <Suspense>
+            <Personal />
+          </Suspense>
+        )
+      },
+      {
+        path: MANAGE_STAR_PATH,
+        element: (
+          <Suspense>
+            <Star />
           </Suspense>
         )
       }

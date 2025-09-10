@@ -151,16 +151,16 @@ const Star: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex justify-between items-center">
-        <div className="p-2">
-          <Title level={3}>星标问卷</Title>
-        </div>
-        <div className="p-2">
+    <div className="flex flex-col h-full bg-transparent w-full">
+      <div className="flex justify-between items-center px-6 pt-6 pb-2 shrink-0">
+        <Typography.Text className="text-[20px] font-semibold text-gray-800 tracking-wide">
+          星标问卷
+        </Typography.Text>
+        <div className="w-64">
           <ListSearch searchChange={searchChange} />
         </div>
       </div>
-      <div className="px-2 flex-1 flex flex-col">
+      <div className="px-6 pb-6 flex-1 flex flex-col overflow-y-auto custom-no-scrollbar">
         {/* 问卷列表 */}
         {questionList.length === 0 ? (
           <Empty className="mt-40" description="暂无星标问卷" />

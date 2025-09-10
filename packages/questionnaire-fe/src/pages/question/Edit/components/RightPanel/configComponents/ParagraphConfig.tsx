@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { Form, Input, InputNumber, Button, message } from 'antd'
+import { Form, Input, InputNumber, Button, App } from 'antd'
 import { SaveOutlined } from '@ant-design/icons'
 import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '@/store'
@@ -11,6 +11,7 @@ interface ParagraphConfigProps {
 }
 
 const ParagraphConfig: React.FC<ParagraphConfigProps> = ({ componentId }) => {
+  const { message } = App.useApp()
   const dispatch = useDispatch()
   const [form] = Form.useForm()
 

@@ -2,5 +2,6 @@ export enum operationType {
   save = 'save',
   back = 'back',
   forward = 'forward',
-  generate = 'generate'
+  generate = 'generate',
+  delete = 'delete'
 }

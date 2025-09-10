@@ -19,9 +19,10 @@ import {
 } from '@ant-design/icons'
 import { addComponent } from '@/store/modules/componentsSlice'
 import { getComponentDefaultProps } from '@/utils/getComponentDefaultProps'
-import { message } from 'antd'
+import { App } from 'antd'
 
 const ComponentMarket: React.FC = () => {
+  const { message } = App.useApp()
   const dispatch = useDispatch()
 
   // 处理组件点击，添加到编辑区域
@@ -115,18 +116,20 @@ const ComponentMarket: React.FC = () => {
   ]
 
   return (
-    <div className="flex flex-col space-y-3 py-2">
+    <div className="grid grid-cols-2 gap-2 py-2">
       {componentList.map(component => (
         <div
           key={component.id}
-          className="border-custom-bg-200 border-dashed border-2 rounded-lg p-3 transition-all duration-200 hover:border-custom-bg-400 hover:shadow-md cursor-pointer"
+          className="group border-custom-bg-200 border-dashed border rounded-lg p-2 transition-all duration-200 hover:border-custom-primary-100 hover:shadow-sm hover:-translate-y-0.5 cursor-pointer flex flex-col items-center justify-center bg-white"
           onClick={() => handleComponentClick(component.type)}
         >
-          <div className="flex items-center space-x-3 p-2">
-            <div className="w-10 h-10 text-xl flex items-center justify-center bg-custom-bg-400 rounded-md text-white">
+          <div className="flex flex-col items-center justify-center gap-1.5 py-0.5">
+            <div className="w-8 h-8 text-[18px] flex items-center justify-center text-custom-primary-200 bg-custom-bg-100 rounded group-hover:bg-custom-primary-100 group-hover:text-white transition-colors duration-200">
               {component.icon}
             </div>
-            <div className="font-medium">{component.name}</div>
+            <div className="text-xs font-medium text-custom-text-100 group-hover:text-custom-primary-200 transition-colors duration-200">
+              {component.name}
+            </div>
           </div>
         </div>
       ))}

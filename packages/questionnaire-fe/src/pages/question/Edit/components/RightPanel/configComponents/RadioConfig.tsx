@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { Form, Input, Button, message, Checkbox } from 'antd'
+import { Form, Input, Button, Checkbox, App } from 'antd'
 import { SaveOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '@/store'
@@ -11,6 +11,7 @@ interface RadioConfigProps {
 }
 
 const RadioConfig: React.FC<RadioConfigProps> = ({ componentId }) => {
+  const { message } = App.useApp()
   const dispatch = useDispatch()
   const [form] = Form.useForm()
 

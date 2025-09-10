@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Typography, Spin, Alert, Card, Button, Tag, List, Space, Select, message } from 'antd'
+import { Typography, Spin, Alert, Card, Button, Tag, List, Space, Select, App } from 'antd'
 import { ArrowLeftOutlined, FileWordOutlined } from '@ant-design/icons'
 import apis from '@/apis'
 
@@ -31,6 +31,7 @@ interface AIAnalysisResult {
  * 问卷AI分析页面
  */
 const AIAnalysis: React.FC = () => {
+  const { message } = App.useApp()
   const { id = '' } = useParams() // 从URL参数中获取问卷ID
   const navigate = useNavigate() // 用于页面导航
   const [error, setError] = useState<string | null>(null)

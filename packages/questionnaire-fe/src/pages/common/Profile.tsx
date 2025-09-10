@@ -1,7 +1,7 @@
 import { useAvatar } from '@/hooks/useAvatar'
 import { HOME_PATH, MANAGE_MARKET_PATH } from '@/router'
 import { LeftOutlined } from '@ant-design/icons'
-import { Avatar, FloatButton, Button, Modal, Form, Input, message } from 'antd'
+import { Avatar, FloatButton, Button, Modal, Form, Input, App } from 'antd'
 import { Rule } from 'antd/es/form'
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -13,6 +13,7 @@ import useRequestSuccessChecker from '@/hooks/useRequestSuccessChecker'
 import CustomSpin from '@/components/CustomSpin/CustomSpin'
 
 const Profile: React.FC = () => {
+  const { message } = App.useApp()
   const { avatar } = useAvatar()
   const nav = useNavigate()
   const { isRequestSuccess } = useRequestSuccessChecker()

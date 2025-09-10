@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react'
-import { Modal, message, Select } from 'antd'
+import { Modal, Select, App } from 'antd'
 import LottieAnimation from '@/components/Common/LottieAnimation'
 import ai from '@/assets/lottie/ai.json'
 import { Input, Button, Skeleton, Tooltip } from 'antd'
@@ -34,6 +34,7 @@ const GenerateDialogTitle = React.memo((props: { title: string }) => {
 GenerateDialogTitle.displayName = 'GenerateDialogTitle'
 
 const GenerateDialog = (props: GenerateDialogProps) => {
+  const { message } = App.useApp()
   const { isOpen, close, addQuestions } = props
   // 用于存储停止生成的回调函数
   const handleStopClickRef = useRef<() => void>(() => {

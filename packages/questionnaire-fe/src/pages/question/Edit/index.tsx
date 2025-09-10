@@ -18,6 +18,7 @@ import { QUESTION_EDIT_PATH, MANAGE_MARKET_PATH } from '@/router/index'
 import {
   setVersion,
   addComponent,
+  deleteComponent,
   resetComponents,
   undo,
   redo
@@ -36,10 +37,11 @@ const Edit: React.FC = () => {
   const version = useSelector((state: RootState) => state.components.version)
   const historyIndex = useSelector((state: RootState) => state.components.historyIndex)
   const historyLength = useSelector((state: RootState) => state.components.history.length)
+  const selectedId = useSelector((state: RootState) => state.components.selectedId)
   const dispatch = useDispatch()
   const { isGenerateDialogOpen, openGenerateDialog, closeGenerateDialog } = useGenerateDialog()
   const { isRequestSuccess } = useRequestSuccessChecker()
-  const { message } = App.useApp()
+  const { message, modal } = App.useApp()
 
   // 处理复制问卷
   useEffect(() => {
@@ -153,6 +155,14 @@ const Edit: React.FC = () => {
       } else {
         message.info('没有可前进的操作')
       }
+    },
+    [operationType.delete]: () => {
+      if (selectedId) {
+        dispatch(deleteComponent(selectedId))
+        message.success('删除成功')
+      } else {
+        message.warning('请选择要删除的组件')
+      }
     }
   }
 
@@ -171,7 +181,7 @@ const Edit: React.FC = () => {
     }
 
     // 先保存问卷
-    Modal.confirm({
+    modal.confirm({
       title: '提交问卷',
       content: '确定要提交该问卷吗？提交后将发布给用户填写。',
       okText: '确认',
@@ -225,14 +235,19 @@ const Edit: React.FC = () => {
   }
 
   return (
-    <div className="w-full h-screen bg-custom-bg-100 flex flex-col">
+    <div className="w-full h-screen bg-gradient-to-br from-[#E8F5F3] to-[#F1F8E9] flex flex-col">
       <div className="h-16 flex justify-between items-center">
         <div className="size-10 flex justify-center items-center ml-4">
           <Tooltip title="返回">
-            <Button shape="circle" icon={<LeftOutlined />} onClick={() => navigate(-1)} />
+            <Button
+              shape="circle"
+              icon={<LeftOutlined />}
+              onClick={() => navigate(-1)}
+              className="flex justify-center items-center"
+            />
           </Tooltip>
         </div>
-        <div className="flex justify-center items-center h-full gap-4 bg-custom-bg-300 px-16 rounded-b-full mx-auto">
+        <div className="flex justify-center items-center h-full gap-4 px-16 mx-auto">
           <EditorButtonGroup operation={operation} />
           <GenerateDialog
             isOpen={isGenerateDialogOpen}
@@ -252,7 +267,7 @@ const Edit: React.FC = () => {
         </div>
       </div>
       <div className="flex-1 flex justify-between p-2 h-0">
-        <div className="w-[350px] bg-custom-bg-300 rounded-r-lg shadow-2xl p-2">
+        <div className="w-[350px] bg-custom-bg-300 rounded-l-lg shadow-2xl p-2">
           <LeftPanel />
         </div>
         <div className="flex justify-center items-center flex-1 w-0">
@@ -266,7 +281,7 @@ const Edit: React.FC = () => {
             </div>
           )}
         </div>
-        <div className="w-[350px] bg-custom-bg-300 rounded-l-lg shadow-2xl p-2">
+        <div className="w-[350px] bg-custom-bg-300 rounded-r-lg shadow-2xl p-2">
           <RightPanel />
         </div>
       </div>

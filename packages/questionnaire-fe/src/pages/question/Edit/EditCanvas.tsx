@@ -4,7 +4,7 @@ import ComponentRender from '@/pages/question/Edit/components/ComponentRender'
 import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '@/store'
 import useScrollToSelected from '@/pages/question/Edit/hooks/useScrollToSelected'
-import { Typography, message } from 'antd'
+import { Typography, App } from 'antd'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { reorderComponents } from '@/store/modules/componentsSlice'
 import DevTools from '@/components/DevTools'
@@ -16,6 +16,7 @@ const { Title, Paragraph } = Typography
 const TEST_MODE = false
 
 const EditCanvas: React.FC = () => {
+  const { message } = App.useApp()
   const componentList = useSelector((state: RootState) => state.components.componentList)
   const pageConfig = useSelector((state: RootState) => state.pageConfig)
   const { getRef } = useScrollToSelected()
@@ -260,7 +261,7 @@ const EditCanvas: React.FC = () => {
 
       {TEST_MODE && (
         <div className="my-2 p-2 text-center text-sm bg-custom-bg-200 text-custom-text-100 rounded">
-          <b>拖拽调试模式已开启</b> - 请尝试拖拽组件头部的蓝色区域调整顺序
+          <b>拖拽调试模式已开启</b> - 请尝试拖拽组件调整顺序
         </div>
       )}
 
@@ -294,9 +295,7 @@ const EditCanvas: React.FC = () => {
                     {/* 拖拽时的提示 */}
                     {componentList.length > 1 && (
                       <div className="text-xs text-center py-2 text-custom-text-200 mb-2 bg-custom-bg-200 rounded font-medium">
-                        {isDragging
-                          ? '↕️ 请拖放到目标位置...'
-                          : '↕️ 可通过拖拽蓝色区域调整组件顺序'}
+                        {isDragging ? '↕️ 请拖放到目标位置...' : '↕️ 可通过拖拽组件调整顺序'}
                       </div>
                     )}
 
