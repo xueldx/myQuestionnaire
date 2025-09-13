@@ -1,25 +1,23 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Checkbox, CheckboxGroup } from "@heroui/checkbox";
 import { Question } from "@/types/question";
 import useAnswerStore from "@/stores/useAnswerStore";
 
-const QuestionCheckbox = ({ question }: { question: Question }) => {
-  const { addOrUpdateAnswer, getAnswerByQuestionId } = useAnswerStore();
-  const [selected, setSelected] = useState<string[]>([]);
+const EMPTY_ARRAY: string[] = [];
 
-  // 组件挂载时检查是否有已保存的答案
-  useEffect(() => {
-    const savedAnswer = getAnswerByQuestionId(question.fe_id);
-    if (Array.isArray(savedAnswer)) {
-      setSelected(savedAnswer);
-    }
-  }, [question.fe_id, getAnswerByQuestionId]);
+const QuestionCheckbox = ({ question }: { question: Question }) => {
+  const addOrUpdateAnswer = useAnswerStore(state => state.addOrUpdateAnswer);
+
+  // 使用 Zustand selector 订阅特定题目的答案变化，避免不必要的重新渲染或状态不同步
+  const selected = useAnswerStore(state => {
+    const currentAnswers = state.answersByQuestionnaire[state.currentQuestionnaireId] || EMPTY_ARRAY;
+    const answer = currentAnswers.find(a => String(a.fe_id) === String(question.fe_id));
+    return Array.isArray(answer?.value) ? (answer.value as string[]) : EMPTY_ARRAY;
+  });
 
   const handleSelectionChange = (values: string[]) => {
-    setSelected(values);
-    // 确保即使是空数组也会触发状态更新
     addOrUpdateAnswer(question.fe_id, values, question.type);
   };
 

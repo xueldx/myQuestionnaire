@@ -235,7 +235,7 @@ const Edit: React.FC = () => {
   }
 
   return (
-    <div className="w-full h-screen bg-gradient-to-br from-[#E8F5F3] to-[#F1F8E9] flex flex-col">
+    <div className="w-full min-w-[1200px] h-screen overflow-x-auto overflow-y-hidden bg-gradient-to-br from-[#E8F5F3] to-[#F1F8E9] flex flex-col">
       <div className="h-16 flex justify-between items-center">
         <div className="size-10 flex justify-center items-center ml-4">
           <Tooltip title="返回">

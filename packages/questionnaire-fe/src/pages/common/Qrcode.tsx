@@ -6,7 +6,9 @@ import { CopyOutlined, QrcodeOutlined } from '@ant-design/icons'
 const Qrcode = () => {
   const { message } = App.useApp()
   const { id } = useParams()
-  const url = `${window.location.origin}/client?id=${id}`
+  // 根据环境变量决定客户端域名，如果是本地开发则指向8878端口，否则默认使用当前域名
+  const clientUrl = import.meta.env.VITE_CLIENT_URL || window.location.origin
+  const url = `${clientUrl}/client/question?id=${id}`
   const qrRef = useRef<HTMLDivElement>(null)
 
   // 复制链接到剪贴板
