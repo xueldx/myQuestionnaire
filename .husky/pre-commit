@@ -5,6 +5,5 @@ echo "😈Running npm run lint..."
 npm run lint
 echo "😈Running npm run format..."
 npm run format
-echo "😈Adding changes to staging area..."
-git add .
+echo "😈Ready to commit. Note: unstaged files were format/linted but NOT automatically staged."
 echo "😈Pre-commit hook completed."
