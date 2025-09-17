@@ -64,14 +64,6 @@ const router = createBrowserRouter([
         )
       },
       {
-        path: PROFILE_PATH,
-        element: (
-          <Suspense>
-            <Profile />
-          </Suspense>
-        )
-      },
-      {
         path: QRCODE_PATH + '/:id',
         element: (
           <Suspense>
@@ -88,6 +80,14 @@ const router = createBrowserRouter([
         )
       }
     ]
+  },
+  {
+    path: PROFILE_PATH,
+    element: (
+      <Suspense>
+        <Profile />
+      </Suspense>
+    )
   },
   {
     path: '/manage',

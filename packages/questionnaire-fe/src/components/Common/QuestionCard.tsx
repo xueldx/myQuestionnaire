@@ -227,15 +227,14 @@ const QuestionCard: React.FC<PropsType> = (props: PropsType) => {
           <Tooltip title="删除">
             <Popconfirm
               title="确定删除该问卷？"
-              okType="danger"
               onConfirm={del}
-              okButtonProps={{ style: { backgroundColor: '#fe5a55' } }}
+              okButtonProps={{ style: { backgroundColor: '#26A69A' } }}
               icon={<QuestionCircleOutlined className="text-custom-red" />}
             >
               <Button
                 type="text"
                 size="small"
-                className="text-gray-500 hover:!text-red-500 hover:!bg-transparent"
+                className="text-gray-500 hover:!text-[#26a69a] hover:!bg-transparent"
                 icon={<DeleteOutlined className="text-[16px]" />}
               />
             </Popconfirm>
