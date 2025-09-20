@@ -1,13 +1,13 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 class UpdateQuestionDto {
   @IsString()
-  @IsNotEmpty()
-  description: string;
+  @IsOptional()
+  description?: string;
 
   @IsString()
-  @IsNotEmpty()
-  title: string;
+  @IsOptional()
+  title?: string;
 }
 
 export default UpdateQuestionDto;

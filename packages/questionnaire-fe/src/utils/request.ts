@@ -4,7 +4,7 @@ import { getTokenFromStorage } from '@/utils/index'
 
 // 创建axios实例
 const instance: AxiosInstance = axios.create({
-  timeout: 5000
+  timeout: 10000
 })
 
 // 请求拦截器
