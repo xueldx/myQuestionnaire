@@ -42,3 +42,8 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgb(var(--primary-100));
 }
+
+.custom-cancel-btn:hover {
+  color: #529c94 !important;
+  border-color: #529c94 !important;
+}

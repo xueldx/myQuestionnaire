@@ -50,6 +50,11 @@ const unFavorateQuestion = (id: number) =>
 const deleteQuestion = (id: number) => request.delete<number, RespType<any>>(`${prefix}/${id}`)
 
 /**
+ * 批量删除问卷
+ */
+const deleteQuestions = (ids: number[]) => request.post<any, RespType<any>>(`${prefix}/batch-delete`, { ids })
+
+/**
  * 发布问卷
  */
 const publishQuestion = (id: number) =>
@@ -68,6 +73,7 @@ export default {
   favorateQuestion,
   unFavorateQuestion,
   deleteQuestion,
+  deleteQuestions,
   updateQuestion,
   publishQuestion,
   unPublishQuestion
