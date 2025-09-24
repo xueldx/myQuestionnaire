@@ -2,8 +2,32 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useInViewport, useTitle } from 'ahooks'
 import QuestionCard from '@/components/Common/QuestionCard'
 import ListSearch from '@/components/Common/ListSearch'
-import { Typography, FloatButton, Empty, Table, Space, Button, Modal, Radio, Tag, Tooltip, ConfigProvider, Popconfirm } from 'antd'
-import { AppstoreOutlined, BarsOutlined, DeleteOutlined, ExclamationCircleOutlined, EditOutlined, LineChartOutlined, StarOutlined, CopyOutlined, QrcodeOutlined, QuestionCircleOutlined } from '@ant-design/icons'
+import {
+  Typography,
+  FloatButton,
+  Empty,
+  Table,
+  Space,
+  Button,
+  Modal,
+  Radio,
+  Tag,
+  Tooltip,
+  ConfigProvider,
+  Popconfirm
+} from 'antd'
+import {
+  AppstoreOutlined,
+  BarsOutlined,
+  DeleteOutlined,
+  ExclamationCircleOutlined,
+  EditOutlined,
+  LineChartOutlined,
+  StarOutlined,
+  CopyOutlined,
+  QrcodeOutlined,
+  QuestionCircleOutlined
+} from '@ant-design/icons'
 import { Link, useNavigate } from 'react-router-dom'
 import { QUESTION_DETAIL_PATH, QUESTION_EDIT_PATH, QUESTION_STAT_PATH, QRCODE_PATH } from '@/router'
 import dayjs from 'dayjs'
@@ -59,21 +83,20 @@ const List: React.FC = () => {
       key: 'title',
       render: (text: string, record: any) => (
         <Space>
-          <Link to={`${QUESTION_DETAIL_PATH}/${record.id}`} className="hover:text-[#26a69a] text-inherit font-semibold">
+          <Link
+            to={`${QUESTION_DETAIL_PATH}/${record.id}`}
+            className="hover:text-[#26a69a] text-inherit font-semibold"
+          >
             {text}
           </Link>
-          {record.is_published ? (
-            <Tag color="#26a69a">已发布</Tag>
-          ) : (
-            <Tag color="cyan">未发布</Tag>
-          )}
+          {record.is_published ? <Tag color="#26a69a">已发布</Tag> : <Tag color="cyan">未发布</Tag>}
         </Space>
       )
     },
     {
       title: '答卷数量',
       dataIndex: 'answer_count',
-      key: 'answer_count',
+      key: 'answer_count'
     },
     {
       title: '创建时间',
@@ -85,19 +108,30 @@ const List: React.FC = () => {
       title: '操作',
       key: 'action',
       render: (_: any, record: any) => {
-        const isFavorated = record.is_favorated;
-        const isPublished = record.is_published;
-        const isEditable = editable(record);
+        const isFavorated = record.is_favorated
+        const isPublished = record.is_published
+        const isEditable = editable(record)
         return (
           <Space size="small">
             {isEditable && (
               <Tooltip title="编辑问卷">
-                <Button type="text" size="small" icon={<EditOutlined />} onClick={() => nav(`${QUESTION_EDIT_PATH}/${record.id}`)} />
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<EditOutlined />}
+                  onClick={() => nav(`${QUESTION_EDIT_PATH}/${record.id}`)}
+                />
               </Tooltip>
             )}
             {isEditable && (
               <Tooltip title="统计">
-                <Button type="text" size="small" icon={<LineChartOutlined />} disabled={!isPublished || !record.answer_count} onClick={() => nav(`${QUESTION_STAT_PATH}/${record.id}`)} />
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<LineChartOutlined />}
+                  disabled={!isPublished || !record.answer_count}
+                  onClick={() => nav(`${QUESTION_STAT_PATH}/${record.id}`)}
+                />
               </Tooltip>
             )}
             <Tooltip title={isFavorated ? '取消星标' : '星标'}>
@@ -119,7 +153,14 @@ const List: React.FC = () => {
             </Tooltip>
             {isPublished && (
               <Tooltip title="答题链接/二维码">
-                <Button type="text" size="small" onClick={() => window.open(`${window.location.origin}${QRCODE_PATH}/${record.id}`)} icon={<QrcodeOutlined />} />
+                <Button
+                  type="text"
+                  size="small"
+                  onClick={() =>
+                    window.open(`${window.location.origin}${QRCODE_PATH}/${record.id}`)
+                  }
+                  icon={<QrcodeOutlined />}
+                />
               </Tooltip>
             )}
             <Tooltip title="复制">
@@ -147,20 +188,26 @@ const List: React.FC = () => {
             </Tooltip>
             {isEditable && (
               <Tooltip title="删除">
-                <Button type="text" danger size="small" icon={<DeleteOutlined />} onClick={() => {
-                  Modal.confirm({
-                    title: '确定删除该问卷？',
-                    icon: <QuestionCircleOutlined className="text-custom-red" />,
-                    okButtonProps: { style: { backgroundColor: '#26A69A' } },
-                    onOk: async () => {
-                      const res = await apis.questionApi.deleteQuestion(record.id);
-                      if (isRequestSuccess(res)) {
-                        deleteQuestion(record.id);
-                        successMessage(res.msg);
+                <Button
+                  type="text"
+                  danger
+                  size="small"
+                  icon={<DeleteOutlined />}
+                  onClick={() => {
+                    Modal.confirm({
+                      title: '确定删除该问卷？',
+                      icon: <QuestionCircleOutlined className="text-custom-red" />,
+                      okButtonProps: { style: { backgroundColor: '#26A69A' } },
+                      onOk: async () => {
+                        const res = await apis.questionApi.deleteQuestion(record.id)
+                        if (isRequestSuccess(res)) {
+                          deleteQuestion(record.id)
+                          successMessage(res.msg)
+                        }
                       }
-                    }
-                  })
-                }} />
+                    })
+                  }}
+                />
               </Tooltip>
             )}
           </Space>
@@ -241,12 +288,7 @@ const List: React.FC = () => {
         </Typography.Text>
         <Space size="middle">
           {selectedRowKeys.length > 0 && (
-            <Button
-              size="large"
-              danger
-              icon={<DeleteOutlined />}
-              onClick={handleBatchDelete}
-            >
+            <Button size="large" danger icon={<DeleteOutlined />} onClick={handleBatchDelete}>
               批量删除 ({selectedRowKeys.length})
             </Button>
           )}
@@ -268,8 +310,12 @@ const List: React.FC = () => {
               size="large"
               className="custom-radio-group"
             >
-              <Radio.Button value="card"><AppstoreOutlined /></Radio.Button>
-              <Radio.Button value="list"><BarsOutlined /></Radio.Button>
+              <Radio.Button value="card">
+                <AppstoreOutlined />
+              </Radio.Button>
+              <Radio.Button value="list">
+                <BarsOutlined />
+              </Radio.Button>
             </Radio.Group>
           </ConfigProvider>
           <div className="w-64">
@@ -297,7 +343,7 @@ const List: React.FC = () => {
                   onRefresh={getQuestionItem}
                   onDelete={() => deleteQuestion(item.id)}
                   checked={selectedRowKeys.includes(item.id)}
-                  onCheckChange={(checked) => {
+                  onCheckChange={checked => {
                     if (checked) setSelectedRowKeys([...selectedRowKeys, item.id])
                     else setSelectedRowKeys(selectedRowKeys.filter(k => k !== item.id))
                   }}
@@ -312,8 +358,8 @@ const List: React.FC = () => {
               pagination={false}
               rowSelection={{
                 selectedRowKeys,
-                onChange: (keys) => setSelectedRowKeys(keys as number[]),
-                getCheckboxProps: (record) => ({ disabled: !editable(record) })
+                onChange: keys => setSelectedRowKeys(keys as number[]),
+                getCheckboxProps: record => ({ disabled: !editable(record) })
               }}
               className="bg-white/80 backdrop-blur-sm rounded-lg"
             />

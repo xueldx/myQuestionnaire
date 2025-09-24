@@ -52,7 +52,8 @@ const deleteQuestion = (id: number) => request.delete<number, RespType<any>>(`${
 /**
  * 批量删除问卷
  */
-const deleteQuestions = (ids: number[]) => request.post<any, RespType<any>>(`${prefix}/batch-delete`, { ids })
+const deleteQuestions = (ids: number[]) =>
+  request.post<any, RespType<any>>(`${prefix}/batch-delete`, { ids })
 
 /**
  * 发布问卷

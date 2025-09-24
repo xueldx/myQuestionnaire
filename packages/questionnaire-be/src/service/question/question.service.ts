@@ -24,7 +24,7 @@ export class QuestionService {
     private dataSource: DataSource,
     @InjectModel(QuestionnaireDetail.name)
     private readonly questionnaireDetailModel: Model<QuestionnaireDetail>,
-  ) { }
+  ) {}
 
   // 创建问卷
   async create(createQuestionDto: CreateQuestionDto) {
@@ -211,7 +211,7 @@ export class QuestionService {
         throw new Error('未找到符合条件的问卷，或您没有权限删除');
       }
 
-      const validIds = questions.map(q => q.id);
+      const validIds = questions.map((q) => q.id);
 
       // 删除收藏记录
       await queryRunner.manager

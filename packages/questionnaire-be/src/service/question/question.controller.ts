@@ -29,7 +29,7 @@ import config from '@/config';
 @UseGuards(JwtAuthGuard)
 @Controller('question')
 export class QuestionController {
-  constructor(private readonly questionService: QuestionService) { }
+  constructor(private readonly questionService: QuestionService) {}
 
   // 新建问卷
   @Post()
@@ -85,10 +85,7 @@ export class QuestionController {
 
   // 批量删除问卷
   @Post('batch-delete')
-  async removeMany(
-    @Body('ids') ids: number[],
-    @currentUser() user: UserToken,
-  ) {
+  async removeMany(@Body('ids') ids: number[], @currentUser() user: UserToken) {
     try {
       if (!ids || !ids.length) {
         throw new Error('请选择要删除的问卷');

@@ -23,6 +23,7 @@ import {
   undo,
   redo
 } from '@/store/modules/componentsSlice'
+import { resetPageConfig } from '@/store/modules/pageConfigSlice'
 import useRequestSuccessChecker from '@/hooks/useRequestSuccessChecker'
 import { getUserInfoFromStorage } from '@/utils'
 
@@ -43,10 +44,13 @@ const Edit: React.FC = () => {
   const { isRequestSuccess } = useRequestSuccessChecker()
   const { message, modal } = App.useApp()
 
+  const copyExecutedRef = React.useRef(false)
+
   // 处理复制问卷
   useEffect(() => {
     const copyFrom = searchParams.get('copyFrom')
-    if (copyFrom) {
+    if (copyFrom && !copyExecutedRef.current) {
+      copyExecutedRef.current = true
       const copyQuestionnaire = async () => {
         try {
           // 获取原问卷详情
@@ -67,6 +71,15 @@ const Edit: React.FC = () => {
             })
           )
 
+          dispatch(
+            resetPageConfig({
+              title: `${questionnaireDetail.title} (复制)`,
+              description: questionnaireDetail.description,
+              footerText: questionnaireDetail.footer_text || ''
+              // If there are other configs like css/js they should probably be here but let's stick to what we know
+            })
+          )
+
           // 保存到新问卷
           const userInfo = getUserInfoFromStorage()
           const saveRes = await apis.editorApi.saveQuestionnaireDetail({
@@ -82,6 +95,10 @@ const Edit: React.FC = () => {
           if (!isRequestSuccess(saveRes)) {
             message.error('保存问卷详情失败')
             return
+          }
+
+          if (saveRes.data && typeof saveRes.data.version === 'number') {
+            dispatch(setVersion(saveRes.data.version))
           }
 
           message.success('复制成功')
@@ -120,7 +137,12 @@ const Edit: React.FC = () => {
       const res = await apis.editorApi.saveQuestionnaireDetail(params)
       if (isRequestSuccess(res)) {
         message.success('保存成功')
-        dispatch(setVersion(version + 1))
+        if (res.data && typeof res.data.version === 'number') {
+          dispatch(setVersion(res.data.version))
+        } else {
+          // 如果后端没返回，兜底逻辑
+          dispatch(setVersion(version + 1))
+        }
         await apis.questionApi.updateQuestion(parseInt(id) || 0, {
           title: pageConfig.title || '未命名问卷',
           description: pageConfig.description || ''

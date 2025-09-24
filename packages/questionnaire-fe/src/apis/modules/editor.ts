@@ -21,7 +21,7 @@ const saveQuestionnaireDetail = (params: {
   footer_text: string
   creator: string
 }) => {
-  return request.post<any, RespType<null>>(`${prefix}/save`, params)
+  return request.post<any, RespType<QuestionnaireDetail>>(`${prefix}/save`, params)
 }
 
 /**
@@ -36,7 +36,7 @@ const createQuestionnaire = (params: {
   components: ComponentInfoType[]
   version: number
 }) => {
-  return request.post<any, RespType<null>>(`${prefix}/create`, params)
+  return request.post<any, RespType<QuestionnaireDetail>>(`${prefix}/create`, params)
 }
 
 /**

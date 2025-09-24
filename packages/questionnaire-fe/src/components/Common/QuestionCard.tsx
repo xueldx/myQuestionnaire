@@ -139,21 +139,18 @@ const QuestionCard: React.FC<PropsType> = (props: PropsType) => {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center font-semibold text-gray-800 truncate pr-2 text-[15px]">
               {onCheckChange && (
-                <div onClick={(e) => e.stopPropagation()} className="mr-2">
+                <div onClick={e => e.stopPropagation()} className="mr-2">
                   <ConfigProvider
                     theme={{
                       components: {
                         Checkbox: {
                           colorPrimary: '#529c94',
-                          colorPrimaryHover: '#529c94',
+                          colorPrimaryHover: '#529c94'
                         }
                       }
                     }}
                   >
-                    <Checkbox
-                      checked={checked}
-                      onChange={(e) => onCheckChange(e.target.checked)}
-                    />
+                    <Checkbox checked={checked} onChange={e => onCheckChange(e.target.checked)} />
                   </ConfigProvider>
                 </div>
               )}
@@ -213,8 +210,9 @@ const QuestionCard: React.FC<PropsType> = (props: PropsType) => {
           <Button
             type="text"
             size="small"
-            className={`${isFavorated ? 'text-yellow-500' : 'text-gray-500'
-              } hover:!bg-transparent hover:!text-yellow-500`}
+            className={`${
+              isFavorated ? 'text-yellow-500' : 'text-gray-500'
+            } hover:!bg-transparent hover:!text-yellow-500`}
             icon={<StarOutlined className="text-[16px]" />}
             onClick={handleFavorate}
           />

@@ -4,7 +4,7 @@ import { SaveDto } from './dto/save.dto';
 import { ResponseBody } from '@/common/classes/response-body';
 @Controller('editor')
 export class EditorController {
-  constructor(private readonly editorService: EditorService) {}
+  constructor(private readonly editorService: EditorService) { }
 
   @Get('getQuestionnaireDetail')
   async getQuestionnaireDetail(
@@ -18,10 +18,10 @@ export class EditorController {
   @Post('save')
   async save(@Body() saveDto: SaveDto) {
     try {
-      await this.editorService.save(saveDto);
-      return new ResponseBody<null>(1, null, '保存成功');
+      const data = await this.editorService.save(saveDto);
+      return new ResponseBody<any>(1, data, '保存成功');
     } catch (error) {
-      return new ResponseBody<null>(0, null, error.message);
+      return new ResponseBody<any>(0, null, error.message);
     }
   }
 
@@ -37,10 +37,10 @@ export class EditorController {
         components: saveDto.components,
         version: 1, // 初始版本为1
       });
-      await doc.save();
-      return new ResponseBody<null>(1, null, '创建成功');
+      const data = await doc.save();
+      return new ResponseBody<any>(1, data, '创建成功');
     } catch (error) {
-      return new ResponseBody<null>(0, null, error.message);
+      return new ResponseBody<any>(0, null, error.message);
     }
   }
 
