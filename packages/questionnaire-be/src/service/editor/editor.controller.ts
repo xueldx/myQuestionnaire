@@ -4,7 +4,7 @@ import { SaveDto } from './dto/save.dto';
 import { ResponseBody } from '@/common/classes/response-body';
 @Controller('editor')
 export class EditorController {
-  constructor(private readonly editorService: EditorService) { }
+  constructor(private readonly editorService: EditorService) {}
 
   @Get('getQuestionnaireDetail')
   async getQuestionnaireDetail(
