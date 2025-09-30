@@ -14,7 +14,8 @@ import {
   Tag,
   Tooltip,
   ConfigProvider,
-  Popconfirm
+  Popconfirm,
+  Select
 } from 'antd'
 import {
   AppstoreOutlined,
@@ -46,8 +47,9 @@ const { Title } = Typography
 const stepSize = 20
 
 const Market: React.FC = () => {
-  useTitle('小木问卷 - 问卷市场')
+  useTitle('小木问卷 - 模板中心')
   const bottomRef = useRef(null)
+  const [activeTab, setActiveTab] = useState<'public' | 'private'>('public')
   const [currentView, setCurrentView] = useState(1)
   const [questionList, setQuestionList] = useState<Question[]>([])
   const [search, setSearch] = useState('')
@@ -283,9 +285,29 @@ const Market: React.FC = () => {
   return (
     <div className="flex flex-col h-full bg-transparent w-full">
       <div className="flex justify-between items-center px-6 pt-6 pb-2 shrink-0">
-        <Typography.Text className="text-[20px] font-semibold text-gray-800 tracking-wide">
-          问卷市场
-        </Typography.Text>
+        {/* 左侧：二级的子目录（公开模板 / 我的模板） */}
+        <div className="flex gap-6 items-center">
+          <div
+            className="relative cursor-pointer pb-2"
+            onClick={() => setActiveTab('public')}
+          >
+            <span className={`text-[18px] font-semibold tracking-wide transition-colors ${activeTab === 'public' ? 'text-[#408D86]' : 'text-black'}`}>
+              公开模板
+            </span>
+            <div className={`absolute bottom-0 left-0 h-[3px] rounded-full bg-[#408D86] transition-all duration-300 ${activeTab === 'public' ? 'w-full' : 'w-0'}`} />
+          </div>
+          <div
+            className="relative cursor-pointer pb-2"
+            onClick={() => setActiveTab('private')}
+          >
+            <span className={`text-[18px] font-semibold tracking-wide transition-colors ${activeTab === 'private' ? 'text-[#408D86]' : 'text-black'}`}>
+              我的模板
+            </span>
+            <div className={`absolute bottom-0 left-0 h-[3px] rounded-full bg-[#408D86] transition-all duration-300 ${activeTab === 'private' ? 'w-full' : 'w-0'}`} />
+          </div>
+        </div>
+
+        {/* 右侧：操作区 */}
         <Space size="middle">
           {selectedRowKeys.length > 0 && (
             <Button size="large" danger icon={<DeleteOutlined />} onClick={handleBatchDelete}>

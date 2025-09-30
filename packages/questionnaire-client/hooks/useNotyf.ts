@@ -15,6 +15,10 @@ const useNotyf = () => {
         },
         types: [
           {
+            type: "success",
+            background: "#26a69a"
+          },
+          {
             type: "warning",
             background: "orange",
             icon: {

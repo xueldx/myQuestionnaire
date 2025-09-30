@@ -72,7 +72,76 @@ const config = {
     }
   },
   darkMode: "class",
-  plugins: [heroui()]
+  plugins: [
+    heroui({
+      themes: {
+        light: {
+          colors: {
+            primary: {
+              50: '#e6f6f4',
+              100: '#ccece9',
+              200: '#99d9d3',
+              300: '#66c6bd',
+              400: '#33b3a7',
+              500: '#26a69a',
+              600: '#1e857b',
+              700: '#17645c',
+              800: '#0f423d',
+              900: '#08211f',
+              DEFAULT: "#26a69a",
+              foreground: "#ffffff",
+            },
+            secondary: {
+              50: '#e6f6f4',
+              100: '#ccece9',
+              200: '#99d9d3',
+              300: '#66c6bd',
+              400: '#33b3a7',
+              500: '#26a69a',
+              600: '#1e857b',
+              700: '#17645c',
+              800: '#0f423d',
+              900: '#08211f',
+              DEFAULT: "#26a69a",
+              foreground: "#ffffff",
+            },
+          },
+        },
+        dark: {
+          colors: {
+            primary: {
+              50: '#e6f6f4',
+              100: '#ccece9',
+              200: '#99d9d3',
+              300: '#66c6bd',
+              400: '#33b3a7',
+              500: '#26a69a',
+              600: '#1e857b',
+              700: '#17645c',
+              800: '#0f423d',
+              900: '#08211f',
+              DEFAULT: "#26a69a",
+              foreground: "#ffffff",
+            },
+            secondary: {
+              50: '#e6f6f4',
+              100: '#ccece9',
+              200: '#99d9d3',
+              300: '#66c6bd',
+              400: '#33b3a7',
+              500: '#26a69a',
+              600: '#1e857b',
+              700: '#17645c',
+              800: '#0f423d',
+              900: '#08211f',
+              DEFAULT: "#26a69a",
+              foreground: "#ffffff",
+            },
+          },
+        },
+      },
+    })
+  ]
 };
 
 export default config;

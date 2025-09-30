@@ -79,33 +79,30 @@ const ManageLayout: React.FC = () => {
 
           <Space direction="vertical" className="w-full" size="small">
             <div
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg cursor-pointer transition-colors duration-200 ${
-                pathname.startsWith(MANAGE_MARKET_PATH)
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg cursor-pointer transition-colors duration-200 ${pathname.startsWith(MANAGE_MARKET_PATH)
                   ? 'bg-[#D3EBE8] text-[#408D86] font-medium border-l-[3px] border-[#408D86] shadow-sm'
                   : 'text-gray-600 hover:bg-white/50 border-l-[3px] border-transparent'
-              }`}
+                }`}
               onClick={() => nav(MANAGE_MARKET_PATH)}
             >
               <SvgIcon name="market" />
-              <span className="flex-1">问卷市场</span>
+              <span className="flex-1">模板中心</span>
             </div>
             <div
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg cursor-pointer transition-colors duration-200 ${
-                pathname.startsWith(MANAGE_PERSONAL_PATH)
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg cursor-pointer transition-colors duration-200 ${pathname.startsWith(MANAGE_PERSONAL_PATH)
                   ? 'bg-[#D3EBE8] text-[#408D86] font-medium border-l-[3px] border-[#408D86] shadow-sm'
                   : 'text-gray-600 hover:bg-white/50 border-l-[3px] border-transparent'
-              }`}
+                }`}
               onClick={() => nav(MANAGE_PERSONAL_PATH)}
             >
               <SvgIcon name="questionnaire" />
               <span className="flex-1">我的问卷</span>
             </div>
             <div
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg cursor-pointer transition-colors duration-200 ${
-                pathname.startsWith(MANAGE_STAR_PATH)
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg cursor-pointer transition-colors duration-200 ${pathname.startsWith(MANAGE_STAR_PATH)
                   ? 'bg-[#D3EBE8] text-[#408D86] font-medium border-l-[3px] border-[#408D86] shadow-sm'
                   : 'text-gray-600 hover:bg-white/50 border-l-[3px] border-transparent'
-              }`}
+                }`}
               onClick={() => nav(MANAGE_STAR_PATH)}
             >
               <SvgIcon name="star" />
