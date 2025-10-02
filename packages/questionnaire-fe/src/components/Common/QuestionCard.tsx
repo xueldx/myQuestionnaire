@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { Button, Divider, Popconfirm, Space, Tag, Tooltip, Checkbox, ConfigProvider } from 'antd'
+import { Button, Divider, Popconfirm, Space, Tag, Tooltip } from 'antd'
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
@@ -32,8 +32,6 @@ type PropsType = {
   editable: boolean
   onRefresh: (id: number) => Promise<void>
   onDelete: () => void
-  checked?: boolean
-  onCheckChange?: (checked: boolean) => void
 }
 
 const QuestionCard: React.FC<PropsType> = (props: PropsType) => {
@@ -50,9 +48,7 @@ const QuestionCard: React.FC<PropsType> = (props: PropsType) => {
     updatedAt,
     editable,
     onRefresh,
-    onDelete,
-    checked = false,
-    onCheckChange
+    onDelete
   } = props
 
   // 收藏或取消收藏
@@ -138,22 +134,6 @@ const QuestionCard: React.FC<PropsType> = (props: PropsType) => {
         <div className="flex-1 w-0">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center font-semibold text-gray-800 truncate pr-2 text-[15px]">
-              {onCheckChange && (
-                <div onClick={e => e.stopPropagation()} className="mr-2">
-                  <ConfigProvider
-                    theme={{
-                      components: {
-                        Checkbox: {
-                          colorPrimary: '#529c94',
-                          colorPrimaryHover: '#529c94'
-                        }
-                      }
-                    }}
-                  >
-                    <Checkbox checked={checked} onChange={e => onCheckChange(e.target.checked)} />
-                  </ConfigProvider>
-                </div>
-              )}
               <Link
                 to={`${QUESTION_DETAIL_PATH}/${id}`}
                 className="hover:text-[#26a69a] text-inherit"
@@ -210,9 +190,8 @@ const QuestionCard: React.FC<PropsType> = (props: PropsType) => {
           <Button
             type="text"
             size="small"
-            className={`${
-              isFavorated ? 'text-yellow-500' : 'text-gray-500'
-            } hover:!bg-transparent hover:!text-yellow-500`}
+            className={`${isFavorated ? 'text-yellow-500' : 'text-gray-500'
+              } hover:!bg-transparent hover:!text-yellow-500`}
             icon={<StarOutlined className="text-[16px]" />}
             onClick={handleFavorate}
           />

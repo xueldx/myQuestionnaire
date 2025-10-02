@@ -78,7 +78,7 @@ const ManageLayout: React.FC = () => {
           <Divider className="my-6 border-gray-300/50" />
 
           <Space direction="vertical" className="w-full" size="small">
-            <div
+            {/* <div
               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg cursor-pointer transition-colors duration-200 ${pathname.startsWith(MANAGE_MARKET_PATH)
                   ? 'bg-[#D3EBE8] text-[#408D86] font-medium border-l-[3px] border-[#408D86] shadow-sm'
                   : 'text-gray-600 hover:bg-white/50 border-l-[3px] border-transparent'
@@ -87,11 +87,11 @@ const ManageLayout: React.FC = () => {
             >
               <SvgIcon name="market" />
               <span className="flex-1">模板中心</span>
-            </div>
+            </div> */}
             <div
               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg cursor-pointer transition-colors duration-200 ${pathname.startsWith(MANAGE_PERSONAL_PATH)
-                  ? 'bg-[#D3EBE8] text-[#408D86] font-medium border-l-[3px] border-[#408D86] shadow-sm'
-                  : 'text-gray-600 hover:bg-white/50 border-l-[3px] border-transparent'
+                ? 'bg-[#D3EBE8] text-[#408D86] font-medium border-l-[3px] border-[#408D86] shadow-sm'
+                : 'text-gray-600 hover:bg-white/50 border-l-[3px] border-transparent'
                 }`}
               onClick={() => nav(MANAGE_PERSONAL_PATH)}
             >
@@ -100,8 +100,8 @@ const ManageLayout: React.FC = () => {
             </div>
             <div
               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg cursor-pointer transition-colors duration-200 ${pathname.startsWith(MANAGE_STAR_PATH)
-                  ? 'bg-[#D3EBE8] text-[#408D86] font-medium border-l-[3px] border-[#408D86] shadow-sm'
-                  : 'text-gray-600 hover:bg-white/50 border-l-[3px] border-transparent'
+                ? 'bg-[#D3EBE8] text-[#408D86] font-medium border-l-[3px] border-[#408D86] shadow-sm'
+                : 'text-gray-600 hover:bg-white/50 border-l-[3px] border-transparent'
                 }`}
               onClick={() => nav(MANAGE_STAR_PATH)}
             >

@@ -342,11 +342,6 @@ const List: React.FC = () => {
                   updatedAt={item.update_time}
                   onRefresh={getQuestionItem}
                   onDelete={() => deleteQuestion(item.id)}
-                  checked={selectedRowKeys.includes(item.id)}
-                  onCheckChange={checked => {
-                    if (checked) setSelectedRowKeys([...selectedRowKeys, item.id])
-                    else setSelectedRowKeys(selectedRowKeys.filter(k => k !== item.id))
-                  }}
                 />
               ))}
             </div>
