@@ -287,23 +287,33 @@ const Market: React.FC = () => {
       <div className="flex justify-between items-center px-6 pt-6 pb-2 shrink-0">
         {/* 左侧：二级的子目录（公开模板 / 我的模板） */}
         <div className="flex gap-6 items-center">
-          <div
-            className="relative cursor-pointer pb-2"
-            onClick={() => setActiveTab('public')}
-          >
-            <span className={`text-[18px] font-semibold tracking-wide transition-colors ${activeTab === 'public' ? 'text-[#408D86]' : 'text-black'}`}>
+          <div className="relative cursor-pointer pb-2" onClick={() => setActiveTab('public')}>
+            <span
+              className={`text-[18px] font-semibold tracking-wide transition-colors ${
+                activeTab === 'public' ? 'text-[#408D86]' : 'text-black'
+              }`}
+            >
               公开模板
             </span>
-            <div className={`absolute bottom-0 left-0 h-[3px] rounded-full bg-[#408D86] transition-all duration-300 ${activeTab === 'public' ? 'w-full' : 'w-0'}`} />
+            <div
+              className={`absolute bottom-0 left-0 h-[3px] rounded-full bg-[#408D86] transition-all duration-300 ${
+                activeTab === 'public' ? 'w-full' : 'w-0'
+              }`}
+            />
           </div>
-          <div
-            className="relative cursor-pointer pb-2"
-            onClick={() => setActiveTab('private')}
-          >
-            <span className={`text-[18px] font-semibold tracking-wide transition-colors ${activeTab === 'private' ? 'text-[#408D86]' : 'text-black'}`}>
+          <div className="relative cursor-pointer pb-2" onClick={() => setActiveTab('private')}>
+            <span
+              className={`text-[18px] font-semibold tracking-wide transition-colors ${
+                activeTab === 'private' ? 'text-[#408D86]' : 'text-black'
+              }`}
+            >
               我的模板
             </span>
-            <div className={`absolute bottom-0 left-0 h-[3px] rounded-full bg-[#408D86] transition-all duration-300 ${activeTab === 'private' ? 'w-full' : 'w-0'}`} />
+            <div
+              className={`absolute bottom-0 left-0 h-[3px] rounded-full bg-[#408D86] transition-all duration-300 ${
+                activeTab === 'private' ? 'w-full' : 'w-0'
+              }`}
+            />
           </div>
         </div>
 

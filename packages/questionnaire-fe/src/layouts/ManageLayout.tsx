@@ -3,12 +3,13 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useRequest } from 'ahooks'
 import apis from '@/apis'
 import { Button, Divider, Space } from 'antd'
-import { FileAddFilled, AppstoreFilled, FormOutlined } from '@ant-design/icons'
+import { FileAddFilled, AppstoreFilled, FormOutlined, DeleteOutlined } from '@ant-design/icons'
 import SvgIcon from '@/components/Common/SvgIcon'
 import {
   MANAGE_MARKET_PATH,
   MANAGE_PERSONAL_PATH,
   MANAGE_STAR_PATH,
+  MANAGE_TRASH_PATH,
   QUESTION_EDIT_PATH
 } from '@/router'
 import { getUserInfoFromStorage } from '@/utils'
@@ -90,8 +91,8 @@ const ManageLayout: React.FC = () => {
             </div> */}
             <div
               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg cursor-pointer transition-colors duration-200 ${pathname.startsWith(MANAGE_PERSONAL_PATH)
-                ? 'bg-[#D3EBE8] text-[#408D86] font-medium border-l-[3px] border-[#408D86] shadow-sm'
-                : 'text-gray-600 hover:bg-white/50 border-l-[3px] border-transparent'
+                  ? 'bg-[#D3EBE8] text-[#408D86] font-medium border-l-[3px] border-[#408D86] shadow-sm'
+                  : 'text-gray-600 hover:bg-white/50 border-l-[3px] border-transparent'
                 }`}
               onClick={() => nav(MANAGE_PERSONAL_PATH)}
             >
@@ -100,13 +101,23 @@ const ManageLayout: React.FC = () => {
             </div>
             <div
               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg cursor-pointer transition-colors duration-200 ${pathname.startsWith(MANAGE_STAR_PATH)
-                ? 'bg-[#D3EBE8] text-[#408D86] font-medium border-l-[3px] border-[#408D86] shadow-sm'
-                : 'text-gray-600 hover:bg-white/50 border-l-[3px] border-transparent'
+                  ? 'bg-[#D3EBE8] text-[#408D86] font-medium border-l-[3px] border-[#408D86] shadow-sm'
+                  : 'text-gray-600 hover:bg-white/50 border-l-[3px] border-transparent'
                 }`}
               onClick={() => nav(MANAGE_STAR_PATH)}
             >
               <SvgIcon name="star" />
               <span className="flex-1">星标问卷</span>
+            </div>
+            <div
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg cursor-pointer transition-colors duration-200 ${pathname.startsWith(MANAGE_TRASH_PATH)
+                  ? 'bg-[#D3EBE8] text-[#408D86] font-medium border-l-[3px] border-[#408D86] shadow-sm'
+                  : 'text-gray-600 hover:bg-white/50 border-l-[3px] border-transparent'
+                }`}
+              onClick={() => nav(MANAGE_TRASH_PATH)}
+            >
+              <DeleteOutlined className="text-[16px]" />
+              <span className="flex-1">回收站</span>
             </div>
           </Space>
         </div>

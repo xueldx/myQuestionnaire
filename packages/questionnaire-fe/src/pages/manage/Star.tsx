@@ -231,6 +231,7 @@ const Star: React.FC = () => {
                   onClick={() => {
                     Modal.confirm({
                       title: '确定删除该问卷？',
+                      content: '删除后问卷将进入回收站，可在回收站中恢复',
                       icon: <QuestionCircleOutlined className="text-custom-red" />,
                       okButtonProps: { style: { backgroundColor: '#26A69A' } },
                       onOk: async () => {
@@ -308,4 +309,3 @@ const Star: React.FC = () => {
 }
 
 export default Star
-

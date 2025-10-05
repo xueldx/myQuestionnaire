@@ -67,6 +67,38 @@ const publishQuestion = (id: number) =>
 const unPublishQuestion = (id: number) =>
   request.get<number, RespType<any>>(`${prefix}/unpublish/${id}`)
 
+/**
+ * 获取回收站问卷列表
+ */
+const getTrashList = (page: number, limit: number, search: string) =>
+  request.get<any, RespType<QuestionListResponse>>(
+    `${prefix}/trash/list?${qs.stringify({ page, limit, search })}`
+  )
+
+/**
+ * 恢复单个问卷
+ */
+const restoreQuestion = (id: number) =>
+  request.post<number, RespType<any>>(`${prefix}/${id}/restore`)
+
+/**
+ * 批量恢复问卷
+ */
+const restoreQuestions = (ids: number[]) =>
+  request.post<any, RespType<any>>(`${prefix}/batch-restore`, { ids })
+
+/**
+ * 彻底删除单个问卷
+ */
+const permanentDeleteQuestion = (id: number) =>
+  request.post<number, RespType<any>>(`${prefix}/${id}/permanent-delete`)
+
+/**
+ * 批量彻底删除问卷
+ */
+const permanentDeleteQuestions = (ids: number[]) =>
+  request.post<any, RespType<any>>(`${prefix}/batch-permanent-delete`, { ids })
+
 export default {
   getQuestionList,
   getQuestionById,
@@ -77,5 +109,10 @@ export default {
   deleteQuestions,
   updateQuestion,
   publishQuestion,
-  unPublishQuestion
+  unPublishQuestion,
+  getTrashList,
+  restoreQuestion,
+  restoreQuestions,
+  permanentDeleteQuestion,
+  permanentDeleteQuestions
 }

@@ -16,6 +16,7 @@ const NotFound = lazy(() => import('@/pages/common/NotFound'))
 const Market = lazy(() => import('@/pages/manage/Market'))
 const Personal = lazy(() => import('@/pages/manage/Personal'))
 const Star = lazy(() => import('@/pages/manage/Star'))
+const Trash = lazy(() => import('@/pages/manage/Trash'))
 const Detail = lazy(() => import('@/pages/question/Detail'))
 const Edit = lazy(() => import('@/pages/question/Edit'))
 const Stat = lazy(() => import('@/pages/question/Stat'))
@@ -29,6 +30,7 @@ export const QRCODE_PATH = '/qrcode'
 export const MANAGE_MARKET_PATH = '/manage/market'
 export const MANAGE_PERSONAL_PATH = '/manage/personal'
 export const MANAGE_STAR_PATH = '/manage/star'
+export const MANAGE_TRASH_PATH = '/manage/trash'
 export const QUESTION_DETAIL_PATH = '/question/detail'
 export const QUESTION_EDIT_PATH = '/question/edit'
 export const QUESTION_STAT_PATH = '/question/stat'
@@ -114,6 +116,14 @@ const router = createBrowserRouter([
         element: (
           <Suspense>
             <Star />
+          </Suspense>
+        )
+      },
+      {
+        path: MANAGE_TRASH_PATH,
+        element: (
+          <Suspense>
+            <Trash />
           </Suspense>
         )
       }

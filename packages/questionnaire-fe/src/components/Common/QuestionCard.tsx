@@ -226,6 +226,7 @@ const QuestionCard: React.FC<PropsType> = (props: PropsType) => {
           <Tooltip title="删除">
             <Popconfirm
               title="确定删除该问卷？"
+              description="删除后问卷将进入回收站，可在回收站中恢复"
               onConfirm={del}
               okButtonProps={{ style: { backgroundColor: '#26A69A' } }}
               icon={<QuestionCircleOutlined className="text-custom-red" />}

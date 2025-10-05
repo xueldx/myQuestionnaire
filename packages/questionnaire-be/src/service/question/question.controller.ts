@@ -29,7 +29,7 @@ import config from '@/config';
 @UseGuards(JwtAuthGuard)
 @Controller('question')
 export class QuestionController {
-  constructor(private readonly questionService: QuestionService) {}
+  constructor(private readonly questionService: QuestionService) { }
 
   // 新建问卷
   @Post()
@@ -174,5 +174,87 @@ export class QuestionController {
     }
     await this.questionService.incrementAnswerCount(Number(id));
     return { success: true, message: '答卷数量已增加' };
+  }
+
+  // 获取回收站问卷列表
+  @Get('trash/list')
+  async findTrash(
+    @Query() query: FindAllQuestionDto,
+    @currentUser() user: UserToken,
+  ) {
+    try {
+      const { userId } = user;
+      const res = await this.questionService.findTrash(query, userId);
+      return new ResponseBody<any>(1, res, '查询成功');
+    } catch (error) {
+      Logger.error(error);
+      return new ResponseBody<any>(0, null, error.message);
+    }
+  }
+
+  // 恢复单个问卷
+  @Post(':id/restore')
+  async restore(
+    @Param('id', ParseIntPipe) id: number,
+    @currentUser() user: UserToken,
+  ) {
+    try {
+      const { userId } = user;
+      await this.questionService.restore(id, userId);
+      return new ResponseBody<any>(1, null, '恢复成功');
+    } catch (error) {
+      return new ResponseBody<any>(0, null, error.message);
+    }
+  }
+
+  // 批量恢复问卷
+  @Post('batch-restore')
+  async restoreMany(
+    @Body('ids') ids: number[],
+    @currentUser() user: UserToken,
+  ) {
+    try {
+      if (!ids || !ids.length) {
+        throw new Error('请选择要恢复的问卷');
+      }
+      const { userId } = user;
+      const count = await this.questionService.restoreMany(ids, userId);
+      return new ResponseBody<any>(1, { count }, `成功恢复 ${count} 份问卷`);
+    } catch (error) {
+      return new ResponseBody<any>(0, null, error.message);
+    }
+  }
+
+  // 彻底删除单个问卷
+  @Post(':id/permanent-delete')
+  async permanentDelete(
+    @Param('id', ParseIntPipe) id: number,
+    @currentUser() user: UserToken,
+  ) {
+    try {
+      const { userId } = user;
+      await this.questionService.permanentDelete(id, userId);
+      return new ResponseBody<any>(1, null, '彻底删除成功');
+    } catch (error) {
+      return new ResponseBody<any>(0, null, error.message);
+    }
+  }
+
+  // 批量彻底删除问卷
+  @Post('batch-permanent-delete')
+  async permanentDeleteMany(
+    @Body('ids') ids: number[],
+    @currentUser() user: UserToken,
+  ) {
+    try {
+      if (!ids || !ids.length) {
+        throw new Error('请选择要删除的问卷');
+      }
+      const { userId } = user;
+      const count = await this.questionService.permanentDeleteMany(ids, userId);
+      return new ResponseBody<any>(1, { count }, `成功删除 ${count} 份问卷`);
+    } catch (error) {
+      return new ResponseBody<any>(0, null, error.message);
+    }
   }
 }

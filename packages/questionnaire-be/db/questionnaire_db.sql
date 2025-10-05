@@ -31,7 +31,10 @@ CREATE TABLE `question` (
   `author` varchar(255) NOT NULL DEFAULT '官方',
   `update_time` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   `author_id` int NOT NULL,
-  PRIMARY KEY (`id`)
+  `is_deleted` tinyint NOT NULL DEFAULT '0' COMMENT '0:未删除, 1:已删除',
+  `deleted_at` datetime(6) NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_author_id_is_deleted` (`author_id`, `is_deleted`)
 ) ENGINE=InnoDB AUTO_INCREMENT=401 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ----------------------------

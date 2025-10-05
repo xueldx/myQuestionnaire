@@ -38,6 +38,12 @@ class Question {
   @Column({ type: 'boolean', default: false })
   is_published: boolean; // 是否发布
 
+  @Column({ type: 'boolean', default: false })
+  is_deleted: boolean; // 是否删除（软删除）
+
+  @Column({ type: 'datetime', nullable: true })
+  deleted_at: Date | null; // 删除时间
+
   @OneToMany(() => UserFavorite, (userFavorite) => userFavorite.question_id)
   favorites: UserFavorite[];
 

@@ -62,7 +62,7 @@ const List: React.FC = () => {
     Modal.confirm({
       title: '确认批量删除',
       icon: <ExclamationCircleOutlined className="text-custom-red" />,
-      content: `确定要删除选中的 ${selectedRowKeys.length} 份问卷吗？`,
+      content: `确定要将选中的 ${selectedRowKeys.length} 份问卷移入回收站吗？（可在回收站中恢复）`,
       okButtonProps: { style: { backgroundColor: '#26A69A' } },
       cancelButtonProps: { className: 'custom-cancel-btn' },
       onOk: async () => {
@@ -196,6 +196,7 @@ const List: React.FC = () => {
                   onClick={() => {
                     Modal.confirm({
                       title: '确定删除该问卷？',
+                      content: '删除后问卷将进入回收站，可在回收站中恢复',
                       icon: <QuestionCircleOutlined className="text-custom-red" />,
                       okButtonProps: { style: { backgroundColor: '#26A69A' } },
                       onOk: async () => {

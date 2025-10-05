@@ -24,7 +24,7 @@ export class QuestionService {
     private dataSource: DataSource,
     @InjectModel(QuestionnaireDetail.name)
     private readonly questionnaireDetailModel: Model<QuestionnaireDetail>,
-  ) {}
+  ) { }
 
   // 创建问卷
   async create(createQuestionDto: CreateQuestionDto) {
@@ -62,8 +62,12 @@ export class QuestionService {
     user_id: number,
   ) {
     const queryBuilder = this.questionRepository.createQueryBuilder('question');
+
+    // 默认不显示已删除的问卷
+    queryBuilder.where('question.is_deleted = :isDeleted', { isDeleted: false });
+
     if (search) {
-      queryBuilder.where('question.title LIKE :title', {
+      queryBuilder.andWhere('question.title LIKE :title', {
         title: `%${search}%`,
       });
     }
@@ -192,7 +196,7 @@ export class QuestionService {
     return await this.questionRepository.update(id, updateData);
   }
 
-  // 批量删除问卷
+  // 批量删除问卷（软删除）
   async removeMany(ids: number[], user_id: number) {
     const queryRunner = this.dataSource.createQueryRunner();
 
@@ -213,19 +217,12 @@ export class QuestionService {
 
       const validIds = questions.map((q) => q.id);
 
-      // 删除收藏记录
+      // 软删除：标记为已删除，记录删除时间
+      const now = new Date();
       await queryRunner.manager
         .createQueryBuilder()
-        .delete()
-        .from(UserFavorite)
-        .where('question_id IN (:...ids)', { ids: validIds })
-        .execute();
-
-      // 删除问卷
-      await queryRunner.manager
-        .createQueryBuilder()
-        .delete()
-        .from(Question)
+        .update(Question)
+        .set({ is_deleted: true, deleted_at: now })
         .where('id IN (:...ids)', { ids: validIds })
         .execute();
 
@@ -239,7 +236,7 @@ export class QuestionService {
     }
   }
 
-  // 删除问卷
+  // 删除问卷（软删除）
   async remove(id: number, user_id: number) {
     const queryRunner = this.dataSource.createQueryRunner();
 
@@ -256,11 +253,12 @@ export class QuestionService {
         throw new Error('非作者无权限删除问卷');
       }
 
-      // 先删除所有与该问卷相关的收藏记录
-      await queryRunner.manager.delete(UserFavorite, { question_id: id });
-
-      // 然后删除问卷
-      await queryRunner.manager.delete(Question, id);
+      // 软删除：标记为已删除，记录删除时间
+      const now = new Date();
+      await queryRunner.manager.update(Question, id, {
+        is_deleted: true,
+        deleted_at: now,
+      });
 
       await queryRunner.commitTransaction();
     } catch (error) {
@@ -303,5 +301,188 @@ export class QuestionService {
       'answer_count',
       1,
     );
+  }
+
+  // 查询回收站问卷列表
+  async findTrash(
+    { page, limit, search }: FindAllQuestionDto,
+    user_id: number,
+  ) {
+    const queryBuilder = this.questionRepository.createQueryBuilder('question');
+
+    // 只显示已删除的问卷
+    queryBuilder.where('question.is_deleted = :isDeleted', { isDeleted: true });
+    queryBuilder.andWhere('question.author_id = :userId', { userId: user_id });
+
+    if (search) {
+      queryBuilder.andWhere('question.title LIKE :title', {
+        title: `%${search}%`,
+      });
+    }
+
+    const [list, count] = await queryBuilder
+      .orderBy('question.deleted_at', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    return {
+      list,
+      count,
+    };
+  }
+
+  // 恢复单个问卷
+  async restore(id: number, user_id: number) {
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const res = await this.questionRepository.findOneBy({ id });
+      if (!res) {
+        throw new Error('该问卷不存在');
+      }
+
+      if (res.author_id !== user_id) {
+        throw new Error('非作者无权限恢复问卷');
+      }
+
+      if (!res.is_deleted) {
+        throw new Error('该问卷未被删除');
+      }
+
+      // 恢复问卷
+      await queryRunner.manager.update(Question, id, {
+        is_deleted: false,
+        deleted_at: null,
+      });
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  // 批量恢复问卷
+  async restoreMany(ids: number[], user_id: number) {
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // 获取这些问卷，并确认它们属于当前用户
+      const questions = await this.questionRepository
+        .createQueryBuilder('question')
+        .where('question.id IN (:...ids)', { ids })
+        .andWhere('question.author_id = :userId', { userId: user_id })
+        .getMany();
+
+      if (questions.length === 0) {
+        throw new Error('未找到符合条件的问卷，或您没有权限恢复');
+      }
+
+      const validIds = questions.map((q) => q.id);
+
+      // 批量恢复问卷
+      await queryRunner.manager
+        .createQueryBuilder()
+        .update(Question)
+        .set({ is_deleted: false, deleted_at: null })
+        .where('id IN (:...ids)', { ids: validIds })
+        .execute();
+
+      await queryRunner.commitTransaction();
+      return validIds.length;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  // 彻底删除单个问卷
+  async permanentDelete(id: number, user_id: number) {
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const res = await this.questionRepository.findOneBy({ id });
+      if (!res) {
+        throw new Error('该问卷不存在');
+      }
+
+      if (res.author_id !== user_id) {
+        throw new Error('非作者无权限删除问卷');
+      }
+
+      // 先删除所有与该问卷相关的收藏记录
+      await queryRunner.manager.delete(UserFavorite, { question_id: id });
+
+      // 然后彻底删除问卷
+      await queryRunner.manager.delete(Question, id);
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  // 批量彻底删除问卷
+  async permanentDeleteMany(ids: number[], user_id: number) {
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // 获取这些问卷，并确认它们属于当前用户
+      const questions = await this.questionRepository
+        .createQueryBuilder('question')
+        .where('question.id IN (:...ids)', { ids })
+        .andWhere('question.author_id = :userId', { userId: user_id })
+        .getMany();
+
+      if (questions.length === 0) {
+        throw new Error('未找到符合条件的问卷，或您没有权限删除');
+      }
+
+      const validIds = questions.map((q) => q.id);
+
+      // 删除收藏记录
+      await queryRunner.manager
+        .createQueryBuilder()
+        .delete()
+        .from(UserFavorite)
+        .where('question_id IN (:...ids)', { ids: validIds })
+        .execute();
+
+      // 彻底删除问卷
+      await queryRunner.manager
+        .createQueryBuilder()
+        .delete()
+        .from(Question)
+        .where('id IN (:...ids)', { ids: validIds })
+        .execute();
+
+      await queryRunner.commitTransaction();
+      return validIds.length;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 }
