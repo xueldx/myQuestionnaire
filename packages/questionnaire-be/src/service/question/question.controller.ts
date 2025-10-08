@@ -29,7 +29,7 @@ import config from '@/config';
 @UseGuards(JwtAuthGuard)
 @Controller('question')
 export class QuestionController {
-  constructor(private readonly questionService: QuestionService) { }
+  constructor(private readonly questionService: QuestionService) {}
 
   // 新建问卷
   @Post()

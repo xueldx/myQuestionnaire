@@ -24,7 +24,7 @@ export class QuestionService {
     private dataSource: DataSource,
     @InjectModel(QuestionnaireDetail.name)
     private readonly questionnaireDetailModel: Model<QuestionnaireDetail>,
-  ) { }
+  ) {}
 
   // 创建问卷
   async create(createQuestionDto: CreateQuestionDto) {
@@ -64,7 +64,9 @@ export class QuestionService {
     const queryBuilder = this.questionRepository.createQueryBuilder('question');
 
     // 默认不显示已删除的问卷
-    queryBuilder.where('question.is_deleted = :isDeleted', { isDeleted: false });
+    queryBuilder.where('question.is_deleted = :isDeleted', {
+      isDeleted: false,
+    });
 
     if (search) {
       queryBuilder.andWhere('question.title LIKE :title', {

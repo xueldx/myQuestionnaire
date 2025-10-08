@@ -29,7 +29,7 @@ const changePassword = (data: ChangePasswordParams) =>
 /**
  * 注销账户
  */
-const deleteAccount = (id: string) => request.delete<any, RespType<any>>(`${prefix}/delete/${id}`)
+const deleteAccount = () => request.delete<any, RespType<any>>(`${prefix}/delete`)
 
 export default {
   register,

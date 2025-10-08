@@ -5,8 +5,10 @@ import { Avatar, FloatButton, Button, Modal, Form, Input, App } from 'antd'
 import { Rule } from 'antd/es/form'
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '@/store'
+import { setToken, setLoginState, setUserInfo } from '@/store/modules/profileSlice'
+import { LOGIN_STATE } from '@/constant'
 import apis from '@/apis'
 import { QuestionListType } from '@/hooks/types'
 import useRequestSuccessChecker from '@/hooks/useRequestSuccessChecker'
@@ -17,6 +19,7 @@ const Profile: React.FC = () => {
   const { message } = App.useApp()
   const { avatar } = useAvatar()
   const nav = useNavigate()
+  const dispatch = useDispatch()
   const { isRequestSuccess } = useRequestSuccessChecker()
   const userInfo = useSelector((state: RootState) => state.profile.userInfo)
 
@@ -167,15 +170,18 @@ const Profile: React.FC = () => {
       cancelText: '取消',
       onOk: async () => {
         try {
-          if (!userInfo.userId) {
-            message.error('未找到用户ID')
-            return
-          }
-
-          const res = await apis.authApi.deleteAccount(userInfo.userId.toString())
+          const res = await apis.authApi.deleteAccount()
           if (res.code === 1) {
+            // 清空 Redux store 中的用户信息
+            dispatch(setToken(''))
+            dispatch(setUserInfo({}))
+            dispatch(setLoginState(LOGIN_STATE.LOGOUT))
+
             message.success('账号已注销')
-            nav(HOME_PATH)
+            // 跳转回首页
+            setTimeout(() => {
+              nav(HOME_PATH)
+            }, 500)
           } else {
             message.error(res.msg || '注销失败')
           }
@@ -339,9 +345,8 @@ const Profile: React.FC = () => {
                           <div className="flex gap-4 text-sm text-gray-500">
                             <span>📊 收集 {question.answer_count} 份</span>
                             <span
-                              className={`${
-                                question.is_published ? 'text-green-600' : 'text-yellow-600'
-                              }`}
+                              className={`${question.is_published ? 'text-green-600' : 'text-yellow-600'
+                                }`}
                             >
                               ● {question.is_published ? '进行中' : '未发布'}
                             </span>

@@ -1,6 +1,6 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MANAGE_MARKET_PATH } from '@/router'
+import { MANAGE_PERSONAL_PATH } from '@/router'
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
 import { Button } from 'antd'
@@ -58,7 +58,7 @@ const Home: React.FC = () => {
             Create surveys effortlessly, no design skills needed.
           </div>
           <div id="startBtn" className="flex gap-4 justify-center">
-            <Button type="dashed" onClick={() => nav(MANAGE_MARKET_PATH)}>
+            <Button type="dashed" onClick={() => nav(MANAGE_PERSONAL_PATH)}>
               START USE
             </Button>
           </div>

@@ -204,8 +204,8 @@ const Edit: React.FC = () => {
 
     // 先保存问卷
     modal.confirm({
-      title: '提交问卷',
-      content: '确定要提交该问卷吗？提交后将发布给用户填写。',
+      title: '发布问卷',
+      content: '确定要发布该问卷吗？发布后其他用户可填写问卷。',
       okText: '确认',
       cancelText: '取消',
       onOk: async () => {
@@ -225,13 +225,13 @@ const Edit: React.FC = () => {
             return
           }
 
-          message.success('问卷提交成功')
+          message.success('问卷发布成功')
 
           // 跳转到问卷管理页面
           navigate(MANAGE_MARKET_PATH)
         } catch (error) {
-          console.error('提交问卷失败:', error)
-          message.error('提交问卷失败，请稍后重试')
+          console.error('问卷发布失败:', error)
+          message.error('提交发布失败，请稍后重试')
         } finally {
           setSubmitting(false)
         }

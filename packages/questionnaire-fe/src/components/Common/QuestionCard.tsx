@@ -190,8 +190,9 @@ const QuestionCard: React.FC<PropsType> = (props: PropsType) => {
           <Button
             type="text"
             size="small"
-            className={`${isFavorated ? 'text-yellow-500' : 'text-gray-500'
-              } hover:!bg-transparent hover:!text-yellow-500`}
+            className={`${
+              isFavorated ? 'text-yellow-500' : 'text-gray-500'
+            } hover:!bg-transparent hover:!text-yellow-500`}
             icon={<StarOutlined className="text-[16px]" />}
             onClick={handleFavorate}
           />
