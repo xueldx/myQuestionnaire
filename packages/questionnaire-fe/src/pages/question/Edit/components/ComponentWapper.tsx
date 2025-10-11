@@ -49,7 +49,7 @@ const ComponentWapper: React.FC<ComponentWapperProps> = ({
   return (
     <div
       className={clsx(
-        'group p-4 bg-white rounded-lg mb-4 border border-transparent transition-all duration-200 hover:border-custom-primary-100 relative shadow-sm hover:shadow',
+        'group p-4 bg-white rounded-lg mb-4 border border-transparent hover:border-custom-primary-100 relative shadow-sm hover:shadow',
         selectedId === fe_id && '!border-custom-primary-100 shadow-md',
         isDragging && 'opacity-90 border-dashed border-custom-primary-100 shadow-lg rotate-1'
       )}
@@ -67,10 +67,10 @@ const ComponentWapper: React.FC<ComponentWapperProps> = ({
             }
           }}
           className={clsx(
-            'absolute right-0 top-0 h-8 px-2.5 flex items-center justify-center bg-custom-bg-100 text-custom-text-200 cursor-grab active:cursor-grabbing transition-all duration-200 rounded-bl-lg rounded-tr-md opacity-0 group-hover:opacity-100',
+            'absolute right-0 top-0 h-8 px-2.5 flex items-center justify-center bg-custom-bg-100 text-custom-text-200 cursor-grab active:cursor-grabbing rounded-bl-lg rounded-tr-md opacity-0 group-hover:opacity-100',
             selectedId === fe_id && 'opacity-100 bg-custom-primary-100 text-white',
             isDragging &&
-              'opacity-100 cursor-grabbing bg-custom-primary-100 text-white shadow-inner'
+            'opacity-100 cursor-grabbing bg-custom-primary-100 text-white shadow-inner'
           )}
           style={{
             cursor: isDragging ? 'grabbing' : 'grab'
@@ -86,7 +86,7 @@ const ComponentWapper: React.FC<ComponentWapperProps> = ({
       )}
 
       {/* 组件内容 */}
-      <div className={clsx('transition-all', isDragging && 'transform scale-[0.98] opacity-90')}>
+      <div className={clsx(isDragging && 'transform scale-[0.98] opacity-90')}>
         {children}
       </div>
     </div>

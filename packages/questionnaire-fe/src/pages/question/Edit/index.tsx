@@ -14,7 +14,7 @@ import RightPanel from '@/pages/question/Edit/components/RightPanel'
 import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '@/store'
 import apis from '@/apis'
-import { QUESTION_EDIT_PATH, MANAGE_MARKET_PATH } from '@/router/index'
+import { QUESTION_EDIT_PATH, MANAGE_PERSONAL_PATH } from '@/router/index'
 import {
   setVersion,
   addComponent,
@@ -228,7 +228,7 @@ const Edit: React.FC = () => {
           message.success('问卷发布成功')
 
           // 跳转到问卷管理页面
-          navigate(MANAGE_MARKET_PATH)
+          navigate(MANAGE_PERSONAL_PATH)
         } catch (error) {
           console.error('问卷发布失败:', error)
           message.error('提交发布失败，请稍后重试')

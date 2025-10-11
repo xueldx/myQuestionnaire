@@ -1,17 +1,17 @@
-import React, { useEffect } from 'react'
-import { Form, Input, Button, App } from 'antd'
-import { SaveOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons'
+import React, { useEffect, useCallback } from 'react'
+import { Form, Input, Button } from 'antd'
+import { PlusOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '@/store'
 import { updateComponentProps } from '@/store/modules/componentsSlice'
 import { QuestionMatrixCheckboxPropsType } from '@/components/QuestionComponents/QuestionMatrixCheckbox'
+import { useDebouncedValidate } from '../../../hooks/useDebouncedValidate'
 
 interface MatrixCheckboxConfigProps {
   componentId: string
 }
 
 const MatrixCheckboxConfig: React.FC<MatrixCheckboxConfigProps> = ({ componentId }) => {
-  const { message } = App.useApp()
   const dispatch = useDispatch()
   const [form] = Form.useForm()
 
@@ -40,191 +40,95 @@ const MatrixCheckboxConfig: React.FC<MatrixCheckboxConfigProps> = ({ componentId
     return (currentComponent.props as QuestionMatrixCheckboxPropsType).columns || []
   }
 
-  // 添加行选项
-  const addRow = () => {
+  // 立即更新组件属性的方法（用于行列操作）
+  const updatePropsImmediately = (newProps: Partial<QuestionMatrixCheckboxPropsType>) => {
     if (!currentComponent) return
 
-    const currentRows = getRows()
-    const newRows = [...currentRows, `行选项${currentRows.length + 1}`]
-
-    // 获取当前表单值
     const formValues = form.getFieldsValue()
-
-    // 更新组件属性
-    const newProps = {
+    const updatedProps = {
       ...currentComponent.props,
       ...formValues,
-      rows: newRows
+      ...newProps
     }
 
     dispatch(
       updateComponentProps({
         fe_id: componentId,
-        newProps: newProps as QuestionMatrixCheckboxPropsType
+        newProps: updatedProps as QuestionMatrixCheckboxPropsType
       })
     )
+  }
+
+  // 添加行选项
+  const addRow = () => {
+    const currentRows = getRows()
+    const newRows = [...currentRows, `行选项${currentRows.length + 1}`]
+    updatePropsImmediately({ rows: newRows })
   }
 
   // 删除行选项
   const deleteRow = (index: number) => {
-    if (!currentComponent) return
-
     const currentRows = getRows()
-    // 至少保留一个选项
     if (currentRows.length <= 1) return
 
     const newRows = currentRows.filter((_, i) => i !== index)
-
-    // 获取当前表单值
-    const formValues = form.getFieldsValue()
-
-    // 更新组件属性
-    const newProps = {
-      ...currentComponent.props,
-      ...formValues,
-      rows: newRows
-    }
-
-    dispatch(
-      updateComponentProps({
-        fe_id: componentId,
-        newProps: newProps as QuestionMatrixCheckboxPropsType
-      })
-    )
+    updatePropsImmediately({ rows: newRows })
   }
 
   // 修改行选项文本
   const changeRowText = (index: number, text: string) => {
-    if (!currentComponent) return
-
     const currentRows = getRows()
     const newRows = [...currentRows]
     newRows[index] = text
-
-    // 获取当前表单值
-    const formValues = form.getFieldsValue()
-
-    // 更新组件属性
-    const newProps = {
-      ...currentComponent.props,
-      ...formValues,
-      rows: newRows
-    }
-
-    dispatch(
-      updateComponentProps({
-        fe_id: componentId,
-        newProps: newProps as QuestionMatrixCheckboxPropsType
-      })
-    )
+    updatePropsImmediately({ rows: newRows })
   }
 
   // 添加列选项
   const addColumn = () => {
-    if (!currentComponent) return
-
     const currentColumns = getColumns()
     const newColumns = [...currentColumns, `列选项${currentColumns.length + 1}`]
-
-    // 获取当前表单值
-    const formValues = form.getFieldsValue()
-
-    // 更新组件属性
-    const newProps = {
-      ...currentComponent.props,
-      ...formValues,
-      columns: newColumns
-    }
-
-    dispatch(
-      updateComponentProps({
-        fe_id: componentId,
-        newProps: newProps as QuestionMatrixCheckboxPropsType
-      })
-    )
+    updatePropsImmediately({ columns: newColumns })
   }
 
   // 删除列选项
   const deleteColumn = (index: number) => {
-    if (!currentComponent) return
-
     const currentColumns = getColumns()
-    // 至少保留一个选项
     if (currentColumns.length <= 1) return
 
     const newColumns = currentColumns.filter((_, i) => i !== index)
-
-    // 获取当前表单值
-    const formValues = form.getFieldsValue()
-
-    // 更新组件属性
-    const newProps = {
-      ...currentComponent.props,
-      ...formValues,
-      columns: newColumns
-    }
-
-    dispatch(
-      updateComponentProps({
-        fe_id: componentId,
-        newProps: newProps as QuestionMatrixCheckboxPropsType
-      })
-    )
+    updatePropsImmediately({ columns: newColumns })
   }
 
   // 修改列选项文本
   const changeColumnText = (index: number, text: string) => {
-    if (!currentComponent) return
-
     const currentColumns = getColumns()
     const newColumns = [...currentColumns]
     newColumns[index] = text
-
-    // 获取当前表单值
-    const formValues = form.getFieldsValue()
-
-    // 更新组件属性
-    const newProps = {
-      ...currentComponent.props,
-      ...formValues,
-      columns: newColumns
-    }
-
-    dispatch(
-      updateComponentProps({
-        fe_id: componentId,
-        newProps: newProps as QuestionMatrixCheckboxPropsType
-      })
-    )
+    updatePropsImmediately({ columns: newColumns })
   }
 
-  // 应用配置
-  const handleSave = async () => {
-    if (!currentComponent) return
+  // 验证通过后更新预览（表单字段的防抖验证）
+  const onValidSuccess = useCallback(
+    (allValues: any) => {
+      if (!currentComponent) return
 
-    try {
-      // 验证表单
-      const values = await form.validateFields()
-
-      // 派发更新action
       dispatch(
         updateComponentProps({
           fe_id: componentId,
           newProps: {
             ...currentComponent.props,
-            ...values,
+            ...allValues,
             rows: getRows(),
             columns: getColumns()
           } as QuestionMatrixCheckboxPropsType
         })
       )
+    },
+    [currentComponent, componentId, dispatch]
+  )
 
-      message.success('应用成功')
-    } catch (error) {
-      console.error('表单验证失败:', error)
-      message.error('应用失败')
-    }
-  }
+  // 防抖验证函数（仅用于表单字段）
+  const handleValuesChange = useDebouncedValidate(form, onValidSuccess)
 
   if (!currentComponent) return null
 
@@ -234,11 +138,8 @@ const MatrixCheckboxConfig: React.FC<MatrixCheckboxConfigProps> = ({ componentId
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold"> 配置</h3>
-        <Button type="primary" icon={<SaveOutlined />} onClick={handleSave}>
-          应用
-        </Button>
+      <div className="mb-4">
+        <h3 className="font-bold">配置</h3>
       </div>
       <Form
         form={form}
@@ -246,6 +147,7 @@ const MatrixCheckboxConfig: React.FC<MatrixCheckboxConfigProps> = ({ componentId
         initialValues={{
           title: currentComponent.props.title
         }}
+        onValuesChange={handleValuesChange}
       >
         <Form.Item name="title" label="标题" rules={[{ required: true, message: '请输入标题' }]}>
           <Input />

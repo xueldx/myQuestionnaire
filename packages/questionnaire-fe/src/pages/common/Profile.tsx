@@ -1,5 +1,5 @@
 import { useAvatar } from '@/hooks/useAvatar'
-import { HOME_PATH, MANAGE_MARKET_PATH } from '@/router'
+import { HOME_PATH, MANAGE_PERSONAL_PATH } from '@/router'
 import { LeftOutlined, FormOutlined } from '@ant-design/icons'
 import { Avatar, FloatButton, Button, Modal, Form, Input, App } from 'antd'
 import { Rule } from 'antd/es/form'
@@ -360,19 +360,19 @@ const Profile: React.FC = () => {
                       <div
                         key={`empty-${index}`}
                         className="p-4 border border-dashed border-gray-300 rounded-lg hover:border-[#408D86] transition-colors cursor-pointer bg-gray-50"
-                        onClick={() => nav(MANAGE_MARKET_PATH)}
+                        onClick={() => nav(MANAGE_PERSONAL_PATH)}
                       >
                         <div className="flex justify-between items-center">
                           <div>
                             <h3 className="font-medium text-gray-800 mb-1 flex items-center">
                               <span className="text-yellow-500 mr-2">⭐</span>
-                              <span>收藏更多问卷</span>
+                              <span>让AI帮助您创造更多问卷</span>
                             </h3>
                             <p className="text-sm text-gray-600">
-                              点击前往问卷市场，挑选您感兴趣的问卷
+                              点击返回首页，生成您感兴趣的问卷
                             </p>
                           </div>
-                          <div className="text-sm text-[#408D86]">去收藏 →</div>
+                          <div className="text-sm text-[#408D86]">去生成 →</div>
                         </div>
                       </div>
                     ))}
@@ -383,19 +383,19 @@ const Profile: React.FC = () => {
                     <div
                       key={`empty-${index}`}
                       className="p-4 border border-dashed border-gray-300 rounded-lg hover:border-[#408D86] transition-colors cursor-pointer bg-gray-50"
-                      onClick={() => nav(MANAGE_MARKET_PATH)}
+                      onClick={() => nav(MANAGE_PERSONAL_PATH)}
                     >
                       <div className="flex justify-between items-center">
                         <div>
                           <h3 className="font-medium text-gray-800 mb-1 flex items-center">
                             <span className="text-yellow-500 mr-2">⭐</span>
-                            <span>收藏更多问卷</span>
+                            <span>让AI帮助您创造更多问卷</span>
                           </h3>
                           <p className="text-sm text-gray-600">
-                            点击前往问卷市场，挑选您感兴趣的问卷
+                            点击返回首页，生成您感兴趣的问卷
                           </p>
                         </div>
-                        <div className="text-sm text-[#408D86]">去收藏 →</div>
+                        <div className="text-sm text-[#408D86]">去生成 →</div>
                       </div>
                     </div>
                   ))

@@ -29,3 +29,4 @@ yarn-error.log*
 # AI coding context
 AGENTS.md
 .agents/
+技术报告/

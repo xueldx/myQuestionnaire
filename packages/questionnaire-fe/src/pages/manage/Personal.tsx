@@ -364,24 +364,7 @@ const List: React.FC = () => {
           <Empty className="mt-40" description="暂无问卷" />
         )}
         <FloatButton.BackTop target={targetFn} visibilityHeight={120} />
-        <div
-          ref={bottomRef}
-          className="py-6 text-sm text-center text-gray-500 flex items-center justify-center gap-2"
-        >
-          {questionList.length >= total && total ? (
-            <>
-              <span role="img" aria-label="cone">
-                📣
-              </span>
-              <span>duang! 到底啦!</span>
-              <span role="img" aria-label="cone">
-                📣
-              </span>
-            </>
-          ) : (
-            ''
-          )}
-        </div>
+
       </div>
     </div>
   )

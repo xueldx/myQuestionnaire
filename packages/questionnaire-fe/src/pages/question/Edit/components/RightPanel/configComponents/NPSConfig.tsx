@@ -1,17 +1,16 @@
-import React, { useEffect } from 'react'
-import { Form, Input, InputNumber, Button, App } from 'antd'
-import { SaveOutlined } from '@ant-design/icons'
+import React, { useEffect, useCallback } from 'react'
+import { Form, Input, InputNumber } from 'antd'
 import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '@/store'
 import { updateComponentProps } from '@/store/modules/componentsSlice'
 import { QuestionNPSPropsType } from '@/components/QuestionComponents/QuestionNPS'
+import { useDebouncedValidate } from '../../../hooks/useDebouncedValidate'
 
 interface NPSConfigProps {
   componentId: string
 }
 
 const NPSConfig: React.FC<NPSConfigProps> = ({ componentId }) => {
-  const { message } = App.useApp()
   const dispatch = useDispatch()
   const [form] = Form.useForm()
 
@@ -26,28 +25,23 @@ const NPSConfig: React.FC<NPSConfigProps> = ({ componentId }) => {
     }
   }, [currentComponent, form])
 
-  // 应用配置
-  const handleSave = async () => {
-    if (!currentComponent) return
+  // 验证通过后更新预览
+  const onValidSuccess = useCallback(
+    (allValues: any) => {
+      if (!currentComponent) return
 
-    try {
-      // 验证表单
-      const values = await form.validateFields()
-
-      // 派发更新action
       dispatch(
         updateComponentProps({
           fe_id: componentId,
-          newProps: values as QuestionNPSPropsType
+          newProps: allValues as QuestionNPSPropsType
         })
       )
+    },
+    [currentComponent, componentId, dispatch]
+  )
 
-      message.success('应用成功')
-    } catch (error) {
-      console.error('表单验证失败:', error)
-      message.error('应用失败')
-    }
-  }
+  // 防抢验证函数
+  const handleValuesChange = useDebouncedValidate(form, onValidSuccess)
 
   if (!currentComponent) return null
 
@@ -55,9 +49,6 @@ const NPSConfig: React.FC<NPSConfigProps> = ({ componentId }) => {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h3 className="font-bold">配置</h3>
-        <Button type="primary" icon={<SaveOutlined />} onClick={handleSave}>
-          应用
-        </Button>
       </div>
       <Form form={form} layout="vertical" initialValues={currentComponent.props}>
         <Form.Item name="title" label="标题" rules={[{ required: true, message: '请输入标题' }]}>
@@ -76,7 +67,7 @@ const NPSConfig: React.FC<NPSConfigProps> = ({ componentId }) => {
           <Input />
         </Form.Item>
       </Form>
-    </div>
+    </div >
   )
 }
 

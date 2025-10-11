@@ -226,9 +226,8 @@ const EditCanvas: React.FC = () => {
 
   return (
     <div
-      className={`h-full overflow-y-scroll custom-no-scrollbar ${
-        isDragging ? 'bg-custom-bg-100' : ''
-      }`}
+      className={`h-full overflow-y-scroll custom-no-scrollbar ${isDragging ? 'bg-custom-bg-100' : ''
+        }`}
       style={canvasStyle}
     >
       {/* 调试工具 */}
@@ -347,7 +346,7 @@ const EditCanvas: React.FC = () => {
                       className={clsx(
                         'transition-all duration-300',
                         snapshot.isDraggingOver &&
-                          'drop-placeholder bg-custom-primary-300 border-2 border-dashed border-custom-primary-100 rounded-lg p-2 my-2 min-h-[60px] flex items-center justify-center'
+                        'drop-placeholder bg-custom-primary-300 border-2 border-dashed border-custom-primary-100 rounded-lg p-2 my-2 min-h-[60px] flex items-center justify-center'
                       )}
                     >
                       {snapshot.isDraggingOver && (

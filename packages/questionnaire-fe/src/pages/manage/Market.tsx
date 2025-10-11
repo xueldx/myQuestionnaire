@@ -289,30 +289,26 @@ const Market: React.FC = () => {
         <div className="flex gap-6 items-center">
           <div className="relative cursor-pointer pb-2" onClick={() => setActiveTab('public')}>
             <span
-              className={`text-[18px] font-semibold tracking-wide transition-colors ${
-                activeTab === 'public' ? 'text-[#408D86]' : 'text-black'
-              }`}
+              className={`text-[18px] font-semibold tracking-wide transition-colors ${activeTab === 'public' ? 'text-[#408D86]' : 'text-black'
+                }`}
             >
               公开模板
             </span>
             <div
-              className={`absolute bottom-0 left-0 h-[3px] rounded-full bg-[#408D86] transition-all duration-300 ${
-                activeTab === 'public' ? 'w-full' : 'w-0'
-              }`}
+              className={`absolute bottom-0 left-0 h-[3px] rounded-full bg-[#408D86] transition-all duration-300 ${activeTab === 'public' ? 'w-full' : 'w-0'
+                }`}
             />
           </div>
           <div className="relative cursor-pointer pb-2" onClick={() => setActiveTab('private')}>
             <span
-              className={`text-[18px] font-semibold tracking-wide transition-colors ${
-                activeTab === 'private' ? 'text-[#408D86]' : 'text-black'
-              }`}
+              className={`text-[18px] font-semibold tracking-wide transition-colors ${activeTab === 'private' ? 'text-[#408D86]' : 'text-black'
+                }`}
             >
               我的模板
             </span>
             <div
-              className={`absolute bottom-0 left-0 h-[3px] rounded-full bg-[#408D86] transition-all duration-300 ${
-                activeTab === 'private' ? 'w-full' : 'w-0'
-              }`}
+              className={`absolute bottom-0 left-0 h-[3px] rounded-full bg-[#408D86] transition-all duration-300 ${activeTab === 'private' ? 'w-full' : 'w-0'
+                }`}
             />
           </div>
         </div>
@@ -400,24 +396,7 @@ const Market: React.FC = () => {
           <Empty className="mt-40" description="暂无问卷" />
         )}
         <FloatButton.BackTop target={targetFn} visibilityHeight={120} />
-        <div
-          ref={bottomRef}
-          className="py-6 text-sm text-center text-gray-500 flex items-center justify-center gap-2"
-        >
-          {questionList.length >= total && total ? (
-            <>
-              <span role="img" aria-label="cone">
-                📣
-              </span>
-              <span>duang! 到底啦!</span>
-              <span role="img" aria-label="cone">
-                📣
-              </span>
-            </>
-          ) : (
-            ''
-          )}
-        </div>
+
       </div>
     </div>
   )
