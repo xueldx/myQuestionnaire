@@ -345,8 +345,9 @@ const Profile: React.FC = () => {
                           <div className="flex gap-4 text-sm text-gray-500">
                             <span>📊 收集 {question.answer_count} 份</span>
                             <span
-                              className={`${question.is_published ? 'text-green-600' : 'text-yellow-600'
-                                }`}
+                              className={`${
+                                question.is_published ? 'text-green-600' : 'text-yellow-600'
+                              }`}
                             >
                               ● {question.is_published ? '进行中' : '未发布'}
                             </span>
@@ -391,9 +392,7 @@ const Profile: React.FC = () => {
                             <span className="text-yellow-500 mr-2">⭐</span>
                             <span>让AI帮助您创造更多问卷</span>
                           </h3>
-                          <p className="text-sm text-gray-600">
-                            点击返回首页，生成您感兴趣的问卷
-                          </p>
+                          <p className="text-sm text-gray-600">点击返回首页，生成您感兴趣的问卷</p>
                         </div>
                         <div className="text-sm text-[#408D86]">去生成 →</div>
                       </div>

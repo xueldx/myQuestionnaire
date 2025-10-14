@@ -67,7 +67,7 @@ const NPSConfig: React.FC<NPSConfigProps> = ({ componentId }) => {
           <Input />
         </Form.Item>
       </Form>
-    </div >
+    </div>
   )
 }
 

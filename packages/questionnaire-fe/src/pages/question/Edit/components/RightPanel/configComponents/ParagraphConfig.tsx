@@ -50,7 +50,12 @@ const ParagraphConfig: React.FC<ParagraphConfigProps> = ({ componentId }) => {
       <div className="mb-4">
         <h3 className="font-bold">配置</h3>
       </div>
-      <Form form={form} layout="vertical" initialValues={currentComponent.props} onValuesChange={handleValuesChange}>
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={currentComponent.props}
+        onValuesChange={handleValuesChange}
+      >
         <Form.Item
           name="title"
           label="段落内容"

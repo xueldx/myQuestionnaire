@@ -136,10 +136,10 @@ const QuestionnaireClient: React.FC = () => {
       <div className="container mx-auto px-4">
         {/* 问卷标题和元信息 */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-custom-text-100 mb-2">
+          <h1 className="text-2xl font-bold text-default-900 dark:text-white mb-2">
             {questionnaireName}
           </h1>
-          <p className="text-sm text-custom-text-200">
+          <p className="text-sm text-default-500 dark:text-white">
             问卷ID: {currentQuestionnaireId} | 请认真填写以下问题
           </p>
         </div>
@@ -152,18 +152,18 @@ const QuestionnaireClient: React.FC = () => {
             <div
               key={index}
               id={`question-${question.fe_id}`}
-              className="p-6 bg-custom-bg-300 rounded-lg shadow-lg border border-custom-primary-300/30"
+              className="p-6 bg-background dark:bg-default-50 rounded-lg shadow-lg"
             >
               <QuestionRenderer question={question} index={index} />
             </div>
           ))}
           <div className="sticky bottom-4 flex justify-center mt-8">
             <Button
-              color="success"
+              color="secondary"
               variant="shadow"
               size="lg"
               onPress={onSubmit}
-              className="px-8 bg-custom-primary-100 hover:bg-custom-primary-200 text-white"
+              className="px-8"
             >
               <SparklesIcon className="w-4 h-4 mr-2" />
               提交问卷

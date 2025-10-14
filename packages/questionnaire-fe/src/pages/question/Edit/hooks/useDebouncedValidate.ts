@@ -11,7 +11,7 @@ import { FormInstance } from 'antd'
 export const useDebouncedValidate = (
   form: FormInstance,
   onValidSuccess: (values: any) => void,
-  delay: number = 500
+  delay = 500
 ) => {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 

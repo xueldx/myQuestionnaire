@@ -70,7 +70,7 @@ const ComponentWapper: React.FC<ComponentWapperProps> = ({
             'absolute right-0 top-0 h-8 px-2.5 flex items-center justify-center bg-custom-bg-100 text-custom-text-200 cursor-grab active:cursor-grabbing rounded-bl-lg rounded-tr-md opacity-0 group-hover:opacity-100',
             selectedId === fe_id && 'opacity-100 bg-custom-primary-100 text-white',
             isDragging &&
-            'opacity-100 cursor-grabbing bg-custom-primary-100 text-white shadow-inner'
+              'opacity-100 cursor-grabbing bg-custom-primary-100 text-white shadow-inner'
           )}
           style={{
             cursor: isDragging ? 'grabbing' : 'grab'
@@ -86,9 +86,7 @@ const ComponentWapper: React.FC<ComponentWapperProps> = ({
       )}
 
       {/* 组件内容 */}
-      <div className={clsx(isDragging && 'transform scale-[0.98] opacity-90')}>
-        {children}
-      </div>
+      <div className={clsx(isDragging && 'transform scale-[0.98] opacity-90')}>{children}</div>
     </div>
   )
 }

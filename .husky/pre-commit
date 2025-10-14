@@ -1,10 +1,6 @@
 #!/usr/bin/env sh
 echo "😈Starting pre-commit hook..."
 . "$(dirname -- "$0")/_/husky.sh"
-echo "😈Running npm run fix..."
-pnpm -F @questionnaire/fe lint --fix
-echo "😈Running npm run format..."
-pnpm -F @questionnaire/fe format
 echo "😈Running npm run lint..."
 npm run lint
 echo "😈Ready to commit. Note: unstaged files were format/linted but NOT automatically staged."
