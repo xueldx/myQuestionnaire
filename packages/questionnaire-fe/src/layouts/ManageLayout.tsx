@@ -47,7 +47,7 @@ const ManageLayout: React.FC = () => {
       <div className="h-[68px] flex justify-between items-center px-6 shrink-0 z-10 border-b border-gray-200/50 bg-white/30 backdrop-blur-md">
         <div className="flex items-center gap-2">
           <FormOutlined className="text-[26px] text-[#408D86]" />
-          <span className="text-[18px] font-bold text-gray-800 tracking-wide">小木问卷</span>
+          <span className="text-[18px] font-bold text-[#408D86] tracking-wide">问卷小筑</span>
         </div>
         <UserMenu />
       </div>

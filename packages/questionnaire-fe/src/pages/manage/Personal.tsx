@@ -46,7 +46,7 @@ const { Title } = Typography
 const stepSize = 20
 
 const List: React.FC = () => {
-  useTitle('小木问卷 - 我的问卷')
+  useTitle('问卷小筑 - 我的问卷')
   const bottomRef = useRef(null)
   const [currentView, setCurrentView] = useState(1)
   const [questionList, setQuestionList] = useState<Question[]>([])

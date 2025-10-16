@@ -47,7 +47,7 @@ const { Title } = Typography
 const stepSize = 20
 
 const Market: React.FC = () => {
-  useTitle('小木问卷 - 模板中心')
+  useTitle('问卷小筑 - 模板中心')
   const bottomRef = useRef(null)
   const [activeTab, setActiveTab] = useState<'public' | 'private'>('public')
   const [currentView, setCurrentView] = useState(1)

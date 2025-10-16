@@ -5,26 +5,27 @@ import NextLink from "next/link";
 import { siteConfig } from "@/config/site";
 import ShareButton from "@/components/shareButton";
 import { ThemeSwitch } from "@/components/themeSwitch";
-import { GithubIcon, Logo } from "@/components/icons";
+import { GithubIcon, Logo, FormOutlined } from "@/components/icons";
 import { Tooltip } from "@heroui/tooltip";
+
 export const Navbar = () => {
   return (
     <NextUINavbar maxWidth="xl" position="sticky" shouldHideOnScroll>
       <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
         <NavbarBrand as="li" className="gap-3 max-w-fit">
-          <NextLink className="flex justify-start items-center gap-1" href="/">
-            <Logo />
-            <p className="font-bold text-inherit">XM_questionnaire</p>
+          <NextLink className="flex justify-start items-center gap-2" href="/">
+            <FormOutlined />
+            <p className="font-bold text-inherit">问卷小筑</p>
           </NextLink>
         </NavbarBrand>
       </NavbarContent>
       <NavbarContent className="hidden sm:flex basis-1/5 sm:basis-full" justify="end">
         <NavbarItem className="hidden sm:flex gap-3">
-          <Tooltip content="GitHub" showArrow={true}>
-            <Link isExternal aria-label="Github" href={siteConfig.links.github}>
+          {/* <Tooltip content="GitHub" showArrow={true}>
+            <Link isExternal aria-label="Github" href="mailto:xueldx@163.com">
               <GithubIcon className="text-default-500" />
             </Link>
-          </Tooltip>
+          </Tooltip> */}
           <ShareButton />
           <ThemeSwitch />
         </NavbarItem>

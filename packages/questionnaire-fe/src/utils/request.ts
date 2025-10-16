@@ -26,10 +26,10 @@ instance.interceptors.response.use(
       window.location.href = LOGIN_PATH + '?redirect=' + window.location.pathname
     }
     console.error(error)
-    navigator.clipboard.writeText('https://github.com/indulgeback/react-questionnaire')
+    navigator.clipboard.writeText('xueldx@163.com')
     return {
       code: 0,
-      msg: '发生了预期之外的错误：请前往 github 提交issue，仓库地址已复制到剪贴板!' + error.message,
+      msg: '出错啦,可以联系开发者修复,联系方式已复制到剪贴板!' + error.message,
       data: null
     }
   }

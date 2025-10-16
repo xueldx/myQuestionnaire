@@ -27,7 +27,7 @@ import useRequestSuccessChecker from '@/hooks/useRequestSuccessChecker'
 const { Title } = Typography
 
 const Star: React.FC = () => {
-  useTitle('小木问卷 - 星标问卷')
+  useTitle('问卷小筑 - 星标问卷')
   const [questionList, setQuestionList] = useState<Question[]>([])
   const nav = useNavigate()
   const { isRequestSuccess, successMessage } = useRequestSuccessChecker()

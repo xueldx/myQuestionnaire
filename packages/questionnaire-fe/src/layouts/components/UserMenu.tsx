@@ -26,26 +26,26 @@ const UserMenu: React.FC = () => {
   }
 
   const iconItems = [
-    {
-      key: 'gitee',
-      icon: <SvgIcon name="gitee" size="1.2em" />,
-      url: 'https://gitee.com/IndulgeBack/react-questionnaire'
-    },
-    {
-      key: 'github',
-      icon: <SvgIcon name="github" size="1.2em" />,
-      url: 'https://github.com/indulgeback/react-questionnaire'
-    },
+    // {
+    //   key: 'gitee',
+    //   icon: <SvgIcon name="gitee" size="1.2em" />,
+    //   url: ''
+    // },
+    // {
+    //   key: 'github',
+    //   icon: <SvgIcon name="github" size="1.2em" />,
+    //   url: ''
+    // },
     {
       key: 'email',
       icon: <SvgIcon name="email" size="1.2em" />,
-      url: 'https://xmquestionnaire@163.com'
-    },
-    {
-      key: 'juejin',
-      icon: <SvgIcon name="juejin" size="1.2em" />,
-      url: 'https://juejin.cn/user/1410020421418286'
+      url: 'xueldx@163.com'
     }
+    // {
+    //   key: 'juejin',
+    //   icon: <SvgIcon name="juejin" size="1.2em" />,
+    //   url: ''
+    // }
   ]
 
   const items: MenuProps['items'] = [
@@ -82,7 +82,7 @@ const UserMenu: React.FC = () => {
     <div className="flex items-center gap-4">
       {iconItems.map(item => {
         return (
-          <Tooltip title={item.key} key={item.key}>
+          <Tooltip title="联系开发者" key={item.key}>
             <div
               className="w-6 h-6 flex justify-center items-center cursor-pointer hover:bg-gray-200 rounded-md"
               onClick={() => clickIconItem(item)}

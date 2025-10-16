@@ -37,7 +37,7 @@ const { Title } = Typography
 const stepSize = 20
 
 const Trash: React.FC = () => {
-  useTitle('小木问卷 - 回收站')
+  useTitle('问卷小筑 - 回收站')
   const bottomRef = useRef(null)
   const [currentView, setCurrentView] = useState(1)
   const [questionList, setQuestionList] = useState<Question[]>([])

@@ -1,5 +1,5 @@
 export default (verificationCode, expirationTime) => {
-  return `
+    return `
     <!DOCTYPE html>
     <html lang="zh-CN,en-US">
     <head>
@@ -59,7 +59,7 @@ export default (verificationCode, expirationTime) => {
             </div>
             <div class="letter-footer">
                 <p>感谢您的支持！<br>Best regards,</p>
-                <p>小木问卷<br>XM questionnaire</p>
+                <p>问卷小筑<br>XM questionnaire</p>
             </div>
         </div>
     </body>

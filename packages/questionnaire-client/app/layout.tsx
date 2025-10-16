@@ -50,13 +50,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link
                 isExternal
                 className="flex items-center gap-1 text-xs md:text-sm"
-                href="https://indulgeback.netlify.app/"
-                title="indulgeback homepage"
+                href="mailto:xueldx@163.com"
+                title="email"
               >
-                <span className="text-default-600">小木问卷&copy;2024-present.Created by</span>
-                <p className="text-primary">IndulgeBack</p>
+                <span className="text-default-600">问卷小筑&copy;2025-present.Created by</span>
+                <p className="text-primary">xueldx</p>
               </Link>
-            </footer>
+              </footer>
           </div>
         </Providers>
       </body>
