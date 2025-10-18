@@ -8,7 +8,6 @@ const NotFound: React.FC = () => {
   return (
     <Result
       className="h-screen pt-56"
-      status="404"
       title="404"
       subTitle="糟糕，找不到页面啦！"
       extra={

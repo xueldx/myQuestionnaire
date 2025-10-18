@@ -328,9 +328,9 @@ const Market: React.FC = () => {
             theme={{
               components: {
                 Radio: {
-                  buttonSolidCheckedBg: '#529c94',
-                  buttonSolidCheckedHoverBg: '#529c94',
-                  buttonSolidCheckedActiveBg: '#529c94'
+                  buttonSolidCheckedBg: '#4b847a',
+                  buttonSolidCheckedHoverBg: '#4b847a',
+                  buttonSolidCheckedActiveBg: '#4b847a'
                 }
               }
             }}
@@ -374,11 +374,6 @@ const Market: React.FC = () => {
                   updatedAt={item.update_time}
                   onRefresh={getQuestionItem}
                   onDelete={() => deleteQuestion(item.id)}
-                  checked={selectedRowKeys.includes(item.id)}
-                  onCheckChange={checked => {
-                    if (checked) setSelectedRowKeys([...selectedRowKeys, item.id])
-                    else setSelectedRowKeys(selectedRowKeys.filter(k => k !== item.id))
-                  }}
                 />
               ))}
             </div>

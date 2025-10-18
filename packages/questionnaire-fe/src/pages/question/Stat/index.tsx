@@ -82,12 +82,22 @@ const QuestionStat: React.FC = () => {
             })
           )
 
+          // 获取理论上的最高分
+          let maxScore = 5
+          if (item.componentInfo?.props) {
+            if (questionType === 'questionRating') maxScore = item.componentInfo.props.count || 5
+            else if (questionType === 'questionNPS' || questionType === 'questionSlider')
+              maxScore = item.componentInfo.props.max || 10
+          } else {
+            maxScore = item.summary.maxScore || 5
+          }
+
           // 使用具体组件类型，显示后端返回的问题标题
           return (
             <RatingStat
               question={question || `问题ID: ${questionId}`}
               data={ratingData}
-              maxScore={item.summary.maxScore || 5}
+              maxScore={maxScore}
             />
           )
         }
@@ -156,7 +166,7 @@ const QuestionStat: React.FC = () => {
           // 如果还是没有数据，则无法显示
           if (rows.length === 0 || columns.length === 0) {
             return (
-              <div className="bg-gray-800 rounded-xl p-6 text-center text-gray-300">
+              <div className="bg-white rounded-xl p-6 text-center text-gray-500 border border-gray-200">
                 该矩阵题暂无数据或无法解析
               </div>
             )
@@ -288,23 +298,24 @@ const QuestionStat: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-[#E8F5F3] to-[#F1F8E9] py-8">
       <div className="max-w-[1400px] mx-auto px-4 py-4">
         <div className="text-center mb-8">
-          <Title level={2} style={{ color: '#38bdf8', marginBottom: '8px' }}>
+          <Title level={2} style={{ color: '#26A69A', marginBottom: '8px' }}>
             {questionnaireTitle}
           </Title>
-          <Paragraph style={{ color: '#94a3b8' }}>
+          <Paragraph style={{ color: '#4b5563' }}>
             {questionnaireDesc || '问卷统计分析报告'}
           </Paragraph>
-          <Paragraph style={{ color: '#64748b' }}>共有 {totalResponseCount} 份答卷</Paragraph>
+          <Paragraph style={{ color: '#6b7280' }}>共有 {totalResponseCount} 份答卷</Paragraph>
 
           {/* AI分析按钮 */}
           <Button
             type="primary"
             size="large"
             onClick={goToAIAnalysis}
-            style={{ marginTop: '12px', background: '#4338ca' }}
+            style={{ marginTop: '12px', backgroundColor: '#26A69A', borderColor: '#26A69A' }}
+            className="hover:opacity-90 transition-opacity"
           >
             AI智能分析
           </Button>
@@ -319,13 +330,18 @@ const QuestionStat: React.FC = () => {
             if (!statComponent) return null
 
             return (
-              <div key={index} className="col-span-1 bg-gray-800 p-6 rounded-lg shadow-lg">
-                <h2 className="text-xl font-semibold text-white mb-4">
+              <div
+                key={index}
+                className="col-span-1 bg-custom-bg-300/60 backdrop-blur-md p-6 rounded-lg shadow-sm border border-gray-100"
+              >
+                <h2 className="text-xl font-semibold text-gray-800 mb-4">
                   题目 {index + 1} ({item.questionTypeName})
                 </h2>
                 {statComponent}
-                <Divider style={{ borderColor: '#4b5563' }} />
-                <div className="text-sm text-gray-400">总回答数: {item.totalResponses}</div>
+                <Divider style={{ borderColor: '#f3f4f6' }} />
+                <div className="text-sm text-gray-500 font-medium">
+                  总回答数: {item.totalResponses}
+                </div>
               </div>
             )
           })}

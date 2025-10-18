@@ -283,7 +283,7 @@ const List: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-transparent w-full">
-      <div className="flex justify-between items-center px-6 pt-6 pb-2 shrink-0">
+      <div className="flex justify-between items-center px-6 pt-6 pb-2 shrink-0 ">
         <Typography.Text className="text-[20px] font-semibold text-gray-800 tracking-wide">
           我的问卷
         </Typography.Text>
@@ -297,9 +297,9 @@ const List: React.FC = () => {
             theme={{
               components: {
                 Radio: {
-                  buttonSolidCheckedBg: '#529c94',
-                  buttonSolidCheckedHoverBg: '#529c94',
-                  buttonSolidCheckedActiveBg: '#529c94'
+                  buttonSolidCheckedBg: '#4b847a',
+                  buttonSolidCheckedHoverBg: '#4b847a',
+                  buttonSolidCheckedActiveBg: '#4b847a'
                 }
               }
             }}
@@ -324,7 +324,10 @@ const List: React.FC = () => {
           </div>
         </Space>
       </div>
-      <div className="flex-1 px-6 pb-6 overflow-y-auto custom-no-scrollbar" ref={questionListRef}>
+      <div
+        className="pt-2 flex-1 px-6 pb-6 overflow-y-auto custom-no-scrollbar"
+        ref={questionListRef}
+      >
         {/* 问卷列表 */}
         {questionList.length > 0 ? (
           viewMode === 'card' ? (

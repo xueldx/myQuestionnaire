@@ -288,22 +288,22 @@ const Edit: React.FC = () => {
           </Tooltip>
         </div>
       </div>
-      <div className="flex-1 flex justify-between p-2 h-0">
-        <div className="w-[350px] bg-custom-bg-300 rounded-l-lg shadow-2xl p-2">
+      <div className="flex-1 flex justify-between p-2 overflow-hidden">
+        <div className="w-[350px] bg-custom-bg-300/60 backdrop-blur-md rounded-3xl shadow-2xl p-2 flex flex-col overflow-y-auto border border-white/20">
           <LeftPanel />
         </div>
-        <div className="flex justify-center items-center flex-1 w-0">
+        <div className="flex justify-center items-center flex-1">
           {loading ? (
-            <div className="min-w-[324px] min-h-[663px] w-[50%] h-[80%] rounded-t-[30px] rounded-b-[40px] p-[10px] shadow-2xl bg-custom-bg-100 border-custom-bg-300 border-8 flex justify-center items-center">
+            <div className="min-w-[324px] w-[50%] h-full rounded-[40px] p-[10px] shadow-2xl bg-custom-bg-100 border-custom-bg-300 border-8 flex justify-center items-center">
               <CustomSpin />
             </div>
           ) : (
-            <div className="min-w-[324px] min-h-[663px] w-[50%] h-[80%] rounded-t-[30px] rounded-b-[40px] p-[10px] shadow-2xl bg-custom-bg-100 border-custom-bg-300 border-8">
+            <div className="min-w-[324px] w-[50%] h-full rounded-t-[30px] rounded-b-[40px] p-[10px] shadow-2xl bg-custom-bg-100 border-custom-bg-300 border-8">
               <EditCanvas />
             </div>
           )}
         </div>
-        <div className="w-[350px] bg-custom-bg-300 rounded-r-lg shadow-2xl p-2">
+        <div className="w-[350px] bg-custom-bg-300/60 backdrop-blur-md rounded-3xl shadow-2xl p-2 flex flex-col overflow-y-auto border border-white/20">
           <RightPanel />
         </div>
       </div>

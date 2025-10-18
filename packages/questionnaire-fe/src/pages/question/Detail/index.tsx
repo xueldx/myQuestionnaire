@@ -27,7 +27,7 @@ const Detail: React.FC = () => {
   }
 
   return (
-    <div className="w-full min-h-screen bg-custom-bg-100">
+    <div className="w-full min-h-screen bg-gradient-to-br from-[#E8F5F3] to-[#F1F8E9]">
       {/* 头部区域 - 返回按钮 */}
       <div className="h-16 flex items-center">
         <div className="size-10 flex justify-center items-center ml-4">

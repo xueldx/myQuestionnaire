@@ -181,7 +181,7 @@ ${question.props?.description ? `- 题目说明：${question.props.description}`
     })
   }
 
-  const dialogTitle = isGenerating ? '生成中，要稍等一会哦～～' : '小木来帮你生成一个问卷吧'
+  const dialogTitle = isGenerating ? '生成中，要稍等一会哦～～' : '让AI来帮你生成一个问卷吧'
 
   useEffect(() => {
     if (markdownRef.current) {

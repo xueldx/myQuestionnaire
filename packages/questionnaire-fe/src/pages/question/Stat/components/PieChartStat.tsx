@@ -33,7 +33,7 @@ const PieChartStat: React.FC<PieChartStatProps> = ({ question, data }) => {
       container: containerRef.current,
       autoFit: true,
       padding: 40,
-      theme: 'dark'
+      theme: 'light'
     })
     chartRef.current = chart
 
@@ -52,14 +52,23 @@ const PieChartStat: React.FC<PieChartStatProps> = ({ question, data }) => {
       })
       .animate('enter', { type: 'waveIn' })
       .scale('color', {
-        range: ['#1890FF', '#2FC25B', '#FACC14', '#F04864', '#8543E0', '#13C2C2']
+        range: [
+          '#ff4d4f', // Red
+          '#1890ff', // Blue
+          '#52c41a', // Green
+          '#fadb14', // Yellow
+          '#722ed1', // Purple
+          '#fa8c16', // Orange
+          '#13c2c2', // Teal
+          '#eb2f96' // Magenta
+        ]
       })
       .label({
         text: (d: StatItem) => `${d.option}\n${d.percentage?.toFixed(1)}%`,
         position: 'outside',
         style: {
           fontSize: 12,
-          fill: '#E5E7EB',
+          fill: '#4B5563',
           textAlign: 'center'
         },
         transform: [
@@ -99,27 +108,27 @@ const PieChartStat: React.FC<PieChartStatProps> = ({ question, data }) => {
   }, [data])
 
   return (
-    <div className="bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6 transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 transition-all duration-300 hover:shadow-md flex flex-col">
       <div className="flex items-center mb-3 sm:mb-4">
-        <div className="w-1.5 sm:w-2 h-5 sm:h-6 bg-blue-500 rounded-full mr-2 sm:mr-3" />
-        <h2 className="text-lg sm:text-xl font-semibold text-gray-100 line-clamp-2">{question}</h2>
+        <div className="w-1.5 sm:w-2 h-5 sm:h-6 bg-[#26A69A] rounded-full mr-2 sm:mr-3" />
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-800 line-clamp-2">{question}</h2>
       </div>
 
       <div
         ref={containerRef}
-        className="h-72 sm:h-80 mb-3 sm:mb-4 bg-gray-700 rounded-lg p-2 sm:p-4 flex-grow"
+        className="h-72 sm:h-80 mb-3 sm:mb-4 bg-gray-50 rounded-lg p-2 sm:p-4 flex-grow"
       />
 
       <div className="grid grid-cols-1 gap-2 sm:gap-3">
         {data.map((item, index) => (
           <div
             key={index}
-            className="bg-gray-700 rounded-lg p-2 sm:p-3 flex justify-between items-center transform transition-all duration-200 hover:bg-gray-600"
+            className="bg-gray-50 rounded-lg p-2 sm:p-3 flex justify-between items-center transition-all duration-200 hover:bg-gray-100"
           >
-            <span className="flex-1 overflow-hidden whitespace-nowrap text-ellipsis text-gray-200 text-xs sm:text-sm">
+            <span className="flex-1 overflow-hidden whitespace-nowrap text-ellipsis text-gray-600 text-xs sm:text-sm">
               {item.option}
             </span>
-            <span className="ml-2 sm:ml-3 text-xs sm:text-sm font-medium text-blue-400 whitespace-nowrap">
+            <span className="ml-2 sm:ml-3 text-xs sm:text-sm font-medium text-gray-500 whitespace-nowrap">
               {`${item.count}人 (${item.percentage?.toFixed(1)}%)`}
             </span>
           </div>

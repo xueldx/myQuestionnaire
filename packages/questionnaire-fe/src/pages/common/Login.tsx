@@ -4,7 +4,6 @@ import { App, Button, Checkbox, Form, FormRule, Input } from 'antd'
 import { REGISTER_PATH } from '@/router'
 import apis from '@/apis'
 import { rememberUser, deleteUserFromStorage, getUserFromStorage, login } from '@/utils'
-import colorfulLogo from '@/assets/img/colorful-logo.webp'
 import useRequestSuccessChecker from '@/hooks/useRequestSuccessChecker'
 import regexp from '@/utils/regexp'
 import { setLoginState, setToken, setUserInfo } from '@/store/modules/profileSlice'
@@ -14,6 +13,7 @@ import gsap from 'gsap'
 import { LOGIN_STATE } from '@/constant'
 import { RootState } from '@/store'
 import SvgIcon from '@/components/Common/SvgIcon'
+import { FormOutlined } from '@ant-design/icons'
 
 const Login: React.FC = () => {
   const nav = useNavigate()
@@ -86,13 +86,16 @@ const Login: React.FC = () => {
   }, [])
   return (
     <div className="custom-main flex items-center">
-      <AuthBg />
-      <div className="w-1/2 flex justify-center">
+      {/* <AuthBg /> */}
+      <div className=" flex justify-center">
         <div
-          className="bg-white/80  backdrop-blur-sm p-5 rounded-md shadow-white shadow-2xl"
+          className="bg-white/80  backdrop-blur-sm p-5 rounded-md shadow-white shadow-2xl w-96"
           id="login-form"
         >
-          <img className="h-48" src={colorfulLogo} alt="logo" />
+          <div className="flex flex-col items-center justify-center gap-3 mb-8 w-full">
+            <FormOutlined className="text-[60px] text-[#408D86]" />
+            <h1 className="text-[18px] font-bold text-[#408D86] tracking-widest">问卷小筑</h1>
+          </div>
           <Form
             layout="vertical"
             initialValues={{ remember: true }}

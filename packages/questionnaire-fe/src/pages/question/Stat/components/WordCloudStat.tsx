@@ -53,7 +53,7 @@ const WordCloudStat: React.FC<WordCloudStatProps> = ({ question, data, responseC
         container: containerRef.current,
         autoFit: true,
         padding: 20,
-        theme: 'dark'
+        theme: 'light'
       })
       chartRef.current = chart
 
@@ -66,7 +66,16 @@ const WordCloudStat: React.FC<WordCloudStatProps> = ({ question, data, responseC
           .encode('value', 'value')
           .encode('color', 'text')
           .scale('color', {
-            range: ['#1890FF', '#2FC25B', '#FACC14', '#F04864', '#8543E0', '#13C2C2']
+            range: [
+              '#ff4d4f',
+              '#1890ff',
+              '#52c41a',
+              '#fadb14',
+              '#722ed1',
+              '#fa8c16',
+              '#13C2C2',
+              '#eb2f96'
+            ]
           })
           .style({
             fontFamily: '"PingFang SC", "Microsoft YaHei", sans-serif', // 添加中文字体支持
@@ -151,15 +160,15 @@ const WordCloudStat: React.FC<WordCloudStatProps> = ({ question, data, responseC
     processedData.length > 0 ? [...processedData].sort((a, b) => b.value - a.value) : []
 
   return (
-    <div className="bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6 transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 transition-all duration-300 hover:shadow-md flex flex-col">
       <div className="flex items-center mb-3 sm:mb-4">
-        <div className="w-1.5 sm:w-2 h-5 sm:h-6 bg-purple-500 rounded-full mr-2 sm:mr-3" />
-        <h2 className="text-lg sm:text-xl font-semibold text-gray-100 line-clamp-2">{question}</h2>
+        <div className="w-1.5 sm:w-2 h-5 sm:h-6 bg-[#26A69A] rounded-full mr-2 sm:mr-3" />
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-800 line-clamp-2">{question}</h2>
       </div>
 
-      <div className="bg-gray-700 rounded-lg p-3 mb-3 flex items-center justify-between">
-        <span className="text-sm text-gray-300">回答总数</span>
-        <span className="text-lg font-bold text-purple-400">{responseCount}人</span>
+      <div className="bg-gray-50 rounded-lg p-3 mb-3 flex items-center justify-between border border-gray-100">
+        <span className="text-sm text-gray-500">回答总数</span>
+        <span className="text-lg font-bold text-[#26A69A]">{responseCount}人</span>
         {renderError && (
           <span className="text-xs text-yellow-400 ml-2">词云渲染失败，显示柱状图</span>
         )}
@@ -168,31 +177,31 @@ const WordCloudStat: React.FC<WordCloudStatProps> = ({ question, data, responseC
       {processedData.length > 0 ? (
         <div
           ref={containerRef}
-          className="h-80 mb-3 sm:mb-4 bg-gray-700 rounded-lg p-2 sm:p-4 flex-grow"
+          className="h-80 mb-3 sm:mb-4 bg-gray-50 rounded-lg p-2 sm:p-4 flex-grow"
         />
       ) : (
-        <div className="h-80 mb-3 sm:mb-4 bg-gray-700 rounded-lg p-2 sm:p-4 flex-grow flex items-center justify-center">
+        <div className="h-80 mb-3 sm:mb-4 bg-gray-50 rounded-lg p-2 sm:p-4 flex-grow flex items-center justify-center">
           <span className="text-gray-400">暂无足够数据生成词云</span>
         </div>
       )}
 
       <div className="grid grid-cols-1 gap-2 sm:gap-3">
-        <h3 className="text-gray-300 text-sm font-medium">关键词排行</h3>
+        <h3 className="text-gray-600 text-sm font-semibold">关键词排行</h3>
         {sortedData.length > 0 ? (
           sortedData.slice(0, 10).map((item, index) => (
             <div
               key={index}
-              className="bg-gray-700 rounded-lg p-2 sm:p-3 flex justify-between items-center transform transition-all duration-200 hover:bg-gray-600"
+              className="bg-gray-50 rounded-lg p-2 sm:p-3 flex justify-between items-center transition-all duration-200 hover:bg-gray-100"
             >
               <div className="flex items-center">
-                <div className="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center mr-2 text-xs text-white">
+                <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center mr-2 text-xs text-gray-600">
                   {index + 1}
                 </div>
-                <span className="overflow-hidden whitespace-nowrap text-ellipsis text-gray-200 text-xs sm:text-sm">
+                <span className="overflow-hidden whitespace-nowrap text-ellipsis text-gray-600 text-xs sm:text-sm">
                   {item.text}
                 </span>
               </div>
-              <span className="ml-2 sm:ml-3 text-xs sm:text-sm font-medium text-purple-400 whitespace-nowrap">
+              <span className="ml-2 sm:ml-3 text-xs sm:text-sm font-medium text-[#26A69A] whitespace-nowrap">
                 {`出现${item.value}次`}
               </span>
             </div>

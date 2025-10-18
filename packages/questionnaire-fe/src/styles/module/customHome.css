@@ -1,142 +1,93 @@
 .custom-app {
-    background: rgb(var(--bg-100));
+    background: transparent;
 }
 
-.custom-main {
-    height: 100vh;
-}
-
-.custom-header {
-    height: 68px;
+.custom-home-container {
+    width: 100%;
+    height: calc(100vh - 68px - 50px);
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 0 24px;
-    backdrop-filter: blur(10px);
-    background-color: rgba(var(--primary-100), 0.4);
-    z-index: 999;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
+    justify-content: center;
+    padding: 2rem;
+    overflow: hidden;
 }
 
-
-.custom-hero-banner {
-    height: 95vh;
-    background-image: linear-gradient(to right bottom,
-            rgba(var(--primary-300), 0.5),
-            rgba(var(--primary-100), 0.5)),
-        url('@/assets/img/bg-hero.webp');
-    background-size: cover;
-    background-position: top;
-    position: relative;
-    clip-path: polygon(0 0, 100% 0, 100% 75vh, 0 100%);
-    -webkit-clip-path: polygon(0 0, 100% 0, 100% 75vh, 0 100%);
+.custom-hero-section {
+    flex: 1;
+    max-width: 600px;
+    padding-right: 4rem;
 }
 
+.custom-visual-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    align-items: center;
+    justify-content: center;
+}
+
+.custom-main-title {
+    font-weight: 800 !important;
+    font-size: 64px !important;
+    background: linear-gradient(135deg, #408D86 0%, #2D635E 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 1.5rem;
+    line-height: 1.2;
+}
 
 .custom-intro-lottie {
-    width: 34vw;
+    width: 28vw;
+    max-width: 450px;
+    filter: drop-shadow(0 20px 30px rgba(64, 141, 134, 0.1));
 }
 
-
-.custom-feature-banner {
-    height: 95vh;
-    background-image: linear-gradient(to right bottom,
-            rgba(var(--primary-100), 0.5),
-            rgba(var(--primary-300), 0.5)),
-        url('@/assets/img/bg-feature.webp');
-    background-size: cover;
-    background-position: top;
-    position: relative;
-    clip-path: polygon(0 25vh, 100% 0, 100% 75vh, 0 100%);
-    -webkit-clip-path: polygon(0 25vh, 100% 0, 100% 75vh, 0 100%);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-
-.custom-feature-card-container {
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.custom-feature-card {
-    position: relative;
-    width: 15rem;
-    height: 22rem;
-    background: rgba(255, 255, 255, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transform-origin: center center;
-    transform: translateZ(0) rotate(calc(var(--r) * 1deg));
-    transition: transform 0.5s ease-out, margin 0.5s ease-out;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    border-radius: 10px;
-    margin: 0 -1.5rem;
-    cursor: pointer;
-}
-
-.custom-feature-card-container:hover .custom-feature-card {
-    will-change: transform, margin;
-    transform: translateZ(0) rotate(0deg);
-    margin: 0 1.8rem;
-}
-
-.custom-feature-card::before {
-    content: attr(data-text);
-    position: absolute;
-    bottom: 0;
+.custom-feature-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
     width: 100%;
-    font-size: 1rem;
-    height: 5rem;
-    background: rgba(255, 255, 255, 0.1);
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-    color: #fff;
-    letter-spacing: 0.3rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    max-width: 500px;
 }
 
-.custom-questionnaire-list {
-    margin-top: 5px;
-    padding: 0 10px;
-    height: calc(100% - 60px);
-    overflow-y: scroll;
+.custom-mini-card {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    padding: 1.25rem;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.custom-mini-card:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 20px 25px -5px rgba(64, 141, 134, 0.1);
+}
+
+.custom-mini-card-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #408D86;
 }
 
 .custom-footer {
     height: 50px;
     display: flex;
-    flex-direction: column;
     justify-content: center;
     align-items: center;
-    text-align: center;
-    background: rgb(var(--bg-100));
-    color: rgb(var(--text-200));
-    line-height: 20px;
-    z-index: 999;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-}
-
-.custom-main-title {
-    font-weight: 600 !important;
-    font-size: 56px !important;
-    background: -webkit-linear-gradient(315deg, rgb(var(--bg-300)) 25%, rgb(var(--bg-300)));
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-bottom: 20px;
+    font-size: 0.85rem;
+    color: #94a3b8;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(4px);
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 /* 隐藏滚动条 */

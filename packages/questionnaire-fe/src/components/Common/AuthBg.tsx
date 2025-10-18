@@ -3,7 +3,7 @@ import React from 'react'
 
 const AuthBg: React.FC = () => {
   return (
-    <div className="w-1/2 flex justify-center">
+    <div className="w-5/12 flex justify-center">
       <SvgIcon name="auth" size="44rem"></SvgIcon>
     </div>
   )

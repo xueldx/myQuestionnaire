@@ -36,7 +36,7 @@ const MatrixStat: React.FC<MatrixStatProps> = ({ question, data, rows, columns }
       container: containerRef.current,
       autoFit: true,
       padding: 40,
-      theme: 'dark'
+      theme: 'light'
     })
     chartRef.current = chart
 
@@ -56,13 +56,13 @@ const MatrixStat: React.FC<MatrixStatProps> = ({ question, data, rows, columns }
       })
       .scale('color', {
         domain: [0, 100],
-        range: ['#F8FAFC', '#3B82F6']
+        range: ['#F9FAFB', '#26A69A']
       })
       .axis('x', {
         title: false,
         label: {
           style: {
-            fill: '#9CA3AF',
+            fill: '#4B5563',
             fontSize: 12
           }
         }
@@ -71,7 +71,7 @@ const MatrixStat: React.FC<MatrixStatProps> = ({ question, data, rows, columns }
         title: false,
         label: {
           style: {
-            fill: '#9CA3AF',
+            fill: '#4B5563',
             fontSize: 12
           }
         }
@@ -86,7 +86,7 @@ const MatrixStat: React.FC<MatrixStatProps> = ({ question, data, rows, columns }
       .label({
         text: (d: MatrixStatItem) => `${d.percentage.toFixed(1)}%`,
         style: {
-          fill: (d: MatrixStatItem) => (d.percentage > 50 ? '#FFFFFF' : '#1E3A8A'),
+          fill: (d: MatrixStatItem) => (d.percentage > 50 ? '#FFFFFF' : '#374151'),
           fontSize: 12,
           textAlign: 'center'
         }
@@ -124,36 +124,38 @@ const MatrixStat: React.FC<MatrixStatProps> = ({ question, data, rows, columns }
   })
 
   return (
-    <div className="bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6 transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 transition-all duration-300 hover:shadow-md flex flex-col">
       <div className="flex items-center mb-3 sm:mb-4">
-        <div className="w-1.5 sm:w-2 h-5 sm:h-6 bg-blue-500 rounded-full mr-2 sm:mr-3" />
-        <h2 className="text-lg sm:text-xl font-semibold text-gray-100 line-clamp-2">{question}</h2>
+        <div className="w-1.5 sm:w-2 h-5 sm:h-6 bg-[#26A69A] rounded-full mr-2 sm:mr-3" />
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-800 line-clamp-2">{question}</h2>
       </div>
 
       <div
         ref={containerRef}
-        className="h-80 sm:h-96 mb-3 sm:mb-4 bg-gray-700 rounded-lg p-2 sm:p-4 flex-grow"
+        className="h-80 sm:h-96 mb-3 sm:mb-4 bg-gray-50 rounded-lg p-2 sm:p-4 flex-grow"
       />
 
       <div className="grid grid-cols-1 gap-4">
         {dataByRow.map((rowGroup, rowIndex) => (
-          <div key={rowIndex} className="bg-gray-700 rounded-lg p-3">
-            <h3 className="text-gray-200 text-sm font-medium mb-2 pb-2 border-b border-gray-600">
+          <div key={rowIndex} className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+            <h3 className="text-gray-700 text-sm font-semibold mb-2 pb-2 border-b border-gray-200">
               {rowGroup.row}
             </h3>
             <div className="grid grid-cols-1 gap-2">
               {rowGroup.columns.map((item, colIndex) => (
                 <div
                   key={colIndex}
-                  className="flex justify-between items-center py-1 transform transition-all duration-200 hover:bg-gray-600 hover:px-2 rounded"
+                  className="flex justify-between items-center py-1 transition-all duration-200 hover:bg-white hover:px-2 rounded group"
                 >
-                  <span className="text-gray-300 text-xs sm:text-sm">{item.column}</span>
+                  <span className="text-gray-600 text-xs sm:text-sm group-hover:text-gray-800">
+                    {item.column}
+                  </span>
                   <div className="flex items-center">
                     <div
-                      className="h-2 rounded bg-blue-500"
+                      className="h-2 rounded bg-[#26A69A] opacity-80"
                       style={{ width: `${Math.max(item.percentage, 5)}px` }}
                     ></div>
-                    <span className="ml-2 text-xs text-blue-400">
+                    <span className="ml-2 text-xs text-[#26A69A] font-medium">
                       {`${item.count}人 (${item.percentage.toFixed(1)}%)`}
                     </span>
                   </div>

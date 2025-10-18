@@ -14,8 +14,8 @@ export const Navbar = () => {
       <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
         <NavbarBrand as="li" className="gap-3 max-w-fit">
           <NextLink className="flex justify-start items-center gap-2" href="/">
-            <FormOutlined />
-            <p className="font-bold text-inherit">问卷小筑</p>
+            <FormOutlined className="text-[#408D86] text-[20px]" />
+            <p className="font-bold text-[#408D86]">问卷小筑</p>
           </NextLink>
         </NavbarBrand>
       </NavbarContent>

@@ -87,11 +87,11 @@ const AIAnalysis: React.FC = () => {
         <title>${analysisResult.title}</title>
         <style>
           body { font-family: Arial, sans-serif; margin: 40px; }
-          h1, h2 { color: #1e40af; }
+          h1, h2 { color: #26A69A; }
           .section { margin: 20px 0; }
           .insight { margin: 10px 0; }
           .question { margin: 15px 0; padding-bottom: 15px; border-bottom: 1px solid #eee; }
-          .question-title { font-weight: bold; }
+          .question-title { font-weight: bold; color: #408D86; }
           .recommendation { margin: 10px 0; }
         </style>
       </head>
@@ -212,36 +212,50 @@ const AIAnalysis: React.FC = () => {
     return (
       <div className="space-y-6 mt-4">
         {/* 概要部分 */}
-        <Card className="bg-sky-50">
-          <Title level={3}>{analysisResult.title}</Title>
-          <Paragraph className="text-lg">{analysisResult.overview}</Paragraph>
+        <Card className="bg-custom-bg-300/60 backdrop-blur-md border-gray-100 shadow-sm">
+          <Title level={3} style={{ color: '#26A69A' }}>
+            {analysisResult.title}
+          </Title>
+          <Paragraph className="text-lg text-gray-700">{analysisResult.overview}</Paragraph>
         </Card>
 
         {/* 关键发现 */}
-        <Card title="关键发现" className="bg-white">
+        <Card
+          title={<span className="text-[#26A69A]">关键发现</span>}
+          className="bg-custom-bg-300/60 backdrop-blur-md border-gray-100 shadow-sm"
+        >
           <List
             dataSource={analysisResult.key_insights}
             renderItem={(item, index) => (
-              <List.Item>
-                <Text strong>{index + 1}. </Text>
-                {item}
+              <List.Item className="!justify-start border-b-gray-50 last:border-none text-left w-full">
+                <div className="flex items-start">
+                  <Text strong className="text-[#26A69A] mr-2 shrink-0">
+                    {index + 1}.{' '}
+                  </Text>
+                  <span className="text-gray-600 text-left">{item}</span>
+                </div>
               </List.Item>
             )}
           />
         </Card>
 
         {/* 问题分析 */}
-        <Card title="问题分析" className="bg-white">
+        <Card
+          title={<span className="text-[#26A69A]">问题分析</span>}
+          className="bg-custom-bg-300/60 backdrop-blur-md border-gray-100 shadow-sm"
+        >
           <List
             dataSource={analysisResult.question_analyses}
             renderItem={item => (
-              <List.Item>
+              <List.Item className="border-b-gray-50 last:border-none">
                 <div>
-                  <Text strong>{item.title}</Text>
-                  <Tag color="blue" className="ml-2">
+                  <Text strong className="text-gray-800">
+                    {item.title}
+                  </Text>
+                  <Tag color="#26A69A" className="ml-2">
                     ID: {item.id}
                   </Tag>
-                  <Paragraph className="mt-2">{item.analysis}</Paragraph>
+                  <Paragraph className="mt-2 text-gray-600">{item.analysis}</Paragraph>
                 </div>
               </List.Item>
             )}
@@ -249,13 +263,20 @@ const AIAnalysis: React.FC = () => {
         </Card>
 
         {/* 建议 */}
-        <Card title="改进建议" className="bg-orange-50">
+        <Card
+          title={<span className="text-[#26A69A]">改进建议</span>}
+          className="bg-custom-bg-300/60 backdrop-blur-md border-gray-100 shadow-sm"
+        >
           <List
             dataSource={analysisResult.recommendations}
             renderItem={(item, index) => (
-              <List.Item>
-                <Text strong>{index + 1}. </Text>
-                {item}
+              <List.Item className="!justify-start border-b-gray-50 last:border-none text-left w-full">
+                <div className="flex items-start">
+                  <Text strong className="text-[#26A69A] mr-2 shrink-0">
+                    {index + 1}.{' '}
+                  </Text>
+                  <span className="text-gray-600 text-left">{item}</span>
+                </div>
               </List.Item>
             )}
           />
@@ -266,7 +287,7 @@ const AIAnalysis: React.FC = () => {
 
   // 渲染主页面
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sky-50 to-indigo-50 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-[#E8F5F3] to-[#F1F8E9] py-8">
       <div className="max-w-4xl mx-auto px-4 py-4 relative">
         {/* 返回按钮 */}
         <Button
@@ -291,10 +312,10 @@ const AIAnalysis: React.FC = () => {
         )}
 
         <div className="text-center mb-8 mt-10">
-          <Title level={2} style={{ color: '#1e40af' }}>
+          <Title level={2} style={{ color: '#26A69A' }}>
             问卷AI分析
           </Title>
-          <Paragraph className="text-gray-600">快速获取问卷数据洞察和建议</Paragraph>
+          <Paragraph className="text-gray-600 font-medium">快速获取问卷数据洞察和建议</Paragraph>
         </div>
 
         {/* 错误提示 */}
@@ -343,7 +364,7 @@ const AIAnalysis: React.FC = () => {
         {analyzing && (
           <div className="flex flex-col items-center justify-center py-8">
             <Spin size="large" />
-            <Paragraph className="mt-4 text-blue-600">{progressText}</Paragraph>
+            <Paragraph className="mt-4 text-[#26A69A] font-medium">{progressText}</Paragraph>
           </div>
         )}
 

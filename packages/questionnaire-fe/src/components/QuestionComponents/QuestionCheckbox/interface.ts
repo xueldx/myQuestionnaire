@@ -7,5 +7,5 @@ export type QuestionCheckboxPropsType = {
 export const QuestionCheckboxDefaultProps: QuestionCheckboxPropsType = {
   title: '这是一道多选题',
   options: ['选项1', '选项2', '选项3'],
-  column: false
+  column: true
 }

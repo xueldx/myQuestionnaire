@@ -44,9 +44,9 @@ const Qrcode = () => {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[100vh] bg-gradient-to-br from-custom-primary-300 via-custom-bg-200 to-custom-bg-100 rounded-2xl shadow-2xl p-8">
-      <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center">
-        <h2 className="mb-2 text-2xl font-extrabold text-custom-primary-100 tracking-wider drop-shadow-lg">
+    <div className="w-full h-full flex flex-col items-center justify-center p-8 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-lg p-8 flex flex-col items-center max-w-md">
+        <h2 className="mb-6 text-3xl font-extrabold text-custom-primary-100 tracking-wider">
           扫码答题
         </h2>
         <div ref={qrRef}>
@@ -56,21 +56,23 @@ const Qrcode = () => {
             className="my-4 border-4 border-custom-primary-100 rounded-lg shadow-md"
           />
         </div>
-        <div className="flex gap-4 mt-4">
+        <div className="flex gap-4 mt-6 w-full">
           <Tooltip title="复制二维码图片">
-            <Button icon={<QrcodeOutlined />} onClick={handleCopyQrcode} type="primary" ghost>
+            <Button icon={<QrcodeOutlined />} onClick={handleCopyQrcode} type="primary" ghost block>
               复制二维码
             </Button>
           </Tooltip>
           <Tooltip title="复制答题链接">
-            <Button icon={<CopyOutlined />} onClick={handleCopyLink} type="primary">
+            <Button icon={<CopyOutlined />} onClick={handleCopyLink} type="primary" block>
               复制链接
             </Button>
           </Tooltip>
         </div>
-        <div className="mt-4 text-base text-custom-text-200 break-all text-center select-all">
-          <span className="font-semibold text-custom-primary-200">答题链接：</span>
-          <span>{url}</span>
+        <div className="mt-6 w-full p-4 bg-custom-bg-100 rounded-lg">
+          <div className="text-sm text-custom-text-200 break-all text-center">
+            <div className="font-semibold text-custom-primary-100 mb-2">答题链接：</div>
+            <span className="select-all text-xs">{url}</span>
+          </div>
         </div>
       </div>
       <div className="mt-8 text-sm text-custom-text-200 opacity-70 text-center">

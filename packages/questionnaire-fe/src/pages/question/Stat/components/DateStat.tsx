@@ -48,7 +48,7 @@ const DateStat: React.FC<DateStatProps> = ({
       container: containerRef.current,
       autoFit: true,
       padding: 40,
-      theme: 'dark'
+      theme: 'light'
     })
     chartRef.current = chart
 
@@ -59,16 +59,16 @@ const DateStat: React.FC<DateStatProps> = ({
       .encode('x', 'range')
       .encode('y', 'count')
       .style({
-        fill: 'l(270) 0:#8b5cf6 1:#3b82f6',
+        fill: 'l(270) 0:#4DB6AC 1:#26A69A',
         fillOpacity: 0.4,
-        stroke: '#8b5cf6'
+        stroke: '#26A69A'
       })
       .axis('y', {
         title: '回答数',
         grid: true,
         label: {
           style: {
-            fill: '#9CA3AF'
+            fill: '#4B5563'
           }
         }
       })
@@ -76,7 +76,7 @@ const DateStat: React.FC<DateStatProps> = ({
         title: false,
         label: {
           style: {
-            fill: '#9CA3AF',
+            fill: '#4B5563',
             angle: 45
           }
         }
@@ -93,7 +93,7 @@ const DateStat: React.FC<DateStatProps> = ({
       .encode('y', 'count')
       .encode('shape', 'circle')
       .style({
-        fill: '#8b5cf6',
+        fill: '#26A69A',
         r: 4
       })
 
@@ -112,30 +112,30 @@ const DateStat: React.FC<DateStatProps> = ({
   }, [data])
 
   return (
-    <div className="bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6 transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 transition-all duration-300 hover:shadow-md flex flex-col">
       <div className="flex items-center mb-3 sm:mb-4">
-        <div className="w-1.5 sm:w-2 h-5 sm:h-6 bg-indigo-500 rounded-full mr-2 sm:mr-3" />
-        <h2 className="text-lg sm:text-xl font-semibold text-gray-100 line-clamp-2">{question}</h2>
+        <div className="w-1.5 sm:w-2 h-5 sm:h-6 bg-[#26A69A] rounded-full mr-2 sm:mr-3" />
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-800 line-clamp-2">{question}</h2>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-        <div className="bg-gray-700 rounded-lg p-3 text-center">
-          <span className="text-sm text-gray-300">总回答数</span>
-          <div className="text-2xl font-bold text-indigo-400 mt-1">{responseCount}人</div>
+        <div className="bg-gray-50 rounded-lg p-3 text-center border border-gray-100">
+          <span className="text-sm text-gray-500">总回答数</span>
+          <div className="text-2xl font-bold text-[#26A69A] mt-1">{responseCount}人</div>
         </div>
 
         {mostFrequentDate && (
-          <div className="bg-gray-700 rounded-lg p-3 text-center">
-            <span className="text-sm text-gray-300">最常选日期</span>
-            <div className="text-xl font-bold text-indigo-400 mt-1">{mostFrequentDate.date}</div>
+          <div className="bg-gray-50 rounded-lg p-3 text-center border border-gray-100">
+            <span className="text-sm text-gray-500">最常选日期</span>
+            <div className="text-xl font-bold text-[#26A69A] mt-1">{mostFrequentDate.date}</div>
             <div className="text-xs text-gray-400">{mostFrequentDate.count}人选择</div>
           </div>
         )}
 
         {earliestDate && latestDate && (
-          <div className="bg-gray-700 rounded-lg p-3 text-center">
-            <span className="text-sm text-gray-300">日期区间</span>
-            <div className="text-sm font-bold text-indigo-400 mt-1">
+          <div className="bg-gray-50 rounded-lg p-3 text-center border border-gray-100">
+            <span className="text-sm text-gray-500">日期区间</span>
+            <div className="text-sm font-bold text-[#26A69A] mt-1">
               {earliestDate} ~ {latestDate}
             </div>
           </div>
@@ -144,20 +144,20 @@ const DateStat: React.FC<DateStatProps> = ({
 
       <div
         ref={containerRef}
-        className="h-72 sm:h-80 mb-3 sm:mb-4 bg-gray-700 rounded-lg p-2 sm:p-4 flex-grow"
+        className="h-72 sm:h-80 mb-3 sm:mb-4 bg-gray-50 rounded-lg p-2 sm:p-4 flex-grow"
       />
 
       <div className="grid grid-cols-1 gap-2 sm:gap-3">
-        <h3 className="text-gray-300 text-sm font-medium">日期分布详情</h3>
+        <h3 className="text-gray-600 text-sm font-semibold">日期分布详情</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
           {data.map((item, index) => (
             <div
               key={index}
-              className="bg-gray-700 rounded-lg p-2 transform transition-all duration-200 hover:bg-gray-600"
+              className="bg-gray-50 rounded-lg p-2 transition-all duration-200 hover:bg-gray-100 border border-gray-100"
             >
-              <div className="text-xs text-gray-300 mb-1">{item.range}</div>
+              <div className="text-xs text-gray-500 mb-1">{item.range}</div>
               <div className="flex justify-between items-center">
-                <span className="text-indigo-400 text-xs">{item.count}人</span>
+                <span className="text-[#26A69A] text-xs font-medium">{item.count}人</span>
                 <span className="text-gray-400 text-xs">{item.percentage}%</span>
               </div>
             </div>

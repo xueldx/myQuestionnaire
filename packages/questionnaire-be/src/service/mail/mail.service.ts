@@ -44,9 +44,9 @@ export class MailService {
       // 设置键值对，并指定过期时间
       await this.client.set(email, verificationCode, { EX: expirationTime }); // 存储验证码，有效期为10分钟
       await this.mailerService.sendMail({
-        from: `"XM Questionnaire" <${config().mailer.user}>`,
+        from: `"问卷小筑" <${config().mailer.user}>`,
         to: email,
-        subject: 'Verification Code',
+        subject: '验证码',
         html: generateEmail(verificationCode, expirationTime),
       });
       return expirationTime;

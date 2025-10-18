@@ -113,7 +113,7 @@ const QuestionCard: React.FC<PropsType> = (props: PropsType) => {
   }
 
   return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm hover:shadow border border-white/60 p-5 flex flex-col transition-all duration-300 relative group overflow-hidden">
+    <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm hover:shadow hover:-translate-y-2 border border-white/60 p-5 flex flex-col transition-all duration-300 relative group overflow-hidden">
       <div className="flex gap-4 mb-4 relative z-10">
         <div className="shrink-0 w-12 h-14 bg-[#4B847A] rounded-lg flex flex-col items-center justify-center text-white shadow-inner">
           <div className="w-6 h-1.5 bg-white/40 rounded-full mb-1"></div>
@@ -142,7 +142,7 @@ const QuestionCard: React.FC<PropsType> = (props: PropsType) => {
               </Link>
             </div>
             {isPublished ? (
-              <span className="shrink-0 px-2.5 py-0.5 bg-[#26a69a] text-white text-[11px] rounded-full">
+              <span className="shrink-0 px-2.5 py-0.5 bg-[#4b847a] text-white text-[11px] rounded-full">
                 已发布
               </span>
             ) : (

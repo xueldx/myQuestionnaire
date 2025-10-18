@@ -5,12 +5,12 @@ import { LOGIN_PATH } from '@/router'
 import { Rule } from 'antd/es/form'
 import regexp from '@/utils/regexp'
 import apis from '@/apis'
-import colorfulLogo from '@/assets/img/colorful-logo.webp'
 import { UserInfo } from '@/apis/modules/types/auth'
 import useRequestSuccessChecker from '@/hooks/useRequestSuccessChecker'
 import { useRequest } from 'ahooks'
 import AuthBg from '@/components/Common/AuthBg'
 import gsap from 'gsap'
+import { FormOutlined } from '@ant-design/icons'
 
 const Register: React.FC = () => {
   const { message } = App.useApp()
@@ -115,13 +115,16 @@ const Register: React.FC = () => {
 
   return (
     <div className="custom-main flex items-center">
-      <AuthBg />
-      <div className="w-1/2 flex justify-center">
+      {/* <AuthBg /> */}
+      <div className=" flex justify-center">
         <div
-          className="bg-white/80 backdrop-blur-sm p-10 rounded-md shadow-white shadow-2xl"
+          className="bg-white/80 backdrop-blur-sm p-10 rounded-md shadow-white shadow-2xl w-96"
           id="register-form"
         >
-          <img className="h-48" src={colorfulLogo} alt="logo" />
+          <div className="flex flex-col items-center justify-center gap-3 mb-8 w-full">
+            <FormOutlined className="text-[60px] text-[#408D86]" />
+            <h1 className="text-[18px] font-bold text-[#408D86] tracking-widest">问卷小筑</h1>
+          </div>
           <Form name="register" layout="vertical" onFinish={onFinish}>
             <Form.Item label="昵称" name={formItem.nickname} rules={rules.nickname}>
               <Input />
