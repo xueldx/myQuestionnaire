@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import User from '@/service/auth/entities/user.entity';
@@ -18,8 +22,7 @@ export class AuthService {
 
   // 创建用户
   async createUser(registerUserDto: RegisterUserDto) {
-    const saltRounds = 10; // 盐的轮数
-    // 撒盐加密
+    const saltRounds = 10;
     registerUserDto.password = await bcrypt.hash(
       registerUserDto.password,
       saltRounds,
@@ -28,10 +31,10 @@ export class AuthService {
   }
 
   // 获取用户信息
-  async getUserInfo(email) {
+  async getUserInfo(email: string) {
     const user = await this.findByEmail(email);
     if (!user) {
-      throw new Error('用户不存在');
+      throw new NotFoundException('用户不存在');
     }
     return {
       nickname: user.nickname,
@@ -42,32 +45,31 @@ export class AuthService {
     };
   }
 
-  // 根据邮箱查找用户
+  // 根据邮箱查询用户
   async findByEmail(email: string) {
     return await this.userRepository.findOne({
       where: { email },
     });
   }
 
-  // 根据用户id查找用户
+  // 根据用户 id 查询用户
   async findById(userId: number) {
     return await this.userRepository.findOne({
       where: { id: userId },
     });
   }
 
-  // 验证密码
+  // 校验密码
   async comparePassword(loginDto: LoginDto) {
     const user = await this.findByEmail(loginDto.email);
-    // 解密匹配
     if (user && (await bcrypt.compare(loginDto.password, user.password))) {
       return true;
     }
     return false;
   }
 
-  // 生成 Token
-  createToken(data) {
+  // 生成 token
+  createToken(data: Record<string, any>) {
     return this.jwtService.sign(data);
   }
 
@@ -80,18 +82,20 @@ export class AuthService {
   async changePassword(userId: number, changePasswordDto: ChangePasswordDto) {
     const { oldPassword, newPassword, confirmPassword } = changePasswordDto;
     const user = await this.findById(userId);
+
     if (!user) {
-      throw new Error('用户不存在');
+      throw new NotFoundException('用户不存在');
     }
     if (newPassword !== confirmPassword) {
-      throw new Error('新密码与确认密码不一致');
+      throw new BadRequestException('新密码与确认密码不一致');
     }
     if (!(await bcrypt.compare(oldPassword, user.password))) {
-      throw new Error('旧密码错误');
+      throw new BadRequestException('旧密码错误');
     }
-    const saltRounds = 10; // 盐的轮数
-    // 撒盐加密
+
+    const saltRounds = 10;
     const hashNewPassword = await bcrypt.hash(newPassword, saltRounds);
+
     return await this.userRepository.update(userId, {
       password: hashNewPassword,
     });

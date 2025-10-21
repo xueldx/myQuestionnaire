@@ -106,11 +106,11 @@ const UserMenu: React.FC = () => {
       ) : (
         <Space>
           <Button onClick={() => nav(LOGIN_PATH)}>
-            <RocketOutlined />
-            sign in
+            {/* <RocketOutlined /> */}
+            登录
           </Button>
           <Button type="link" onClick={() => nav(REGISTER_PATH)}>
-            sign up
+            注册
           </Button>
         </Space>
       )}

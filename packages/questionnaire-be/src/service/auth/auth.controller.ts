@@ -10,6 +10,7 @@ import {
   currentUser,
   UserToken,
 } from '@/common/decorators/current-user.decorator';
+
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -20,10 +21,10 @@ export class AuthController {
     const { email } = registerUserDto;
     if (await this.authService.findByEmail(email)) {
       return new ResponseBody<null>(0, null, '该邮箱已注册');
-    } else {
-      this.authService.createUser(registerUserDto);
-      return new ResponseBody<null>(1, null, '注册成功');
     }
+
+    await this.authService.createUser(registerUserDto);
+    return new ResponseBody<null>(1, null, '注册成功');
   }
 
   @Public()
@@ -31,29 +32,32 @@ export class AuthController {
   async login(@Body() loginDto: LoginDto) {
     const { email } = loginDto;
     const user = await this.authService.findByEmail(email);
-    if (user) {
-      if (await this.authService.comparePassword(loginDto)) {
-        const access_token = this.authService.createToken({
-          userId: user.id,
-          email: user.email,
-          password: user.password,
-        });
-        const userInfo = {
-          userId: user.id,
-          avatar: user.avatar,
-          nickname: user.nickname,
-        };
-        return new ResponseBody<{ token: string; userInfo: typeof userInfo }>(
-          1,
-          { token: access_token, userInfo: userInfo },
-          '登录成功',
-        );
-      } else {
-        return new ResponseBody<null>(0, null, '用户名或密码错误');
-      }
-    } else {
+
+    if (!user) {
       return new ResponseBody<null>(0, null, '该用户不存在');
     }
+
+    if (!(await this.authService.comparePassword(loginDto))) {
+      return new ResponseBody<null>(0, null, '用户名或密码错误');
+    }
+
+    const accessToken = this.authService.createToken({
+      userId: user.id,
+      email: user.email,
+      password: user.password,
+    });
+
+    const userInfo = {
+      userId: user.id,
+      avatar: user.avatar,
+      nickname: user.nickname,
+    };
+
+    return new ResponseBody<{ token: string; userInfo: typeof userInfo }>(
+      1,
+      { token: accessToken, userInfo },
+      '登录成功',
+    );
   }
 
   @Get('info')
@@ -76,16 +80,21 @@ export class AuthController {
     @Body() changePasswordDto: ChangePasswordDto,
   ) {
     const { userId } = user;
-    this.authService.changePassword(userId, changePasswordDto);
+    try {
+      await this.authService.changePassword(userId, changePasswordDto);
+      return new ResponseBody<null>(1, null, '密码修改成功');
+    } catch (error) {
+      return new ResponseBody<null>(0, null, error.message);
+    }
   }
 
   @Delete('delete')
   async deleteAccount(@currentUser() user: UserToken) {
     const { userId } = user;
     try {
-      this.authService.deleteAccount(userId);
+      await this.authService.deleteAccount(userId);
       return new ResponseBody<null>(1, null, '注销账户成功');
-    } catch (error) {
+    } catch (_error) {
       return new ResponseBody<null>(0, null, '注销账户失败');
     }
   }
