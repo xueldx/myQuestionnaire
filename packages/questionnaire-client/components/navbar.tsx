@@ -26,12 +26,12 @@ export const Navbar = () => {
               <GithubIcon className="text-default-500" />
             </Link>
           </Tooltip> */}
-          <ShareButton />
+          {/* <ShareButton /> */}
           <ThemeSwitch />
         </NavbarItem>
       </NavbarContent>
       <NavbarContent className="sm:hidden basis-1 pl-4" justify="end">
-        <ShareButton />
+        {/* <ShareButton /> */}
         <ThemeSwitch />
       </NavbarContent>
     </NextUINavbar>

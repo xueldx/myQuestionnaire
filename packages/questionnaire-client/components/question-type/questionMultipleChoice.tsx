@@ -12,7 +12,8 @@ const QuestionCheckbox = ({ question }: { question: Question }) => {
 
   // 使用 Zustand selector 订阅特定题目的答案变化，避免不必要的重新渲染或状态不同步
   const selected = useAnswerStore(state => {
-    const currentAnswers = state.answersByQuestionnaire[state.currentQuestionnaireId] || EMPTY_ARRAY;
+    const currentAnswers =
+      state.answersByQuestionnaire[state.currentQuestionnaireId] || EMPTY_ARRAY;
     const answer = currentAnswers.find(a => String(a.fe_id) === String(question.fe_id));
     return Array.isArray(answer?.value) ? (answer.value as string[]) : EMPTY_ARRAY;
   });

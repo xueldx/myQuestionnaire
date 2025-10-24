@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom'
 import { QRCode, Button, Tooltip, App } from 'antd'
 import { CopyOutlined, QrcodeOutlined } from '@ant-design/icons'
 
+import { copyToClipboard } from '@/utils/copy'
+
 const Qrcode = () => {
   const { message } = App.useApp()
   const { id } = useParams()
@@ -14,7 +16,7 @@ const Qrcode = () => {
   // 复制链接到剪贴板
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(url)
+      await copyToClipboard(url)
       message.success('链接已复制到剪贴板')
     } catch (e) {
       message.error('复制失败，请手动复制')
@@ -32,8 +34,16 @@ const Qrcode = () => {
         if (!blob) throw new Error('二维码转图片失败')
         try {
           // 复制到剪贴板
-          await navigator.clipboard.write([new window.ClipboardItem({ 'image/png': blob })])
-          message.success('二维码图片已复制到剪贴板')
+          if (
+            navigator.clipboard &&
+            navigator.clipboard.write &&
+            typeof window.ClipboardItem !== 'undefined'
+          ) {
+            await navigator.clipboard.write([new window.ClipboardItem({ 'image/png': blob })])
+            message.success('二维码图片已复制到剪贴板')
+          } else {
+            throw new Error('当前浏览器不支持图片复制')
+          }
         } catch (err) {
           message.error('复制失败，建议使用最新版Chrome/Edge浏览器')
         }

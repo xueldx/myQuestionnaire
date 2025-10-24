@@ -6,11 +6,17 @@ import { Popover, PopoverContent, PopoverTrigger } from "@heroui/popover";
 import { Snippet } from "@heroui/snippet";
 import useNotyf from "@/hooks/useNotyf";
 
+import { copyToClipboard } from "@/utils/copy";
+
 const ShareButton = () => {
-  const { showSuccess } = useNotyf();
-  const copyShareLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    showSuccess("分享链接已复制到剪贴板");
+  const { showSuccess, showError } = useNotyf();
+  const copyShareLink = async () => {
+    try {
+      await copyToClipboard(window.location.href);
+      showSuccess("分享链接已复制到剪贴板");
+    } catch (err) {
+      showError("复制失败，请手动复制链接");
+    }
   };
   return (
     <Popover placement="bottom">

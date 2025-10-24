@@ -11,6 +11,8 @@ import SvgIcon from '@/components/Common/SvgIcon'
 import { App } from 'antd'
 import { useAvatar } from '@/hooks/useAvatar'
 
+import { copyToClipboard } from '@/utils/copy'
+
 const UserMenu: React.FC = () => {
   const nav = useNavigate()
   const dispatch = useDispatch()
@@ -68,11 +70,15 @@ const UserMenu: React.FC = () => {
     }
   ]
 
-  const clickIconItem = (item: { key: string; icon: React.ReactNode; url: string }) => {
+  const clickIconItem = async (item: { key: string; icon: React.ReactNode; url: string }) => {
     if (item.key === 'email') {
       // 复制邮箱
-      navigator.clipboard.writeText(item.url)
-      message.success('邮箱已复制到剪贴板')
+      try {
+        await copyToClipboard(item.url)
+        message.success('邮箱已复制到剪贴板')
+      } catch (err) {
+        message.error('复制失败，请手动复制')
+      }
       return
     }
     window.open(item.url, '_blank')

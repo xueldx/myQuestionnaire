@@ -121,8 +121,9 @@ const QuestionnaireProgress: React.FC<QuestionnaireProgressProps> = ({ onQuestio
             {questionnaireData.map((question, index) => (
               <Tooltip
                 key={index}
-                content={`${index + 1}. ${(question.question || "未命名问题").substring(0, 20)}${(question.question || "").length > 20 ? "..." : ""
-                  } - ${answeredStatus[index] ? "已填写" : "未填写"}`}
+                content={`${index + 1}. ${(question.question || "未命名问题").substring(0, 20)}${
+                  (question.question || "").length > 20 ? "..." : ""
+                } - ${answeredStatus[index] ? "已填写" : "未填写"}`}
                 delay={500}
               >
                 <div

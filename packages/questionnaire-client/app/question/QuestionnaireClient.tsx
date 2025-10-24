@@ -12,9 +12,12 @@ import useScrollHighlight from "@/hooks/useScrollHighlight";
 import { useRouter } from "next/navigation";
 import useNotyf from "@/hooks/useNotyf";
 
-const BE_API = process.env.NODE_ENV === "production"
-  ? ""
-  : (typeof window !== "undefined" ? `http://${window.location.hostname}:8879` : "http://localhost:8879");
+const BE_API =
+  process.env.NODE_ENV === "production"
+    ? ""
+    : typeof window !== "undefined"
+      ? `http://${window.location.hostname}:8879`
+      : "http://localhost:8879";
 
 const QuestionnaireClient: React.FC = () => {
   const { questionnaireData, metadata } = useQuestionStore();
