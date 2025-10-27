@@ -1,4 +1,4 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+﻿# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
 node_modules
@@ -21,6 +21,10 @@ static
 .env.development.local
 .env.test.local
 .env.production.local
+
+# 本地调试配置（worktree 专用，不提交,之后会去掉这两行）
+packages/questionnaire-be/src/config/dev.local.yml
+packages/questionnaire-fe/.env.local
 
 npm-debug.log*
 yarn-debug.log*
