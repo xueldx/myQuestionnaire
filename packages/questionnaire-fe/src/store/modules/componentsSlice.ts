@@ -87,17 +87,38 @@ export const componentsSlice = createSlice({
         props
       }
 
-      state.componentList.push(newComponent)
+      // 若当前有选中组件，则插入到选中组件下方；否则保持追加到末尾
+      const selectedIndex = state.componentList.findIndex(
+        component => component.fe_id === state.selectedId
+      )
+      if (selectedIndex >= 0) {
+        state.componentList.splice(selectedIndex + 1, 0, newComponent)
+      } else {
+        state.componentList.push(newComponent)
+      }
+
       state.selectedId = newComponent.fe_id
       saveHistory(state)
     },
     deleteComponent: (state: ComponentsStateType, action: PayloadAction<string>) => {
       const deleteId = action.payload
+      const deleteIndex = state.componentList.findIndex(component => component.fe_id === deleteId)
+      if (deleteIndex < 0) return
 
-      state.componentList = state.componentList.filter(comp => comp.fe_id !== deleteId)
+      // 先删除，再根据删除前的位置决定新的选中项：
+      // 1) 只有1个组件 -> 删除后不选中
+      // 2) 删除非最后一个 -> 选中原“下一个组件”（删除后仍在同一索引）
+      // 3) 删除最后一个 -> 选中原“上一个组件”（删除后索引-1）
+      state.componentList.splice(deleteIndex, 1)
 
       if (state.selectedId === deleteId) {
-        state.selectedId = state.componentList.length > 0 ? state.componentList[0].fe_id : ''
+        if (state.componentList.length === 0) {
+          state.selectedId = ''
+        } else if (deleteIndex < state.componentList.length) {
+          state.selectedId = state.componentList[deleteIndex].fe_id
+        } else {
+          state.selectedId = state.componentList[state.componentList.length - 1].fe_id
+        }
       }
       saveHistory(state)
     },
