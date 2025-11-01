@@ -22,9 +22,13 @@ static
 .env.test.local
 .env.production.local
 
-# 本地调试配置（worktree 专用，不提交,之后会去掉这两行）
+# 本地调试配置（worktree 专用，不提交）
 packages/questionnaire-be/src/config/dev.local.yml
 packages/questionnaire-fe/.env.local
+packages/questionnaire-client/.env.local
+packages/questionnaire-fe/.env.development
+
+
 
 npm-debug.log*
 yarn-debug.log*
@@ -34,3 +38,6 @@ yarn-error.log*
 AGENTS.md
 .agents/
 技术报告/
+devDoc/
+
+

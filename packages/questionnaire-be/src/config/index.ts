@@ -38,7 +38,7 @@ const runtimeConfigPath =
 
 const config = load(readFileSync(runtimeConfigPath));
 
-// 濡傛灉鏄痙ocker鐜锛屽垯浣跨敤docker瀹瑰櫒浼犻€掔殑鐜鍙橀噺閰嶇疆
+// 如果是 docker 环境，则使用 docker 容器传递的环境变量配置
 if (env === configFileNameObj.docker) {
   config.db.mysql.host = process.env.MYSQL_HOST;
   config.db.redis.uri = `redis://${process.env.REDIS_HOST}:6379`;

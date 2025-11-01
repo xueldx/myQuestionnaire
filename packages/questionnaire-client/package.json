@@ -3,9 +3,9 @@
 	"version": "1.24.1",
 	"private": true,
 	"scripts": {
-		"dev": "next dev --turbopack -p 8878",
+		"dev": "node scripts/next-with-port.cjs dev",
 		"build": "next build",
-		"start": "next start -p 8878",
+		"start": "node scripts/next-with-port.cjs start",
 		"lint": "eslint . --ext .ts,.tsx -c .eslintrc.json --fix",
 		"format": "prettier --write \"**/*.{js,ts,jsx,tsx}\""
 	},
