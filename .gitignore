@@ -37,6 +37,7 @@ yarn-error.log*
 # AI coding context
 AGENTS.md
 .agents/
+.claude/
 技术报告/
 devDoc/
 

@@ -26,7 +26,8 @@ import {
   StarOutlined,
   CopyOutlined,
   QrcodeOutlined,
-  QuestionCircleOutlined
+  QuestionCircleOutlined,
+  SendOutlined
 } from '@ant-design/icons'
 import { Link, useNavigate } from 'react-router-dom'
 import { QUESTION_DETAIL_PATH, QUESTION_EDIT_PATH, QUESTION_STAT_PATH, QRCODE_PATH } from '@/router'
@@ -121,6 +122,35 @@ const List: React.FC = () => {
                   icon={<EditOutlined />}
                   onClick={() => nav(`${QUESTION_EDIT_PATH}/${record.id}`)}
                 />
+              </Tooltip>
+            )}
+            {isEditable && (
+              <Tooltip title={isPublished ? '取消发布' : '发布问卷'}>
+                <Popconfirm
+                  title={isPublished ? '确定取消发布该问卷？' : '确定发布该问卷？'}
+                  description={
+                    isPublished
+                      ? '取消发布后，用户将无法访问该问卷'
+                      : '发布后，用户可以通过链接访问该问卷'
+                  }
+                  onConfirm={async () => {
+                    const res = isPublished
+                      ? await apis.questionApi.unPublishQuestion(record.id)
+                      : await apis.questionApi.publishQuestion(record.id)
+                    if (isRequestSuccess(res)) {
+                      getQuestionItem(record.id)
+                      successMessage(res.msg)
+                    }
+                  }}
+                  okButtonProps={{ style: { backgroundColor: '#26A69A' } }}
+                >
+                  <Button
+                    type="text"
+                    size="small"
+                    className={isPublished ? 'text-[#26a69a]' : ''}
+                    icon={<SendOutlined />}
+                  />
+                </Popconfirm>
               </Tooltip>
             )}
             {isEditable && (

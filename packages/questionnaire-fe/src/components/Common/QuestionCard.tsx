@@ -10,7 +10,8 @@ import {
   QuestionCircleOutlined,
   StarOutlined,
   FieldTimeOutlined,
-  QrcodeOutlined
+  QrcodeOutlined,
+  SendOutlined
 } from '@ant-design/icons'
 import { Link, useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
@@ -172,6 +173,29 @@ const QuestionCard: React.FC<PropsType> = (props: PropsType) => {
               onClick={() => nav(`${QUESTION_EDIT_PATH}/${id}`)}
               disabled={!editable}
             />
+          </Tooltip>
+        )}
+        {editable && (
+          <Tooltip title={isPublished ? '取消发布' : '发布问卷'}>
+            <Popconfirm
+              title={isPublished ? '确定取消发布该问卷？' : '确定发布该问卷？'}
+              description={
+                isPublished
+                  ? '取消发布后，用户将无法访问该问卷'
+                  : '发布后，用户可以通过链接访问该问卷'
+              }
+              onConfirm={publish}
+              okButtonProps={{ style: { backgroundColor: '#26A69A' } }}
+            >
+              <Button
+                type="text"
+                size="small"
+                className={`${
+                  isPublished ? 'text-[#26a69a]' : 'text-gray-500'
+                } hover:!text-[#26a69a] hover:!bg-transparent`}
+                icon={<SendOutlined className="text-[16px]" />}
+              />
+            </Popconfirm>
           </Tooltip>
         )}
         {editable && (
