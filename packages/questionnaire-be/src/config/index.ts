@@ -31,12 +31,37 @@ const defaultConfigPath = resolveConfigPath(`${configFileNameObj[env]}.yml`);
 
 // 开发环境优先读取本地调试配置，避免影响团队共享配置
 const localDevConfigPath = resolveConfigPath('dev.local.yml');
-const runtimeConfigPath =
-  env === 'development' && existsSync(localDevConfigPath)
-    ? localDevConfigPath
-    : defaultConfigPath;
+const isPlainObject = (value: unknown): value is Record<string, any> =>
+  !!value && typeof value === 'object' && !Array.isArray(value);
 
-const config = load(readFileSync(runtimeConfigPath));
+const deepMerge = <T>(baseValue: T, overrideValue: unknown): T => {
+  if (!isPlainObject(baseValue) || !isPlainObject(overrideValue)) {
+    return (overrideValue ?? baseValue) as T;
+  }
+
+  const merged: Record<string, any> = { ...baseValue };
+  Object.entries(overrideValue).forEach(([key, value]) => {
+    const currentValue = merged[key];
+    merged[key] =
+      isPlainObject(currentValue) && isPlainObject(value)
+        ? deepMerge(currentValue, value)
+        : value;
+  });
+
+  return merged as T;
+};
+
+const defaultConfig = load(readFileSync(defaultConfigPath)) as Record<
+  string,
+  any
+>;
+const localDevConfig =
+  env === 'development' && existsSync(localDevConfigPath)
+    ? (load(readFileSync(localDevConfigPath)) as Record<string, any>)
+    : null;
+const config = localDevConfig
+  ? deepMerge(defaultConfig, localDevConfig)
+  : defaultConfig;
 
 // 如果是 docker 环境，则使用 docker 容器传递的环境变量配置
 if (env === configFileNameObj.docker) {

@@ -31,13 +31,13 @@ describe('AiController', () => {
 
   it('should call aiService.generate with the correct theme', async () => {
     const theme = 'test-theme';
-    await aiController.generate(theme);
-    expect(aiService.generate).toHaveBeenCalledWith(theme);
+    await aiController.generate(theme, 10, undefined as any);
+    expect(aiService.generate).toHaveBeenCalledWith(theme, 10, undefined);
   });
 
   it('should return an Observable', async () => {
     const theme = 'test-theme';
-    const result = await aiController.generate(theme);
+    const result = await aiController.generate(theme, 10, undefined as any);
     expect(result).toBeInstanceOf(Observable);
   });
 });

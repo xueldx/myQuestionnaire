@@ -2,9 +2,13 @@ import React from 'react'
 import { QuestionRadioPropsType, QuestionRadioDefaultProps } from './interface'
 import { Radio } from 'antd'
 import clsx from 'clsx'
+import { normalizeStringList } from '@/utils/normalizeQuestionComponent'
 
 const QuestionRadio: React.FC<QuestionRadioPropsType> = (customProps: QuestionRadioPropsType) => {
-  const { title, options, column } = { ...QuestionRadioDefaultProps, ...customProps }
+  const mergedProps = { ...QuestionRadioDefaultProps, ...customProps }
+  const title = mergedProps.title
+  const column = mergedProps.column
+  const options = normalizeStringList(mergedProps.options, QuestionRadioDefaultProps.options)
   return (
     <div className="flex flex-col gap-2 pointer-events-none">
       <div

@@ -2,10 +2,14 @@ import React from 'react'
 import { QuestionCheckboxPropsType, QuestionCheckboxDefaultProps } from './interface'
 import { Checkbox } from 'antd'
 import clsx from 'clsx'
+import { normalizeStringList } from '@/utils/normalizeQuestionComponent'
 const QuestionCheckbox: React.FC<QuestionCheckboxPropsType> = (
   customProps: QuestionCheckboxPropsType
 ) => {
-  const { title, options, column } = { ...QuestionCheckboxDefaultProps, ...customProps }
+  const mergedProps = { ...QuestionCheckboxDefaultProps, ...customProps }
+  const title = mergedProps.title
+  const column = mergedProps.column
+  const options = normalizeStringList(mergedProps.options, QuestionCheckboxDefaultProps.options)
   return (
     <div className="flex flex-col gap-2 pointer-events-none">
       <div

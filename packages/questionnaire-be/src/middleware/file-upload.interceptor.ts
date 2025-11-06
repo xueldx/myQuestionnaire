@@ -11,6 +11,11 @@ type FileUploadOptions = {
     file: Express.Multer.File,
     callback: (error: Error | null, filename: string) => void,
   ) => void;
+  fileFilter?: (
+    req: any,
+    file: Express.Multer.File,
+    callback: (error: Error | null, acceptFile: boolean) => void,
+  ) => void;
   limits?: { [key: string]: number };
 };
 
@@ -29,6 +34,7 @@ export function FileUploadInterceptor(
           cb(null, fileName);
         }),
     }),
+    fileFilter: options.fileFilter,
     limits: options.limits || { fileSize: 5 * 1024 * 1024 }, // 默认5MB
   });
 

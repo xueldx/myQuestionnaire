@@ -7,6 +7,7 @@ import { resetComponents } from '@/store/modules/componentsSlice'
 import useRequestSuccessChecker from '@/hooks/useRequestSuccessChecker'
 import { resetPageConfig } from '@/store/modules/pageConfigSlice'
 import { RootState } from '@/store'
+import { normalizeQuestionnaireComponentList } from '@/utils/normalizeQuestionComponent'
 
 function useLoadQuestionData() {
   const { id = '' } = useParams()
@@ -39,7 +40,8 @@ function useLoadQuestionData() {
     if (!data) return
     if (!isRequestSuccess(data)) return
 
-    const { components: componentList = [], selectedId = '', version = 1 } = data.data || {}
+    const { components: rawComponentList = [], selectedId = '', version = 1 } = data.data || {}
+    const componentList = normalizeQuestionnaireComponentList(rawComponentList)
 
     // 重置 redux store
     dispatch(

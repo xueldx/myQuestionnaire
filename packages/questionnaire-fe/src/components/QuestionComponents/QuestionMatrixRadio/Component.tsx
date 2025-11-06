@@ -2,6 +2,7 @@ import React from 'react'
 import { QuestionMatrixRadioPropsType, QuestionMatrixRadioDefaultProps } from './interface'
 import { Radio, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
+import { normalizeStringList } from '@/utils/normalizeQuestionComponent'
 
 interface DataType {
   key: string
@@ -12,7 +13,10 @@ interface DataType {
 const QuestionMatrixRadio: React.FC<QuestionMatrixRadioPropsType> = (
   customProps: QuestionMatrixRadioPropsType
 ) => {
-  const { title, rows, columns } = { ...QuestionMatrixRadioDefaultProps, ...customProps }
+  const mergedProps = { ...QuestionMatrixRadioDefaultProps, ...customProps }
+  const title = mergedProps.title
+  const rows = normalizeStringList(mergedProps.rows, QuestionMatrixRadioDefaultProps.rows)
+  const columns = normalizeStringList(mergedProps.columns, QuestionMatrixRadioDefaultProps.columns)
 
   // 构建表格列
   const tableColumns: ColumnsType<DataType> = [

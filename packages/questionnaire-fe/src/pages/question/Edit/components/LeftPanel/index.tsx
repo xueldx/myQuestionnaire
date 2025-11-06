@@ -1,8 +1,8 @@
-import React, { CSSProperties } from 'react'
+import React, { CSSProperties, ReactNode, useState } from 'react'
 import { Tabs } from 'antd'
 import ComponentMarket from './ComponentMarket'
 import ComponentLayer from './ComponentLayer'
-import { useState } from 'react'
+import { RobotOutlined } from '@ant-design/icons'
 
 const tabContentStyle: CSSProperties = {
   height: '100%',
@@ -33,14 +33,39 @@ const customTabsStyles = `
     flex: 1;
     overflow: hidden;
   }
+  .left-panel-tabs .ai-tab-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(38, 166, 154, 0.18), rgba(255, 193, 7, 0.24));
+    color: #167c72;
+    font-weight: 600;
+  }
 `
 
-const LeftPanel: React.FC = () => {
-  const [activeKey, setActiveKey] = useState('1')
+interface LeftPanelProps {
+  activeKey?: string
+  onActiveChange?: (key: string) => void
+  aiTabContent?: ReactNode
+}
+
+const LeftPanel: React.FC<LeftPanelProps> = props => {
+  const { activeKey: controlledActiveKey, onActiveChange, aiTabContent } = props
+  const [innerActiveKey, setInnerActiveKey] = useState('market')
+  const activeKey = controlledActiveKey ?? innerActiveKey
+
+  const handleChange = (key: string) => {
+    if (!controlledActiveKey) {
+      setInnerActiveKey(key)
+    }
+    onActiveChange?.(key)
+  }
 
   const items = [
     {
-      key: '1',
+      key: 'market',
       label: '物料市场',
       children: (
         <div style={tabContentStyle}>
@@ -49,13 +74,23 @@ const LeftPanel: React.FC = () => {
       )
     },
     {
-      key: '2',
+      key: 'layer',
       label: '问卷图层',
       children: (
         <div style={tabContentStyle}>
           <ComponentLayer />
         </div>
       )
+    },
+    {
+      key: 'ai',
+      label: (
+        <span className="ai-tab-label">
+          <RobotOutlined />
+          AI助手
+        </span>
+      ),
+      children: <div style={tabContentStyle}>{aiTabContent}</div>
     }
   ]
 
@@ -63,10 +98,11 @@ const LeftPanel: React.FC = () => {
     <div className="h-full flex flex-col overflow-hidden scrollbar-hide">
       <style>{customTabsStyles}</style>
       <Tabs
-        defaultActiveKey="1"
+        activeKey={activeKey}
         type="card"
-        onChange={setActiveKey}
+        onChange={handleChange}
         style={tabsStyle}
+        className="left-panel-tabs"
         tabBarStyle={{ marginBottom: 0 }}
         items={items}
       />

@@ -19,6 +19,9 @@ import { AnswerModule } from '@/service/answer/answer.module';
 import User from '@/service/auth/entities/user.entity';
 import Question from '@/service/question/entities/question.entity';
 import UserFavorite from '@/service/question/entities/user-favorite.entity';
+import AiConversation from '@/service/ai/entities/ai-conversation.entity';
+import AiMessage from '@/service/ai/entities/ai-message.entity';
+import AiAttachment from '@/service/ai/entities/ai-attachment.entity';
 
 // 自定义配置
 import configuration from '@/config';
@@ -52,7 +55,14 @@ import { EditorModule } from './service/editor/editor.module';
         return {
           ...config.get('db.mysql'),
           logger: new DbLogger(),
-          entities: [User, Question, UserFavorite],
+          entities: [
+            User,
+            Question,
+            UserFavorite,
+            AiConversation,
+            AiMessage,
+            AiAttachment,
+          ],
         };
       },
     }),

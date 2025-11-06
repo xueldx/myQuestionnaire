@@ -384,7 +384,7 @@ const EditCanvas: React.FC = () => {
         ) : (
           <div className="flex flex-col items-center justify-center h-[200px] text-custom-text-200 text-center border-2 border-dashed border-custom-bg-200 rounded-lg bg-custom-bg-100 p-6">
             <div className="text-lg mb-2">问卷内容为空</div>
-            <div className="text-sm mb-4">请从左侧列表添加组件，或从问卷模板创建</div>
+            <div className="text-sm mb-4">请从左侧列表添加组件，或从其他问卷复制</div>
           </div>
         )}
       </div>

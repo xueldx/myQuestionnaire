@@ -5,6 +5,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '@/store'
 import { updateComponentProps } from '@/store/modules/componentsSlice'
 import { QuestionDropdownPropsType } from '@/components/QuestionComponents/QuestionDropdown'
+import { normalizeStringList } from '@/utils/normalizeQuestionComponent'
 import { useDebouncedValidate } from '../../../hooks/useDebouncedValidate'
 
 interface DropdownConfigProps {
@@ -32,7 +33,7 @@ const DropdownConfig: React.FC<DropdownConfigProps> = ({ componentId }) => {
   // 获取当前选项列表
   const getOptions = (): string[] => {
     if (!currentComponent) return []
-    return (currentComponent.props as QuestionDropdownPropsType).options || []
+    return normalizeStringList((currentComponent.props as QuestionDropdownPropsType).options)
   }
 
   // 立即更新组件属性的方法（用于选项操作）

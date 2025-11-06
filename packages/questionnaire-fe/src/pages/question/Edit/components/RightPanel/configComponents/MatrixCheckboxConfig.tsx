@@ -5,6 +5,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '@/store'
 import { updateComponentProps } from '@/store/modules/componentsSlice'
 import { QuestionMatrixCheckboxPropsType } from '@/components/QuestionComponents/QuestionMatrixCheckbox'
+import { normalizeStringList } from '@/utils/normalizeQuestionComponent'
 import { useDebouncedValidate } from '../../../hooks/useDebouncedValidate'
 
 interface MatrixCheckboxConfigProps {
@@ -31,13 +32,13 @@ const MatrixCheckboxConfig: React.FC<MatrixCheckboxConfigProps> = ({ componentId
   // 获取行选项
   const getRows = (): string[] => {
     if (!currentComponent) return []
-    return (currentComponent.props as QuestionMatrixCheckboxPropsType).rows || []
+    return normalizeStringList((currentComponent.props as QuestionMatrixCheckboxPropsType).rows)
   }
 
   // 获取列选项
   const getColumns = (): string[] => {
     if (!currentComponent) return []
-    return (currentComponent.props as QuestionMatrixCheckboxPropsType).columns || []
+    return normalizeStringList((currentComponent.props as QuestionMatrixCheckboxPropsType).columns)
   }
 
   // 立即更新组件属性的方法（用于行列操作）

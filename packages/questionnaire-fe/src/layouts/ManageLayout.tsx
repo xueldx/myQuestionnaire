@@ -65,7 +65,7 @@ const ManageLayout: React.FC = () => {
             >
               新建问卷
             </Button>
-            <Button
+            {/* <Button
               className="w-full !rounded-full !h-10 !bg-gradient-to-r from-[#59A199] to-[#408D86] !text-white !border-none hover:opacity-90 flex items-center justify-center gap-1 shadow-md"
               onClick={() => {
                 successMessage('AI 生成问卷功能开发中')
@@ -73,7 +73,7 @@ const ManageLayout: React.FC = () => {
             >
               <SvgIcon name="ai" />
               <span className="ml-1">AI 生成问卷</span>
-            </Button>
+            </Button> */}
           </Space>
 
           <Divider className="my-6 border-gray-300/50" />

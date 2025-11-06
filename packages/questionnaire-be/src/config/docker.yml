@@ -30,17 +30,21 @@ mailer:
   port: 465
 # 大模型 API 配置
 openai:
-  qwen-max:
-    model: 'qwen-max'
-    apiKey: 'sk-746e24bbb3d14fc7bced0a4d35453a41'
-    baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1'
-  qwen-plus:
-    model: 'qwen-plus'
-    apiKey: 'sk-746e24bbb3d14fc7bced0a4d35453a41'
-    baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1'
-  deepseek-v3:
-    model: 'deepseek-v3'
-    apiKey: 'sk-746e24bbb3d14fc7bced0a4d35453a41'
-    baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1'
+  # glm-4-flash:
+  #   model: 'glm-4-flash'
+  #   apiKey: '77e64eded6804e4eade10f6ca4b97d25.KOwag7tZmgPL2VyW'
+  #   baseURL: 'https://open.bigmodel.cn/api/paas/v4'
+  # qwen-max:
+  #   model: 'qwen-max'
+  #   apiKey: 'sk-746e24bbb3d14fc7bced0a4d35453a41'
+  #   baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1'
+  # qwen-plus:
+  #   model: 'qwen-plus'
+  #   apiKey: 'sk-746e24bbb3d14fc7bced0a4d35453a41'
+  #   baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1'
+  # deepseek-v3:
+  #   model: 'deepseek-v3'
+  #   apiKey: 'sk-746e24bbb3d14fc7bced0a4d35453a41'
+  #   baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1'
 client:
   internalApiSecret: 'indulgeback'

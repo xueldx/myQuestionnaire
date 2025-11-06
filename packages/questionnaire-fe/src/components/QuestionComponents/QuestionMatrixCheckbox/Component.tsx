@@ -2,6 +2,7 @@ import React from 'react'
 import { QuestionMatrixCheckboxPropsType, QuestionMatrixCheckboxDefaultProps } from './interface'
 import { Checkbox, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
+import { normalizeStringList } from '@/utils/normalizeQuestionComponent'
 
 interface DataType {
   key: string
@@ -12,7 +13,13 @@ interface DataType {
 const QuestionMatrixCheckbox: React.FC<QuestionMatrixCheckboxPropsType> = (
   customProps: QuestionMatrixCheckboxPropsType
 ) => {
-  const { title, rows, columns } = { ...QuestionMatrixCheckboxDefaultProps, ...customProps }
+  const mergedProps = { ...QuestionMatrixCheckboxDefaultProps, ...customProps }
+  const title = mergedProps.title
+  const rows = normalizeStringList(mergedProps.rows, QuestionMatrixCheckboxDefaultProps.rows)
+  const columns = normalizeStringList(
+    mergedProps.columns,
+    QuestionMatrixCheckboxDefaultProps.columns
+  )
 
   // 构建表格列
   const tableColumns: ColumnsType<DataType> = [

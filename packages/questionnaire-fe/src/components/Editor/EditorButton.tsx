@@ -17,10 +17,10 @@ interface EditorButtonProps {
 
 // 默认样式
 const defaultStyles =
-  'size-10 rounded flex justify-center items-center cursor-pointer transition-all duration-300'
+  'size-8 rounded-full flex justify-center items-center cursor-pointer transition-all duration-300'
 
 const disabledStyles =
-  'size-10 rounded flex justify-center items-center cursor-not-allowed opacity-50 '
+  'size-8 rounded-full flex justify-center items-center cursor-not-allowed opacity-50 '
 
 const EditorButton = ({
   icon = 'github',

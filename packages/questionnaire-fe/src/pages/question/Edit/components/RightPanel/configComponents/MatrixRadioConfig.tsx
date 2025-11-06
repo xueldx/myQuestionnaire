@@ -5,6 +5,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '@/store'
 import { updateComponentProps } from '@/store/modules/componentsSlice'
 import { QuestionMatrixRadioPropsType } from '@/components/QuestionComponents/QuestionMatrixRadio'
+import { normalizeStringList } from '@/utils/normalizeQuestionComponent'
 import { useDebouncedValidate } from '../../../hooks/useDebouncedValidate'
 
 interface MatrixRadioConfigProps {
@@ -31,13 +32,13 @@ const MatrixRadioConfig: React.FC<MatrixRadioConfigProps> = ({ componentId }) =>
   // 获取行选项
   const getRows = (): string[] => {
     if (!currentComponent) return []
-    return (currentComponent.props as QuestionMatrixRadioPropsType).rows || []
+    return normalizeStringList((currentComponent.props as QuestionMatrixRadioPropsType).rows)
   }
 
   // 获取列选项
   const getColumns = (): string[] => {
     if (!currentComponent) return []
-    return (currentComponent.props as QuestionMatrixRadioPropsType).columns || []
+    return normalizeStringList((currentComponent.props as QuestionMatrixRadioPropsType).columns)
   }
 
   // 立即更新组件属性的方法（用于行列操作）

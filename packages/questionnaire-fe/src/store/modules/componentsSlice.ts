@@ -134,6 +134,23 @@ export const componentsSlice = createSlice({
       const targetComponent = state.componentList.find(c => c.fe_id === fe_id)
       if (targetComponent) {
         targetComponent.props = newProps
+
+        // Sync the top level title with the new props
+        const propsRecord = newProps as Record<string, unknown>
+        const possibleTitles = [
+          propsRecord.title,
+          propsRecord.text,
+          propsRecord.label,
+          propsRecord.content,
+          propsRecord.name,
+          propsRecord.value
+        ]
+        const newTitle = possibleTitles.find(t => typeof t === 'string' && t.trim().length > 0)
+
+        if (newTitle !== undefined) {
+          targetComponent.title = (newTitle as string).trim()
+        }
+
         saveHistory(state)
       }
     },

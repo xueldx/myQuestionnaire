@@ -5,6 +5,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '@/store'
 import { updateComponentProps } from '@/store/modules/componentsSlice'
 import { QuestionRadioPropsType } from '@/components/QuestionComponents/QuestionRadio'
+import { normalizeStringList } from '@/utils/normalizeQuestionComponent'
 import { useDebouncedValidate } from '../../../hooks/useDebouncedValidate'
 
 interface RadioConfigProps {
@@ -32,7 +33,7 @@ const RadioConfig: React.FC<RadioConfigProps> = ({ componentId }) => {
   // 获取当前选项列表
   const getOptions = (): string[] => {
     if (!currentComponent) return []
-    return (currentComponent.props as QuestionRadioPropsType).options || []
+    return normalizeStringList((currentComponent.props as QuestionRadioPropsType).options)
   }
 
   // 立即更新组件属性的方法（用于选项操作）
