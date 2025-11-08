@@ -1,5 +1,18 @@
 name: Docker Build and Push
 
+# Required repository secrets:
+# - ALIYUN_REGISTRY_URL
+# - ALIYUN_USERNAME
+# - ALIYUN_PASSWORD
+#
+# Required repository vars:
+# - FRONTEND_DOCKERFILE_PATH
+# - BACKEND_DOCKERFILE_PATH
+# - CLIENT_DOCKERFILE_PATH
+# - FRONTEND_IMAGE_NAME
+# - BACKEND_IMAGE_NAME
+# - CLIENT_IMAGE_NAME
+
 on:
   push:
     tags:

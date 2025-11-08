@@ -4,7 +4,7 @@ import { LeftOutlined, FormOutlined } from '@ant-design/icons'
 import { Avatar, FloatButton, Button, Modal, Form, Input, App } from 'antd'
 import { Rule } from 'antd/es/form'
 import React, { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '@/store'
 import { setToken, setLoginState, setUserInfo } from '@/store/modules/profileSlice'
@@ -403,8 +403,6 @@ const Profile: React.FC = () => {
             </div>
           </div>
         </div>
-
-        </footer>
       </div>
     </div>
   )

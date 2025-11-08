@@ -1,12 +1,7 @@
 import { MongoClient, MongoClientOptions } from "mongodb";
+import { getMongoUri } from "@/config/runtime";
 
-let uri: string = "";
-
-if (process.env.NODE_ENV === "production") {
-  uri = `mongodb://admin:12345678@${process.env.MONGO_HOST}:27017/questionnaire_mongo_db?authSource=admin`;
-} else {
-  uri = "mongodb://admin:12345678@localhost:27017/questionnaire_mongo_db?authSource=admin";
-}
+const uri = getMongoUri();
 
 const options: MongoClientOptions = {};
 

@@ -1,0 +1,49 @@
+# Backend development template.
+# Copy this file to `dev.local.yml` and fill in your own credentials.
+
+app:
+  domain: 'http://localhost'
+  port: 8879
+  prefix: '/api'
+  jwt:
+    secret: 'change_me_jwt_secret'
+    expiresIn: '1d'
+
+db:
+  mysql:
+    type: 'mysql'
+    host: 'localhost'
+    username: 'root'
+    password: 'change_me_mysql_password'
+    database: 'questionnaire_db'
+    port: 33306
+    synchronize: true
+    autoLoadEntities: true
+    keepConnectionAlive: true
+  mongo:
+    uri: mongodb://admin:change_me_mongo_password@localhost:27017/questionnaire_mongo_db?authSource=admin
+  redis:
+    uri: 'redis://localhost:6379'
+
+mailer:
+  user: 'your_mail@example.com'
+  pass: 'your_mail_password'
+  host: 'smtp.example.com'
+  port: 465
+
+openai:
+  modelscope-qwen3-235b:
+    model: 'your_model_id_here'
+    apiKey: 'your_modelscope_qwen3_api_key'
+    baseURL: 'https://api-inference.modelscope.cn/v1'
+  modelscope-glm-5:
+    model: 'your_model_id_here'
+    apiKey: 'your_modelscope_glm5_api_key'
+    baseURL: 'https://api-inference.modelscope.cn/v1'
+  modelscope-kimi-k2.5:
+    model: 'your_model_id_here'
+    apiKey: 'your_modelscope_kimik2_api_key'
+    baseURL: 'https://api-inference.modelscope.cn/v1'
+
+client:
+  internalApiSecret: 'change_me_internal_secret'

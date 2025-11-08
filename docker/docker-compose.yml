@@ -1,78 +1,107 @@
 services:
   frontend:
-    image: crpi-oe4mbgvc2pu6g852.cn-beijing.personal.cr.aliyuncs.com/xm_questionnaire/questionnaire-frontend:latest
+    image: ${ALIYUN_REGISTRY_URL}/${FRONTEND_IMAGE_NAME}:latest
     ports:
-      - "8877:80"  # 将主机的 8877 端口映射到容器的 80 端口
+      - "${DOCKER_FRONTEND_PORT:-8877}:80"
     depends_on:
       - backend
     environment:
-      - TZ=Asia/Shanghai  # 设置时区为上海
+      - TZ=${TZ:-Asia/Shanghai}
 
   backend:
-    image: crpi-oe4mbgvc2pu6g852.cn-beijing.personal.cr.aliyuncs.com/xm_questionnaire/questionnaire-backend:latest
+    image: ${ALIYUN_REGISTRY_URL}/${BACKEND_IMAGE_NAME}:latest
     ports:
-      - "8879:8879"  # 将主机的 8879 端口映射到容器的 8879 端口
+      - "${DOCKER_BACKEND_PORT:-8879}:8879"
     depends_on:
       - redis
       - mysql
       - mongo
     environment:
       - NODE_ENV=docker
+      - APP_DOMAIN=${APP_DOMAIN:-http://localhost}
+      - JWT_SECRET=${JWT_SECRET:-change_me_jwt_secret}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-1d}
       - MYSQL_HOST=mysql
+      - MYSQL_PORT=${MYSQL_CONTAINER_PORT:-3307}
+      - MYSQL_USERNAME=${MYSQL_USERNAME:-root}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-change_me_mysql_password}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-questionnaire_db}
       - REDIS_HOST=redis
+      - REDIS_PORT=${REDIS_PORT:-6379}
       - MONGO_HOST=mongo
-      - TZ=Asia/Shanghai  # 设置时区为上海
-    # 如果有数据库或其他外部服务，可以在这里指定它们
+      - MONGO_PORT=${MONGO_PORT:-27017}
+      - MONGO_USERNAME=${MONGO_USERNAME:-admin}
+      - MONGO_PASSWORD=${MONGO_PASSWORD:-change_me_mongo_password}
+      - MONGO_DB_NAME=${MONGO_DB_NAME:-questionnaire_mongo_db}
+      - MONGO_AUTH_SOURCE=${MONGO_AUTH_SOURCE:-admin}
+      - MAILER_USER=${MAILER_USER:-your_mail@example.com}
+      - MAILER_PASS=${MAILER_PASS:-your_mail_password}
+      - MAILER_HOST=${MAILER_HOST:-smtp.example.com}
+      - MAILER_PORT=${MAILER_PORT:-465}
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-change_me_internal_secret}
+      - MODELSCOPE_QWEN3_MODEL=${MODELSCOPE_QWEN3_MODEL:-your_model_id_here}
+      - MODELSCOPE_QWEN3_API_KEY=${MODELSCOPE_QWEN3_API_KEY:-your_modelscope_qwen3_api_key}
+      - MODELSCOPE_QWEN3_BASE_URL=${MODELSCOPE_QWEN3_BASE_URL:-https://api-inference.modelscope.cn/v1}
+      - MODELSCOPE_GLM5_MODEL=${MODELSCOPE_GLM5_MODEL:-your_model_id_here}
+      - MODELSCOPE_GLM5_API_KEY=${MODELSCOPE_GLM5_API_KEY:-your_modelscope_glm5_api_key}
+      - MODELSCOPE_GLM5_BASE_URL=${MODELSCOPE_GLM5_BASE_URL:-https://api-inference.modelscope.cn/v1}
+      - MODELSCOPE_KIMIK2_MODEL=${MODELSCOPE_KIMIK2_MODEL:-your_model_id_here}
+      - MODELSCOPE_KIMIK2_API_KEY=${MODELSCOPE_KIMIK2_API_KEY:-your_modelscope_kimik2_api_key}
+      - MODELSCOPE_KIMIK2_BASE_URL=${MODELSCOPE_KIMIK2_BASE_URL:-https://api-inference.modelscope.cn/v1}
+      - TZ=${TZ:-Asia/Shanghai}
     volumes:
       - backend_logs:/app/logs
 
   client:
-    image: crpi-oe4mbgvc2pu6g852.cn-beijing.personal.cr.aliyuncs.com/xm_questionnaire/questionnaire-client:latest
+    image: ${ALIYUN_REGISTRY_URL}/${CLIENT_IMAGE_NAME}:latest
     ports:
-      - "8878:8878"  # 将主机的 8879 端口映射到容器的 8879 端口
+      - "${DOCKER_CLIENT_PORT:-8878}:8878"
     depends_on:
       - mysql
       - mongo
     environment:
-      # 你可以在这里添加后端需要的环境变量
       - NODE_ENV=production
-      - NEXT_PUBLIC_INTERNAL_API_SECRET=indulgeback
       - MONGO_HOST=mongo
-      - MYSQL_HOST=mysql
-      - TZ=Asia/Shanghai  # 设置时区为上海
-    # 如果有数据库或其他外部服务，可以在这里指定它们
+      - MONGO_PORT=${MONGO_PORT:-27017}
+      - MONGO_USERNAME=${MONGO_USERNAME:-admin}
+      - MONGO_PASSWORD=${MONGO_PASSWORD:-change_me_mongo_password}
+      - MONGO_DB_NAME=${MONGO_DB_NAME:-questionnaire_mongo_db}
+      - MONGO_AUTH_SOURCE=${MONGO_AUTH_SOURCE:-admin}
+      - BACKEND_API_BASE_URL=http://backend:8879/api
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-change_me_internal_secret}
+      - TZ=${TZ:-Asia/Shanghai}
     volumes:
       - client_logs:/app/logs
 
   redis:
     image: redis:latest
     ports:
-      - "6379:6379"
+      - "${REDIS_HOST_PORT:-6379}:6379"
 
   mysql:
     image: mysql:8.0
     ports:
-      - "3307:3307"
-    command: --port=3307
+      - "${MYSQL_HOST_PORT:-33306}:${MYSQL_CONTAINER_PORT:-3307}"
+    command: --port=${MYSQL_CONTAINER_PORT:-3307}
     environment:
-      - MYSQL_ROOT_PASSWORD=12345678
-      - MYSQL_DATABASE=questionnaire_db
-      - TZ=Asia/Shanghai  # 设置时区为上海
+      - MYSQL_ROOT_PASSWORD=${MYSQL_PASSWORD:-change_me_mysql_password}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-questionnaire_db}
+      - TZ=${TZ:-Asia/Shanghai}
     volumes:
       - mysql_data:/var/lib/mysql
 
   mongo:
     image: mongo:6.0
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=12345678
-      - TZ=Asia/Shanghai  # 设置时区为上海
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD:-change_me_mongo_password}
+      - TZ=${TZ:-Asia/Shanghai}
     ports:
-      - "27017:27017"
+      - "${MONGO_HOST_PORT:-27017}:27017"
     volumes:
       - mongodb_data:/data/db  
-    command: mongod --auth  # 启用身份验证
-    privileged: true  # 提升权限
+    command: mongod --auth
+    privileged: true
 
 volumes:
   mysql_data:

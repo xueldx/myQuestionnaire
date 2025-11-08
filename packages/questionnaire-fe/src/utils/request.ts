@@ -31,14 +31,11 @@ instance.interceptors.response.use(
       'message' in error.response.data
         ? String(error.response.data.message)
         : ''
-
-    navigator.clipboard.writeText('xueldx@163.com')
-
     return {
       code: 0,
       msg:
         (backendMsg ? `${backendMsg}; ` : '') +
-        '出错啦,可以联系开发者修复,联系方式已复制到剪贴板!' +
+        '出错啦,请联系项目维护者或检查服务日志。' +
         error.message,
       data: null
     }

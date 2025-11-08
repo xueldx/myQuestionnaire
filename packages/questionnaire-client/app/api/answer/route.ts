@@ -1,7 +1,33 @@
 import { NextResponse } from "next/server";
+import { getBackendApiBaseUrl, getInternalApiSecret } from "@/config/runtime";
 import MongoUtils from "@/utils/mongo";
 
 const COLLECTION_NAME = "questionnaire_answers";
+
+async function notifyBackend(questionnaireId: number) {
+  const internalApiSecret = getInternalApiSecret();
+
+  if (!internalApiSecret) {
+    console.warn(
+      "[client/api/answer] INTERNAL_API_SECRET 未配置，已跳过后端答卷计数同步"
+    );
+    return;
+  }
+
+  const backendApiBaseUrl = getBackendApiBaseUrl();
+
+  try {
+    await fetch(`${backendApiBaseUrl}/question/increment-answer-count/${questionnaireId}`, {
+      method: "PATCH",
+      headers: {
+        "x-internal-secret": internalApiSecret
+      },
+      cache: "no-store"
+    });
+  } catch (error) {
+    console.error("[client/api/answer] 通知后端更新答卷计数失败:", error);
+  }
+}
 
 export async function POST(request: Request) {
   try {
@@ -20,6 +46,8 @@ export async function POST(request: Request) {
         submit_time: new Date()
       }
     });
+
+    await notifyBackend(Number(questionnaire_id));
 
     return NextResponse.json({
       success: true,

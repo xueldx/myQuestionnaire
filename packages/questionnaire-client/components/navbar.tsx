@@ -1,12 +1,8 @@
 import React from "react";
 import { Navbar as NextUINavbar, NavbarContent, NavbarBrand, NavbarItem } from "@heroui/navbar";
-import { Link } from "@heroui/link";
 import NextLink from "next/link";
-import { siteConfig } from "@/config/site";
-import ShareButton from "@/components/shareButton";
 import { ThemeSwitch } from "@/components/themeSwitch";
-import { GithubIcon, Logo, FormOutlined } from "@/components/icons";
-import { Tooltip } from "@heroui/tooltip";
+import { FormOutlined } from "@/components/icons";
 
 export const Navbar = () => {
   return (
@@ -21,11 +17,6 @@ export const Navbar = () => {
       </NavbarContent>
       <NavbarContent className="hidden sm:flex basis-1/5 sm:basis-full" justify="end">
         <NavbarItem className="hidden sm:flex gap-3">
-          {/* <Tooltip content="GitHub" showArrow={true}>
-            <Link isExternal aria-label="Github" href="mailto:xueldx@163.com">
-              <GithubIcon className="text-default-500" />
-            </Link>
-          </Tooltip> */}
           {/* <ShareButton /> */}
           <ThemeSwitch />
         </NavbarItem>

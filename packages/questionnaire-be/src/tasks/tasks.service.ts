@@ -9,6 +9,6 @@ export class TasksService {
   //   @Cron(CronExpression.EVERY_10_SECONDS)
   //   handleCron() {
   //     console.log('每10秒执行一次的任务');
-  //     this.mailService.sendVerificationEmail('2064685326@qq.com');
+  //     this.mailService.sendVerificationEmail('demo@example.com');
   //   }
 }

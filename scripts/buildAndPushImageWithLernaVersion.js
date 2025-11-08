@@ -1,10 +1,20 @@
 const { exec } = require("child_process")
-require("dotenv").config()
 const fs = require("fs")
 const path = require("path")
 const ora = require("ora")
 const chalk = require("chalk")
 const figlet = require("figlet")
+const dotenv = require("dotenv")
+
+const loadEnvFile = (fileName, override = false) => {
+  const filePath = path.resolve(__dirname, "../", fileName)
+  if (fs.existsSync(filePath)) {
+    dotenv.config({ path: filePath, override })
+  }
+}
+
+loadEnvFile(".env")
+loadEnvFile(".env.local", true)
 
 // 初始化Ora加载器
 const spinner = ora({
@@ -58,8 +68,6 @@ function getVersionFromLerna() {
 function logEnvVarInfo() {
   logInfo(" -------------------- 环境变量加载完毕 -------------------- ")
   logInfo("Aliyun Registry URL:", process.env.ALIYUN_REGISTRY_URL)
-  logInfo("Aliyun Username:", process.env.ALIYUN_USERNAME)
-  logInfo("Aliyun Password:", process.env.ALIYUN_PASSWORD)
   logInfo("Frontend Image Name:", process.env.FRONTEND_IMAGE_NAME)
   logInfo("Backend Image Name:", process.env.BACKEND_IMAGE_NAME)
   logInfo("Client Image Name:", process.env.CLIENT_IMAGE_NAME)
@@ -102,6 +110,26 @@ async function executeCommand(command) {
       resolve(stdout)
     })
   )
+}
+
+async function executeCommandWithInput(command, input) {
+  return new Promise((resolve, reject) => {
+    const child = exec(command, (err, stdout, stderr) => {
+      if (err) {
+        if (stderr) {
+          logError("标准错误输出:")
+          console.error(stderr)
+        }
+        return reject(err)
+      }
+      resolve(stdout)
+    })
+
+    if (child.stdin) {
+      child.stdin.write(input)
+      child.stdin.end()
+    }
+  })
 }
 
 // 构建多平台镜像并直接推送
@@ -188,8 +216,8 @@ async function createAndPushManifestList(imageName, tag, platforms, version) {
 // 登录到阿里云镜像仓库
 async function loginToRegistry() {
   try {
-    const command = `docker login ${process.env.ALIYUN_REGISTRY_URL} -u ${process.env.ALIYUN_USERNAME} -p "${process.env.ALIYUN_PASSWORD}"`
-    await executeCommand(command)
+    const command = `docker login ${process.env.ALIYUN_REGISTRY_URL} --username ${process.env.ALIYUN_USERNAME} --password-stdin`
+    await executeCommandWithInput(command, `${process.env.ALIYUN_PASSWORD}\n`)
     logSuccess("登录到阿里云镜像仓库成功")
   } catch (error) {
     logError("登录到阿里云镜像仓库失败:", error.message)
@@ -215,6 +243,10 @@ async function main() {
       {
         name: process.env.BACKEND_IMAGE_NAME,
         dockerfilePath: process.env.BACKEND_DOCKERFILE_PATH,
+      },
+      {
+        name: process.env.CLIENT_IMAGE_NAME,
+        dockerfilePath: process.env.CLIENT_DOCKERFILE_PATH,
       },
     ]
 

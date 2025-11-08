@@ -1,10 +1,20 @@
 // 这个文件可以手动运行来初始化数据库
 
-// 数据库连接配置
+import { config as loadEnv } from "dotenv";
 import { MongoClient } from "mongodb";
+import fs from "fs";
+import path from "path";
+import { getMongoDbName, getMongoUri } from "../config/runtime";
 
-// 连接字符串 - 与项目配置保持一致
-const uri = "mongodb://admin:12345678@localhost:27017/questionnaire_mongo_db?authSource=admin";
+const appDir = path.resolve(__dirname, "..");
+[".env", ".env.local"].forEach(fileName => {
+  const filePath = path.join(appDir, fileName);
+  if (fs.existsSync(filePath)) {
+    loadEnv({ path: filePath, override: true });
+  }
+});
+
+const uri = getMongoUri();
 const client = new MongoClient(uri);
 
 // 模拟问卷数据
@@ -43,7 +53,7 @@ async function initDb() {
     await client.connect();
     console.log("已连接到MongoDB");
 
-    const db = client.db("questionnaire_mongo_db");
+    const db = client.db(getMongoDbName());
     const collection = db.collection("questionnaire_details");
 
     // 检查是否已有数据

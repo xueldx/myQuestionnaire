@@ -20,9 +20,10 @@ const MainLayout: React.FC = () => {
       </main>
       <footer className="custom-footer shrink-0">
         <div>
-          问卷小筑 &copy;2025 - present. Created by <Link to="mailto:xueldx@163.com">xueldx</Link>
+          问卷小筑 &copy;2025 - present. Maintained by{' '}
+          <Link to="mailto:support@example.com">project maintainer</Link>
         </div>
-        </footer>
+      </footer>
       <Spin indicator={<CustomSpin />} spinning={screenSpinning} fullscreen />
     </div>
   )
