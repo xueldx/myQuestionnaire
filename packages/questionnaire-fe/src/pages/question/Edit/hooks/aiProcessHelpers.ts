@@ -15,8 +15,8 @@ const PROCESS_STEP_ORDER: Record<string, number> = {
   constraints: 30,
   polishing: 40,
   thinking: 50,
-  answering: 60,
-  drafting: 70
+  drafting: 60,
+  answering: 70
 }
 
 const isWorkflowStage = (value: unknown): value is AiGenerateStage | AiCopilotIntent =>
@@ -44,6 +44,8 @@ export const sortProcessSteps = (steps: AiProcessStep[]) =>
   [...steps].sort(
     (left, right) => (PROCESS_STEP_ORDER[left.id] ?? 999) - (PROCESS_STEP_ORDER[right.id] ?? 999)
   )
+
+export const getProcessStepOrder = (stepId: string) => PROCESS_STEP_ORDER[stepId] ?? 999
 
 export const resolveProcessScenario = (
   intent: AiCopilotIntent,
@@ -177,7 +179,7 @@ export const getPhaseProcessStep = (
 
     return {
       id: 'answering',
-      label: '整理结果说明'
+      label: '整理生成说明'
     }
   }
 
@@ -214,8 +216,8 @@ export const getProcessSummary = (scenario: AiProcessScenario, status: AiStreamS
 
   if (scenario === 'edit') {
     if (status === 'thinking') return '正在分析修改要求'
-    if (status === 'answering') return '正在整理修改说明'
     if (status === 'drafting') return '正在生成修改草稿'
+    if (status === 'answering') return '正在整理修改说明'
     if (status === 'draft_ready' || status === 'done') return '已完成修改草稿生成'
     if (status === 'error') return '修改过程中出现异常'
     return '正在准备修改问卷'
@@ -223,8 +225,8 @@ export const getProcessSummary = (scenario: AiProcessScenario, status: AiStreamS
 
   if (status === 'polishing') return '正在整理输入内容'
   if (status === 'thinking') return '正在分析输入要求'
-  if (status === 'answering') return '正在整理结果说明'
   if (status === 'drafting') return '正在生成问卷草稿'
+  if (status === 'answering') return '正在整理生成说明'
   if (status === 'draft_ready' || status === 'done') return '已完成问卷草稿生成'
   if (status === 'error') return '生成过程中出现异常'
   return '正在准备生成问卷'
@@ -247,15 +249,15 @@ export const getProgressAssistantMessage = (
   if (scenario === 'edit') {
     if (nextStatus === 'connecting') return '正在连接 AI 并读取当前问卷...'
     if (nextStatus === 'thinking') return '正在分析修改要求...'
-    if (nextStatus === 'answering') return '正在整理修改说明...'
     if (nextStatus === 'drafting') return '正在生成修改草稿...'
+    if (nextStatus === 'answering') return '正在整理修改说明...'
     return fallback
   }
 
   if (nextStatus === 'connecting') return '正在连接 AI 并准备生成问卷...'
   if (nextStatus === 'polishing') return '正在整理输入内容...'
   if (nextStatus === 'thinking') return '正在分析输入要求...'
-  if (nextStatus === 'answering') return '正在整理结果说明...'
   if (nextStatus === 'drafting') return '正在生成问卷草稿...'
+  if (nextStatus === 'answering') return '正在整理生成说明...'
   return fallback
 }

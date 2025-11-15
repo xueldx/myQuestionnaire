@@ -34,6 +34,7 @@ const Edit: React.FC = () => {
   const { id = '' } = useParams()
   const [searchParams] = useSearchParams()
   const [submitting, setSubmitting] = useState(false)
+  const [applyingDraft, setApplyingDraft] = useState(false)
   const [leftPanelActiveKey, setLeftPanelActiveKey] = useState('market')
   const { loading } = useLoadQuestionData()
   const componentList = useSelector((state: RootState) => state.components.componentList)
@@ -45,30 +46,10 @@ const Edit: React.FC = () => {
   const dispatch = useDispatch()
   const { isRequestSuccess } = useRequestSuccessChecker()
   const { message, modal } = App.useApp()
-  const aiWorkbench = useAiWorkbench(id)
   const [lastNonAiPanelKey, setLastNonAiPanelKey] = useState('market')
   const previousLeftPanelKeyRef = React.useRef(leftPanelActiveKey)
 
   const copyExecutedRef = React.useRef(false)
-
-  useEffect(() => {
-    if (leftPanelActiveKey !== 'ai') {
-      setLastNonAiPanelKey(leftPanelActiveKey)
-    }
-  }, [leftPanelActiveKey])
-
-  useEffect(() => {
-    const previousKey = previousLeftPanelKeyRef.current
-    previousLeftPanelKeyRef.current = leftPanelActiveKey
-
-    if (leftPanelActiveKey !== 'ai' || previousKey === 'ai') return
-    if (componentList.length === 0) {
-      void aiWorkbench.openFreshGenerateEntrySession()
-      return
-    }
-
-    void aiWorkbench.openFreshEditEntrySession()
-  }, [aiWorkbench, componentList.length, leftPanelActiveKey])
 
   useEffect(() => {
     const copyFrom = searchParams.get('copyFrom')
@@ -135,8 +116,21 @@ const Edit: React.FC = () => {
     }
   }, [id, searchParams])
 
-  const saveQuestionnaire = async () => {
-    if (componentList.length === 0) {
+  const saveQuestionnaireSnapshot = async (
+    questionnaire: {
+      title: string
+      description: string
+      footerText: string
+      components: typeof componentList
+    },
+    currentVersion: number,
+    feedback?: {
+      successMessage?: string | null
+      failureMessage?: string | null
+      networkErrorMessage?: string | null
+    }
+  ) => {
+    if (questionnaire.components.length === 0) {
       message.warning('请先添加问卷组件')
       return false
     }
@@ -146,37 +140,95 @@ const Edit: React.FC = () => {
       const creator = userInfo.nickname || '未知'
       const params = {
         questionnaire_id: parseInt(id) || 0,
-        title: pageConfig.title || '未命名问卷',
-        description: pageConfig.description || '',
-        footer_text: pageConfig.footerText || '',
-        components: componentList,
-        version,
+        title: questionnaire.title || '未命名问卷',
+        description: questionnaire.description || '',
+        footer_text: questionnaire.footerText || '',
+        components: questionnaire.components,
+        version: currentVersion,
         creator
       }
 
       const res = await apis.editorApi.saveQuestionnaireDetail(params)
       if (isRequestSuccess(res)) {
-        message.success('保存成功')
+        if (feedback?.successMessage !== null) {
+          message.success(feedback?.successMessage || '保存成功')
+        }
         if (res.data && typeof res.data.version === 'number') {
           dispatch(setVersion(res.data.version))
         } else {
-          dispatch(setVersion(version + 1))
+          dispatch(setVersion(currentVersion + 1))
         }
         await apis.questionApi.updateQuestion(parseInt(id) || 0, {
-          title: pageConfig.title || '未命名问卷',
-          description: pageConfig.description || ''
+          title: questionnaire.title || '未命名问卷',
+          description: questionnaire.description || ''
         })
         return true
       }
 
-      message.error(res.msg || '保存失败')
+      if (feedback?.failureMessage !== null) {
+        message.error(feedback?.failureMessage || res.msg || '保存失败')
+      }
       return false
     } catch (error) {
       console.error('保存问卷失败:', error)
-      message.error('保存问卷失败，请稍后重试')
+      if (feedback?.networkErrorMessage !== null) {
+        message.error(feedback?.networkErrorMessage || '保存问卷失败，请稍后重试')
+      }
       return false
     }
   }
+
+  const saveQuestionnaire = async () =>
+    saveQuestionnaireSnapshot(
+      {
+        title: pageConfig.title,
+        description: pageConfig.description,
+        footerText: pageConfig.footerText,
+        components: componentList
+      },
+      version
+    )
+
+  const aiWorkbench = useAiWorkbench(id, {
+    onDraftApplied: async ({ questionnaire, version: draftVersion, successMessage }) => {
+      setApplyingDraft(true)
+      try {
+        const saveSuccess = await saveQuestionnaireSnapshot(questionnaire, draftVersion, {
+          successMessage: null,
+          failureMessage: null,
+          networkErrorMessage: null
+        })
+
+        if (saveSuccess) {
+          message.success(`${successMessage}，并已自动保存`)
+          return
+        }
+
+        message.warning(`${successMessage}，但自动保存失败，请手动点击保存`)
+      } finally {
+        setApplyingDraft(false)
+      }
+    }
+  })
+
+  useEffect(() => {
+    if (leftPanelActiveKey !== 'ai') {
+      setLastNonAiPanelKey(leftPanelActiveKey)
+    }
+  }, [leftPanelActiveKey])
+
+  useEffect(() => {
+    const previousKey = previousLeftPanelKeyRef.current
+    previousLeftPanelKeyRef.current = leftPanelActiveKey
+
+    if (leftPanelActiveKey !== 'ai' || previousKey === 'ai') return
+    if (componentList.length === 0) {
+      void aiWorkbench.openFreshGenerateEntrySession()
+      return
+    }
+
+    void aiWorkbench.openFreshEditEntrySession()
+  }, [aiWorkbench, componentList.length, leftPanelActiveKey])
 
   const operationMap = {
     [operationType.generate]: () => setLeftPanelActiveKey('ai'),
@@ -394,6 +446,7 @@ const Edit: React.FC = () => {
                     errorMessage={aiWorkbench.errorMessage}
                     warningMessage={aiWorkbench.warningMessage}
                     draftApplied={aiWorkbench.draftApplied}
+                    isApplyingDraft={applyingDraft}
                     selectedId={selectedId}
                     onApply={aiWorkbench.applyDraft}
                     onDiscard={aiWorkbench.discardDraft}

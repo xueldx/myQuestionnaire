@@ -32,6 +32,7 @@ import {
 import {
   getConnectingProcessStep,
   getPhaseProcessStep,
+  getProcessStepOrder,
   getProcessSummary,
   getProgressAssistantMessage,
   getToolProcessStep,
@@ -98,6 +99,12 @@ const getEmptyDraftFallback = (): QuestionnaireDraft => ({
 })
 
 const PROCESS_MESSAGE_ID_PREFIX = 'ai-process'
+
+type DraftApplyPayload = {
+  questionnaire: QuestionnaireDraft
+  version: number
+  successMessage: string
+}
 
 const createInitialProcessMessage = (
   scenario: AiProcessScenario,
@@ -219,6 +226,20 @@ const restartProcessMessage = (
   return nextMessages
 }
 
+const getScenarioPhaseSteps = (
+  scenario: AiProcessScenario
+): Array<Pick<AiProcessStep, 'id' | 'label'>> => {
+  if (scenario === 'polish') {
+    return [getPhaseProcessStep(scenario, 'polishing')]
+  }
+
+  return [
+    getPhaseProcessStep(scenario, 'thinking'),
+    getPhaseProcessStep(scenario, 'drafting'),
+    getPhaseProcessStep(scenario, 'answering')
+  ]
+}
+
 const updateProcessByStatus = (
   messages: AiChatMessage[],
   scenario: AiProcessScenario,
@@ -235,7 +256,13 @@ const updateProcessByStatus = (
   return updateProcessMessage(
     messages,
     metadata =>
-      setProcessStepStatus(metadata, step, 'running', getProcessSummary(scenario, status)),
+      setProcessStepStatus(
+        metadata,
+        scenario,
+        step,
+        'running',
+        getProcessSummary(scenario, status)
+      ),
     scenario,
     status
   )
@@ -252,7 +279,7 @@ const updateProcessByToolEvent = (
 
   return updateProcessMessage(
     messages,
-    metadata => setProcessStepStatus(metadata, step, stepStatus, step.label),
+    metadata => setProcessStepStatus(metadata, scenario, step, stepStatus, step.label),
     scenario,
     'thinking'
   )
@@ -272,6 +299,7 @@ const finalizeProcessMessage = (
 
 const setProcessStepStatus = (
   metadata: AiProcessMessageMeta,
+  scenario: AiProcessScenario,
   step: Pick<AiProcessStep, 'id' | 'label'>,
   nextStatus: AiProcessStepStatus,
   summary: string
@@ -281,11 +309,21 @@ const setProcessStepStatus = (
   )
   const existingStepIndex = nextSteps.findIndex(item => item.id === step.id)
   const previousRunningStepIndex = nextSteps.findIndex(item => item.status === 'running')
+  const phaseSteps = getScenarioPhaseSteps(scenario)
+  const phaseStepIds = new Set(phaseSteps.map(item => item.id))
+  const currentStepOrder = getProcessStepOrder(step.id)
 
   if (previousRunningStepIndex >= 0 && nextSteps[previousRunningStepIndex].id !== step.id) {
+    const previousRunningStep = nextSteps[previousRunningStepIndex]
+    const previousStepOrder = getProcessStepOrder(previousRunningStep.id)
     nextSteps[previousRunningStepIndex] = {
-      ...nextSteps[previousRunningStepIndex],
-      status: nextSteps[previousRunningStepIndex].status === 'error' ? 'error' : 'done'
+      ...previousRunningStep,
+      status:
+        previousRunningStep.status === 'error'
+          ? 'error'
+          : previousStepOrder > currentStepOrder && phaseStepIds.has(previousRunningStep.id)
+          ? 'pending'
+          : 'done'
     }
   }
 
@@ -300,6 +338,30 @@ const setProcessStepStatus = (
       id: step.id,
       label: step.label,
       status: nextStatus
+    })
+  }
+
+  if (nextStatus === 'running' && phaseStepIds.has(step.id)) {
+    phaseSteps.forEach(phaseStep => {
+      if (getProcessStepOrder(phaseStep.id) <= currentStepOrder) return
+
+      const phaseStepIndex = nextSteps.findIndex(item => item.id === phaseStep.id)
+      if (phaseStepIndex >= 0) {
+        if (nextSteps[phaseStepIndex].status !== 'running') {
+          nextSteps[phaseStepIndex] = {
+            ...nextSteps[phaseStepIndex],
+            label: phaseStep.label,
+            status: 'pending'
+          }
+        }
+        return
+      }
+
+      nextSteps.push({
+        id: phaseStep.id,
+        label: phaseStep.label,
+        status: 'pending'
+      })
     })
   }
 
@@ -392,6 +454,7 @@ const buildHistoryProcessMessage = (
 
       return setProcessStepStatus(
         previousMetadata,
+        scenario,
         step,
         message.kind === 'tool_result' && ensurePlainObject(message.metadata).status === 'error'
           ? 'error'
@@ -505,8 +568,14 @@ const ACTIVE_STREAM_STATUSES: AiStreamStatus[] = [
   'drafting'
 ]
 
-const useAiWorkbench = (questionnaireId: string) => {
+const useAiWorkbench = (
+  questionnaireId: string,
+  options?: {
+    onDraftApplied?: (payload: DraftApplyPayload) => Promise<void> | void
+  }
+) => {
   const { message, modal } = App.useApp()
+  const onDraftApplied = options?.onDraftApplied
   const dispatch = useDispatch<AppDispatch>()
   const componentList = useSelector((state: RootState) => state.components.componentList)
   const selectedId = useSelector((state: RootState) => state.components.selectedId)
@@ -1264,7 +1333,7 @@ const useAiWorkbench = (questionnaireId: string) => {
   )
 
   const applyGenerateDraft = useCallback(
-    (draft: QuestionnaireDraft) => {
+    async (draft: QuestionnaireDraft) => {
       const normalizedComponents = normalizeQuestionnaireComponentList(draft.components)
 
       if (normalizedComponents.length === 0) {
@@ -1295,6 +1364,23 @@ const useAiWorkbench = (questionnaireId: string) => {
         )
       }
 
+      const nextQuestionnaire: QuestionnaireDraft =
+        componentList.length === 0
+          ? {
+              title: draft.title,
+              description: draft.description,
+              footerText: draft.footerText,
+              components: normalizedComponents
+            }
+          : {
+              title: pageConfig.title,
+              description: pageConfig.description,
+              footerText: pageConfig.footerText,
+              components: normalizedComponents
+            }
+      const successMessage =
+        componentList.length === 0 ? 'AI 生成的问卷已应用到编辑器' : 'AI 生成的组件已插入当前问卷'
+
       setDraftApplied(true)
       clearDraftAfterApply()
       void persistConversationDraftState({
@@ -1302,15 +1388,27 @@ const useAiWorkbench = (questionnaireId: string) => {
         latestDraft: null,
         latestSummary: null
       })
-      message.success(
-        componentList.length === 0 ? 'AI 生成的问卷已应用到编辑器' : 'AI 生成的组件已插入当前问卷'
-      )
+
+      if (onDraftApplied) {
+        await onDraftApplied({
+          questionnaire: nextQuestionnaire,
+          version,
+          successMessage
+        })
+        return
+      }
+
+      message.success(successMessage)
     },
     [
       clearDraftAfterApply,
       componentList.length,
       dispatch,
       message,
+      onDraftApplied,
+      pageConfig.description,
+      pageConfig.footerText,
+      pageConfig.title,
       persistConversationDraftState,
       selectedId,
       version
@@ -1318,7 +1416,7 @@ const useAiWorkbench = (questionnaireId: string) => {
   )
 
   const doApplyEditDraft = useCallback(
-    (draft: QuestionnaireDraft) => {
+    async (draft: QuestionnaireDraft) => {
       const normalizedComponents = normalizeQuestionnaireComponentList(draft.components)
       const nextSelectedId =
         normalizedComponents.find(component => component.fe_id === selectedId)?.fe_id ||
@@ -1341,6 +1439,13 @@ const useAiWorkbench = (questionnaireId: string) => {
         })
       )
 
+      const nextQuestionnaire: QuestionnaireDraft = {
+        title: draft.title,
+        description: draft.description,
+        footerText: draft.footerText,
+        components: normalizedComponents
+      }
+
       setDraftApplied(true)
       clearDraftAfterApply()
       void persistConversationDraftState({
@@ -1348,12 +1453,30 @@ const useAiWorkbench = (questionnaireId: string) => {
         latestDraft: null,
         latestSummary: null
       })
+
+      if (onDraftApplied) {
+        await onDraftApplied({
+          questionnaire: nextQuestionnaire,
+          version,
+          successMessage: 'AI 草稿已应用到编辑器'
+        })
+        return
+      }
+
       message.success('AI 草稿已应用到编辑器')
     },
-    [clearDraftAfterApply, dispatch, message, persistConversationDraftState, selectedId, version]
+    [
+      clearDraftAfterApply,
+      dispatch,
+      message,
+      onDraftApplied,
+      persistConversationDraftState,
+      selectedId,
+      version
+    ]
   )
 
-  const applyDraft = useCallback(() => {
+  const applyDraft = useCallback(async () => {
     if (!finalDraft) {
       message.warning('请先等待 AI 生成最终草稿')
       return
@@ -1365,12 +1488,12 @@ const useAiWorkbench = (questionnaireId: string) => {
     }
 
     if (mode === 'generate') {
-      applyGenerateDraft(finalDraft)
+      await applyGenerateDraft(finalDraft)
       return
     }
 
     if (version === baseVersionRef.current) {
-      doApplyEditDraft(finalDraft)
+      await doApplyEditDraft(finalDraft)
       return
     }
 
@@ -1379,8 +1502,8 @@ const useAiWorkbench = (questionnaireId: string) => {
       content: 'AI 草稿生成期间，你又修改了当前问卷。是否仍然覆盖当前编辑结果？',
       okText: '覆盖应用',
       cancelText: '放弃本次草稿',
-      onOk: () => {
-        doApplyEditDraft(finalDraft)
+      onOk: async () => {
+        await doApplyEditDraft(finalDraft)
       }
     })
   }, [

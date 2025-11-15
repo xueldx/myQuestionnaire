@@ -65,7 +65,7 @@ const ProcessMessageCard = React.memo(({ message }: { message: AiChatMessage }) 
                   ? 'bg-[#EF4444]'
                   : step.status === 'running'
                   ? 'bg-[#F59E0B]'
-                  : 'bg-[#D1D5DB]'
+                  : 'bg-[#FCD34D]'
 
               return (
                 <div key={step.id} className="relative">
@@ -82,7 +82,7 @@ const ProcessMessageCard = React.memo(({ message }: { message: AiChatMessage }) 
                       ? '处理异常'
                       : step.status === 'running'
                       ? '进行中'
-                      : '等待中'}
+                      : '待处理'}
                   </div>
                 </div>
               )

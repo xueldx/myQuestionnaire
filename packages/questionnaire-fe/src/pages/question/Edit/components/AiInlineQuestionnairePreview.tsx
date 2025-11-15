@@ -16,6 +16,7 @@ interface AiInlineQuestionnairePreviewProps {
   errorMessage: string | null
   warningMessage: string | null
   draftApplied: boolean
+  isApplyingDraft: boolean
   selectedId: string
   onApply: () => void
   onDiscard: () => void
@@ -167,6 +168,7 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
   errorMessage,
   warningMessage,
   draftApplied,
+  isApplyingDraft,
   selectedId,
   onApply,
   onDiscard,
@@ -298,14 +300,14 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
             放弃草稿
           </div>
           <div
-            onClick={!finalDraft || draftApplied ? undefined : onApply}
+            onClick={!finalDraft || draftApplied || isApplyingDraft ? undefined : onApply}
             className={`mr-2 flex h-[39px] items-center justify-center rounded-t-lg border border-b-0 px-4 text-[14px] transition-all duration-300 ${
-              !finalDraft || draftApplied
+              !finalDraft || draftApplied || isApplyingDraft
                 ? 'cursor-not-allowed border-[#f0f0f0] bg-[#fafafa] text-gray-400'
                 : 'cursor-pointer border-transparent bg-gradient-to-r from-teal-500 to-emerald-400 font-semibold text-white shadow-[0_-2px_10px_rgba(20,184,166,0.3)] hover:opacity-90'
             }`}
           >
-            {draftApplied ? '已应用到编辑器' : '应用到编辑器'}
+            {draftApplied ? '已应用到编辑器' : isApplyingDraft ? '应用并保存中...' : '应用到编辑器'}
           </div>
         </div>
       </div>

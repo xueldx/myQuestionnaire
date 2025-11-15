@@ -1,4 +1,5 @@
 import {
+  getPhaseProcessStep,
   getProcessSummary,
   getToolProcessStep,
   inferHistoryProcessScenario,
@@ -61,5 +62,30 @@ describe('aiProcessHelpers', () => {
     ])
 
     expect(sortedSteps.map(step => step.id)).toEqual(['snapshot', 'constraints', 'polishing'])
+  })
+
+  it('sorts drafting before answering for generate and edit flows', () => {
+    const sortedSteps = sortProcessSteps([
+      {
+        id: 'answering',
+        label: '整理修改说明',
+        status: 'done'
+      },
+      {
+        id: 'drafting',
+        label: '生成修改草稿',
+        status: 'done'
+      }
+    ])
+
+    expect(sortedSteps.map(step => step.id)).toEqual(['drafting', 'answering'])
+  })
+
+  it('uses generation summary wording after the draft step', () => {
+    expect(getPhaseProcessStep('generate', 'answering')).toEqual({
+      id: 'answering',
+      label: '整理生成说明'
+    })
+    expect(getProcessSummary('generate', 'answering')).toBe('正在整理生成说明')
   })
 })

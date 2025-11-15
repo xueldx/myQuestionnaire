@@ -93,7 +93,9 @@ const buildMongoUri = (fallbackUri: string) => {
   const credentials = username
     ? `${encodeCredential(username)}${password ? `:${encodeCredential(password)}` : ''}@`
     : '';
-  const authQuery = authSource ? `?authSource=${encodeCredential(authSource)}` : '';
+  const authQuery = authSource
+    ? `?authSource=${encodeCredential(authSource)}`
+    : '';
 
   return `mongodb://${credentials}${host}:${port}/${dbName}${authQuery}`;
 };
@@ -117,8 +119,7 @@ const applyEnvironmentOverrides = (baseConfig: Record<string, any>) => {
   config.app.port = parseNumber(process.env.APP_PORT, config.app.port || 8879);
   config.app.prefix = getStringEnv('APP_PREFIX') || config.app.prefix;
   config.app.jwt = config.app.jwt || {};
-  config.app.jwt.secret =
-    getStringEnv('JWT_SECRET') || config.app.jwt.secret;
+  config.app.jwt.secret = getStringEnv('JWT_SECRET') || config.app.jwt.secret;
   config.app.jwt.expiresIn =
     getStringEnv('JWT_EXPIRES_IN') || config.app.jwt.expiresIn;
 

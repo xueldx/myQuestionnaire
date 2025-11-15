@@ -1382,7 +1382,6 @@ ${instructionBlock}
       });
     }
 
-    this.emitCopilotPhase(res, currentPhaseRef, 'drafting', workflowStage);
     const reply = parsed.assistantReply || '已生成可应用草稿';
     const summary = buildDiffSummary(
       dto.questionnaire,

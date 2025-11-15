@@ -122,7 +122,7 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
         return {
           type: 'success' as const,
           message: '正在整理生成说明',
-          tooltip: 'AI 正在整理本轮生成说明，随后会输出可应用的问卷草稿。'
+          tooltip: 'AI 已生成可应用的问卷草稿，正在整理本轮生成说明。'
         }
       }
 
@@ -163,7 +163,7 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
       return {
         type: 'success' as const,
         message: '正在整理修改说明',
-        tooltip: 'AI 正在生成本轮修改说明，随后会输出结构化草稿建议。'
+        tooltip: 'AI 已生成结构化修改草稿，正在整理本轮修改说明。'
       }
     }
 
