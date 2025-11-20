@@ -1,5 +1,5 @@
 import apis from '@/apis'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { useRequest } from 'ahooks'
 import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
@@ -11,9 +11,11 @@ import { normalizeQuestionnaireComponentList } from '@/utils/normalizeQuestionCo
 
 function useLoadQuestionData() {
   const { id = '' } = useParams()
+  const [searchParams] = useSearchParams()
   const dispatch = useDispatch()
   const { isRequestSuccess } = useRequestSuccessChecker()
   const pageConfig = useSelector((state: RootState) => state.pageConfig)
+  const questionnaireId = id || searchParams.get('id') || ''
 
   // 加载问卷数据
   const { loading, data, error, run } = useRequest(
@@ -29,11 +31,10 @@ function useLoadQuestionData() {
 
   // 初始化加载
   useEffect(() => {
-    if (!id) return
-    const searchParams = new URLSearchParams(window.location.search)
+    if (!questionnaireId) return
     if (searchParams.get('copyFrom')) return
-    run(id)
-  }, [id, window.location.search])
+    run(questionnaireId)
+  }, [questionnaireId, run, searchParams])
 
   // 设置组件数据
   useEffect(() => {

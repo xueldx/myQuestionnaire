@@ -14,6 +14,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const devPort = Number(env.VITE_DEV_PORT || 8877)
   const apiProxyTarget = env.VITE_API_PROXY_TARGET || 'http://localhost:8879'
+  const clientProxyTarget = env.VITE_CLIENT_URL || 'http://localhost:8878'
 
   return {
     // 设置项目的基路径
@@ -32,6 +33,10 @@ export default defineConfig(({ mode }) => {
         '/api': {
           // target: 'https://xmquestionnaire.cn',
           target: apiProxyTarget,
+          changeOrigin: true
+        },
+        '/client': {
+          target: clientProxyTarget,
           changeOrigin: true
         }
       },

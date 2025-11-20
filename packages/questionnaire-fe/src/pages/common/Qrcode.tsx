@@ -9,7 +9,11 @@ const Qrcode = () => {
   const { message } = App.useApp()
   const { id } = useParams()
   // 根据环境变量决定客户端域名，如果是本地开发则指向8878端口，否则默认使用当前域名
-  const clientUrl = import.meta.env.VITE_CLIENT_URL || window.location.origin
+  const defaultClientUrl =
+    import.meta.env.DEV && window.location.port === '8877'
+      ? 'http://localhost:8878'
+      : window.location.origin
+  const clientUrl = import.meta.env.VITE_CLIENT_URL || defaultClientUrl
   const url = `${clientUrl}/client/question?id=${id}`
   const qrRef = useRef<HTMLDivElement>(null)
 

@@ -14,6 +14,8 @@ async function bootstrap() {
   const tasksService = app.get(TasksService);
 
   const config = app.get(ConfigService);
+  const isDevelopment =
+    (process.env.NODE_ENV || 'development') !== 'docker';
 
   app.setGlobalPrefix(config.get<string>('app.prefix'));
 
@@ -26,13 +28,15 @@ async function bootstrap() {
     }),
   );
 
-  // 设置访问频率 防御DDos攻击
-  app.use(
-    rateLimit({
-      windowMs: 15 * 60 * 1000, // 15分钟
-      max: 1000, // 限制15分钟内最多只能访问1000次
-    }),
-  );
+  // 本地开发环境跳过全局限流，避免热更新和调试流量触发 429。
+  if (!isDevelopment) {
+    app.use(
+      rateLimit({
+        windowMs: 15 * 60 * 1000,
+        max: 1000,
+      }),
+    );
+  }
   await app.listen(config.get<number>('app.port'));
 }
 bootstrap();
