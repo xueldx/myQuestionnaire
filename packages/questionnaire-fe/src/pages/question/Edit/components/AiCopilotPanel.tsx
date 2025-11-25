@@ -202,7 +202,7 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
       ? hasGenerateBase
         ? '请输入想追加的题目需求，例如：在最后一道题后补两道开放建议题'
         : '请输入原始需求，例如：想做一份门店服务满意度问卷，最好有基础信息、服务体验和建议题'
-      : '请输入你的修改需求，例如：把第 3 题改成多选'
+      : '请输入你的修改需求，建议单次只修改一题，并且写出具体题目和修改要求，例如：把第 3 题改成多选'
 
   const activeConversation = conversationList.find(item => item.id === activeConversationId)
   const formatConversationTime = (value: string | null) => {

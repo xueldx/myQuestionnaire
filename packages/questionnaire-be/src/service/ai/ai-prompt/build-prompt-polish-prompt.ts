@@ -1,6 +1,9 @@
 import { CopilotStreamDto } from '@/service/ai/dto/copilot-stream.dto';
 
-type PromptPolishPromptDto = Pick<CopilotStreamDto, 'instruction' | 'questionnaire'>;
+type PromptPolishPromptDto = Pick<
+  CopilotStreamDto,
+  'instruction' | 'questionnaire'
+>;
 
 export const buildPromptPolishPrompt = (
   dto: PromptPolishPromptDto,

@@ -10,13 +10,8 @@ import {
   QuestionnaireDraft
 } from '../../components/aiCopilotTypes'
 import { mergeGenerateDraftIntoBase } from '../aiGenerateDraftMerge'
-import { getProgressAssistantMessage } from '../aiProcessHelpers'
 import { buildPersistedDraft, getEmptyDraftFallback } from './aiShared'
-import {
-  normalizeConversationMessages,
-  replaceLastAssistantMessage,
-  updateProcessByStatus
-} from './aiProcessState'
+import { normalizeConversationMessages, updateProcessByStatus } from './aiProcessState'
 
 type MessageApi = {
   info: (content: string) => void
@@ -164,7 +159,7 @@ export const useAiWorkbenchRuntime = ({
       >,
       requestIntent: AiCopilotIntent,
       processScenario: AiProcessScenario,
-      fallbackMessage: string
+      _fallbackMessage: string
     ) => {
       setStatus(nextStatus)
 
@@ -176,14 +171,7 @@ export const useAiWorkbenchRuntime = ({
       }
 
       setMessages(previousMessages =>
-        updateProcessByStatus(
-          replaceLastAssistantMessage(
-            previousMessages,
-            getProgressAssistantMessage(processScenario, nextStatus, fallbackMessage)
-          ),
-          processScenario,
-          nextStatus
-        )
+        updateProcessByStatus(previousMessages, processScenario, nextStatus)
       )
     },
     [dispatchGenerateFlow, setMessages, setStatus]

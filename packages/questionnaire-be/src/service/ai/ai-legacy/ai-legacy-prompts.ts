@@ -1,4 +1,7 @@
-export const buildLegacyGeneratePrompt = (theme: string, count: number) => `生成一份关于${theme}的问卷，要求如下：
+export const buildLegacyGeneratePrompt = (
+  theme: string,
+  count: number,
+) => `生成一份关于${theme}的问卷，要求如下：
 1. 问卷需包含${count}个问题，每个问题都要与${theme}主题相关
 2. 输出格式为JSON，结构如下：
 {
@@ -56,7 +59,8 @@ export const buildLegacyAnalysisPrompt = ({
   description?: string;
   formattedStats: string;
   formattedQuestions: string;
-}) => `
+}) =>
+  `
 你是一位数据分析专家，请对以下问卷数据进行简要分析：
 
 问卷标题: ${title || '未知标题'}

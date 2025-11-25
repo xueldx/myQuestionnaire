@@ -1,7 +1,4 @@
-import {
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { In, Repository } from 'typeorm';
 import AiConversation from '@/service/ai/entities/ai-conversation.entity';
 import AiMessage from '@/service/ai/entities/ai-message.entity';
@@ -87,9 +84,7 @@ export const serializeConversation = (
   updatedAt: conversation.update_time.toISOString(),
 });
 
-export const serializeMessage = (
-  message: AiMessage,
-): SerializedAiMessage => ({
+export const serializeMessage = (message: AiMessage): SerializedAiMessage => ({
   id: message.id,
   role: message.role,
   kind: message.kind,
@@ -105,10 +100,8 @@ export const serializeConversationDetail = (
   messages: AiMessage[],
 ): SerializedAiConversationDetail => ({
   ...serializeConversation(deps, conversation),
-  latestDraft:
-    (conversation.latest_draft as QuestionnaireDraft | null) || null,
-  latestSummary:
-    (conversation.latest_summary as DraftSummary | null) || null,
+  latestDraft: (conversation.latest_draft as QuestionnaireDraft | null) || null,
+  latestSummary: (conversation.latest_summary as DraftSummary | null) || null,
   messages: messages.map((message) => serializeMessage(message)),
 });
 

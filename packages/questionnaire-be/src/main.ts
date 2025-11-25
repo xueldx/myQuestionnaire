@@ -14,8 +14,7 @@ async function bootstrap() {
   const tasksService = app.get(TasksService);
 
   const config = app.get(ConfigService);
-  const isDevelopment =
-    (process.env.NODE_ENV || 'development') !== 'docker';
+  const isDevelopment = (process.env.NODE_ENV || 'development') !== 'docker';
 
   app.setGlobalPrefix(config.get<string>('app.prefix'));
 

@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, ForbiddenException } from '@nestjs/common';
 import { Request, Response } from 'express';
 import OpenAI from 'openai';
 import { Observable } from 'rxjs';
@@ -254,7 +251,8 @@ export class AiService {
   private getRuntimeHelperDeps() {
     return {
       createToolCallId: this.createToolCallId.bind(this),
-      buildComponentCatalogPayload: this.buildComponentCatalogPayload.bind(this),
+      buildComponentCatalogPayload:
+        this.buildComponentCatalogPayload.bind(this),
       sanitizeToolPreview: this.sanitizeToolPreview.bind(this),
       getEnhancedStats: this.getEnhancedStats.bind(this),
       persistConversationMessage: this.persistConversationMessage.bind(this),
@@ -320,7 +318,11 @@ export class AiService {
     questionnaireId: number,
     userId: number,
   ) {
-    return ensureQuestionnaireAccess(this.getConversationHelperDeps(), questionnaireId, userId);
+    return ensureQuestionnaireAccess(
+      this.getConversationHelperDeps(),
+      questionnaireId,
+      userId,
+    );
   }
 
   private async requireConversation(
@@ -331,11 +333,20 @@ export class AiService {
       withAttachments?: boolean;
     },
   ) {
-    return requireConversation(this.getConversationHelperDeps(), id, userId, options);
+    return requireConversation(
+      this.getConversationHelperDeps(),
+      id,
+      userId,
+      options,
+    );
   }
 
   async listConversations(questionnaireId: number, userId: number) {
-    return listConversations(this.getConversationHelperDeps(), questionnaireId, userId);
+    return listConversations(
+      this.getConversationHelperDeps(),
+      questionnaireId,
+      userId,
+    );
   }
 
   async createConversation(dto: CreateConversationDto, userId: number) {
@@ -351,7 +362,12 @@ export class AiService {
     dto: UpdateConversationDto,
     userId: number,
   ) {
-    return updateConversation(this.getConversationHelperDeps(), id, dto, userId);
+    return updateConversation(
+      this.getConversationHelperDeps(),
+      id,
+      dto,
+      userId,
+    );
   }
 
   async deleteConversation(id: number, userId: number) {
@@ -362,7 +378,11 @@ export class AiService {
     questionnaireId: number,
     userId: number,
   ) {
-    return findPreferredConversation(this.getConversationHelperDeps(), questionnaireId, userId);
+    return findPreferredConversation(
+      this.getConversationHelperDeps(),
+      questionnaireId,
+      userId,
+    );
   }
 
   private async createConversationFromCopilotRequest(
@@ -405,7 +425,10 @@ export class AiService {
   private async loadConversationHistory(
     conversationId: number,
   ): Promise<Array<Pick<AiMessage, 'role' | 'content'>>> {
-    return loadConversationHistory(this.getConversationHelperDeps(), conversationId);
+    return loadConversationHistory(
+      this.getConversationHelperDeps(),
+      conversationId,
+    );
   }
 
   private async persistConversationMessage(params: {
@@ -529,7 +552,8 @@ export class AiService {
         createRequestId: this.createRequestId.bind(this),
         resolveCopilotConversation: this.resolveCopilotConversation.bind(this),
         loadConversationHistory: this.loadConversationHistory.bind(this),
-        sanitizeConversationHistory: this.sanitizeConversationHistory.bind(this),
+        sanitizeConversationHistory:
+          this.sanitizeConversationHistory.bind(this),
         pickConversationTitle: this.pickConversationTitle.bind(this),
         saveConversation: (conversation: AiConversation) =>
           this.aiConversationRepository.save(conversation),

@@ -64,7 +64,8 @@ export const getComposerGuide = ({
   return {
     targetLabel: '正式问卷',
     effectLabel: '发送后会基于正式问卷生成修改建议',
-    placeholder: '请输入你的修改需求，例如：把第 3 题改成多选',
+    placeholder:
+      '请输入你的修改需求，建议单次只修改一题，并且写出具体题目和修改要求，例如：把第 3 题改成多选',
     tone: 'info',
     modeLabels: {
       generate: '生成',

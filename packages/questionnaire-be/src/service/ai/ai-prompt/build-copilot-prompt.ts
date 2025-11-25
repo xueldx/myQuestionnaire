@@ -17,7 +17,8 @@ export const buildCopilotPrompt = (
       .map((item) => `${item.role}: ${item.content}`)
       .join('\n') || '无历史消息';
   const hasExistingComponents = dto.questionnaire.components.length > 0;
-  const originalInstruction = dto.originalInstruction?.trim() || dto.instruction;
+  const originalInstruction =
+    dto.originalInstruction?.trim() || dto.instruction;
   const instructionBlock =
     dto.intent === 'generate'
       ? `用户原始需求：

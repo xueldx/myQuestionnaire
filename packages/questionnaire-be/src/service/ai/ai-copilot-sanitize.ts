@@ -72,7 +72,9 @@ export const normalizeComponentProps = (
   return nextProps;
 };
 
-export const sanitizeCopilotDto = (dto: CopilotStreamDto): SanitizedCopilotDto => {
+export const sanitizeCopilotDto = (
+  dto: CopilotStreamDto,
+): SanitizedCopilotDto => {
   const snapshot = ensureObject(dto?.questionnaire);
   const rawComponents = Array.isArray(snapshot.components)
     ? snapshot.components

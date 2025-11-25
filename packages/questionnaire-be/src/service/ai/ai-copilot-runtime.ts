@@ -286,6 +286,31 @@ export const emitCopilotPhase = (
   });
 };
 
+const emitAssistantReplyChunks = async (
+  res: Response,
+  reply: string,
+  options?: {
+    chunkSize?: number;
+    delayMs?: number;
+  },
+) => {
+  const normalizedReply = reply.trim();
+  if (!normalizedReply) return;
+
+  const chunkSize = options?.chunkSize ?? 10;
+  const delayMs = options?.delayMs ?? 24;
+
+  for (let start = 0; start < normalizedReply.length; start += chunkSize) {
+    const delta = normalizedReply.slice(start, start + chunkSize);
+    if (!delta) continue;
+    writeSseEvent(res, 'assistant_delta', { delta });
+
+    if (start + chunkSize < normalizedReply.length && delayMs > 0) {
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+};
+
 export const streamPromptRefine = async (
   dto: SanitizedCopilotDto,
   client: OpenAI,
@@ -342,6 +367,8 @@ export const streamPromptRefine = async (
   }
 
   const reply = 'Prompt 润色完成，已回填到输入框，可继续编辑或直接发送。';
+  emitCopilotPhase(res, currentPhaseRef, 'answering', 'polish');
+  await emitAssistantReplyChunks(res, reply);
   writeSseEvent(res, 'prompt_refined', {
     prompt: finalPrompt,
     reply,
@@ -435,7 +462,11 @@ export const streamDraftStage = async (
     }
 
     if (parsed.pageConfig || parsed.components.length > 0) {
-      const draftPartial = normalizeDraft(parsed, dto.questionnaire, dto.intent);
+      const draftPartial = normalizeDraft(
+        parsed,
+        dto.questionnaire,
+        dto.intent,
+      );
       const signature = JSON.stringify(draftPartial);
 
       if (signature !== lastDraftSignature) {
@@ -489,7 +520,11 @@ export const streamDraftStage = async (
   }
 
   const reply = parsed.assistantReply || '已生成可应用草稿';
-  const summary = buildDiffSummary(dto.questionnaire, validatedDraft, dto.intent);
+  const summary = buildDiffSummary(
+    dto.questionnaire,
+    validatedDraft,
+    dto.intent,
+  );
   writeSseEvent(res, 'draft', {
     reply,
     draft: validatedDraft,

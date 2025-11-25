@@ -10,6 +10,7 @@ import {
 import {
   finalizeProcessMessage,
   replaceLastAssistantMessage,
+  replaceLastAssistantMessageWithSanitizedContent,
   restartProcessMessage,
   updateProcessByToolEvent
 } from './aiProcessState'
@@ -172,6 +173,17 @@ export const useAiPromptPolishStream = ({
                     '正在润色需求...'
                   )
                   break
+                case 'assistant_delta':
+                  rawReplyTextRef.current += event.data.delta
+                  setMessages(previousMessages => {
+                    const nextReply = rawReplyTextRef.current.trim()
+                    if (!nextReply) return previousMessages
+                    return replaceLastAssistantMessageWithSanitizedContent(
+                      previousMessages,
+                      nextReply
+                    )
+                  })
+                  break
                 case 'prompt_delta':
                   if (!hasPromptDelta) {
                     bufferedUiUpdatesRef.current.replacePrompt = true
@@ -213,7 +225,8 @@ export const useAiPromptPolishStream = ({
                     finalizeProcessMessage(
                       replaceLastAssistantMessage(
                         previousMessages,
-                        event.data.reply ||
+                        rawReplyTextRef.current ||
+                          event.data.reply ||
                           'Prompt 润色完成，已回填到输入框，可继续编辑或直接发送。'
                       ),
                       processScenario,

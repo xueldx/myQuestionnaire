@@ -49,13 +49,21 @@ const getBlockContent = (
 const getFallbackAssistantReply = (source: string) => {
   const endDraftIndex = source.indexOf(END_DRAFT);
   if (endDraftIndex >= 0) {
-    return source.slice(endDraftIndex + END_DRAFT.length).trim();
+    return source
+      .slice(endDraftIndex + END_DRAFT.length)
+      .replace(/<<<[A-Z_]*$/g, '')
+      .replace(/<<<END_[A-Z_]*$/g, '')
+      .trim();
   }
 
   const indexes = [
     source.indexOf(PAGE_CONFIG_START),
     source.indexOf(COMPONENT_START),
   ].filter((index) => index >= 0);
+
+  if (source.includes('<<<')) {
+    return '';
+  }
 
   if (indexes.length === 0) {
     return source.trim();

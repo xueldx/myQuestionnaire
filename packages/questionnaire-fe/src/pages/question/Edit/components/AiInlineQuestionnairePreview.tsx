@@ -233,33 +233,37 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
   const hasDraftPreview = Boolean(previewDraft)
   const hasVisibleContent =
     hasDraftPreview && (currentComponents.length > 0 || draftComponents.length > 0)
-  const generateStickyHint =
-    mode === 'generate' ? (
-      <div className="sticky top-0 z-20 -mx-1 mb-4 px-1 pt-1">
-        <div className="rounded-2xl border border-[#F7D9A7] bg-[#FFF9ED]/95 px-4 py-3 text-sm text-[#7C5C00] shadow-sm backdrop-blur-sm">
-          <div className="font-semibold text-[#9A6700]">新增题目插入位置</div>
-          <div className="mt-1 leading-6">
-            {selectedComponent ? (
-              <>
-                本次新增会插入到
-                <span className="mx-1 font-semibold text-[#9A6700]">第 {selectedIndex + 1} 项</span>
-                之后：
-                <span className="ml-1 font-medium text-custom-text-100">
-                  {selectedComponent.title || '未命名题目'}
-                </span>
-              </>
-            ) : (
-              '当前未选中组件，本次新增会直接追加到问卷末尾。'
-            )}
-          </div>
-          {currentComponents.length > 0 && (
-            <div className="mt-1 text-xs text-[#8C6A12]">
-              如需改变位置，请先在左侧问卷图层中选中目标题目。
-            </div>
-          )}
-        </div>
+  const shouldShowGenerateInsertHint = mode === 'generate'
+  const generateStickyHint = shouldShowGenerateInsertHint ? (
+    <div className="rounded-2xl border border-[#F7D9A7] bg-[#FFF9ED]/95 px-4 py-3 text-sm text-[#7C5C00] shadow-sm backdrop-blur-sm">
+      <div className="font-semibold text-[#9A6700]">新增题目插入位置</div>
+      <div className="mt-1 leading-6">
+        {currentComponents.length === 0 ? (
+          '当前问卷暂无题目，本次新增会从第 1 项开始直接创建到当前问卷中。'
+        ) : selectedComponent ? (
+          <>
+            本次新增会插入到
+            <span className="mx-1 font-semibold text-[#9A6700]">第 {selectedIndex + 1} 项</span>
+            之后：
+            <span className="ml-1 font-medium text-custom-text-100">
+              {selectedComponent.title || '未命名题目'}
+            </span>
+          </>
+        ) : (
+          '当前未选中组件，本次新增会直接追加到问卷末尾。'
+        )}
       </div>
-    ) : null
+      {currentComponents.length === 0 ? (
+        <div className="mt-1 text-xs text-[#8C6A12]">
+          应用草稿后，AI 新增内容会作为当前问卷的起始题目依次创建。
+        </div>
+      ) : (
+        <div className="mt-1 text-xs text-[#8C6A12]">
+          如需改变位置，请先在左侧问卷图层中选中目标题目。
+        </div>
+      )}
+    </div>
+  ) : null
 
   return (
     <div className="h-full flex flex-col overflow-hidden rounded-[22px] border border-custom-bg-200 bg-white/75 shadow-sm">
@@ -313,24 +317,27 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
       </div>
 
       <div className="flex-1 overflow-y-auto custom-no-scrollbar bg-white/30 px-4 py-4">
-        {errorMessage && (
-          <Alert
-            className="mb-4"
-            type="error"
-            showIcon
-            message="AI 草稿生成失败"
-            description={errorMessage}
-          />
-        )}
-
-        {warningMessage && !errorMessage && (
-          <Alert
-            className="mb-4"
-            type="warning"
-            showIcon
-            message="AI 已跳过部分解析失败的题目"
-            description={warningMessage}
-          />
+        {(generateStickyHint || errorMessage || (warningMessage && !errorMessage)) && (
+          <div className="sticky top-0 z-40 mb-4 space-y-3">
+            {generateStickyHint}
+            {errorMessage ? (
+              <Alert
+                className="shadow-sm"
+                type="error"
+                showIcon
+                message="AI 草稿生成失败"
+                description={errorMessage}
+              />
+            ) : warningMessage ? (
+              <Alert
+                className="shadow-sm"
+                type="warning"
+                showIcon
+                message="AI 已跳过部分解析失败的题目"
+                description={warningMessage}
+              />
+            ) : null}
+          </div>
         )}
 
         {mode === 'edit' && previewDraft && (
@@ -353,7 +360,6 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
 
         {hasDraftPreview ? (
           <div className="rounded-[28px] border border-custom-bg-200 bg-white/80 p-5 shadow-inner">
-            {generateStickyHint}
             <div className="border-b border-custom-bg-200 pb-4 text-center">
               <div className="text-[26px] font-semibold tracking-[0.02em] text-custom-primary-200">
                 {displayTitle}
@@ -555,8 +561,6 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
                 当前展示的是问卷基线内容。切到生成模式后，AI 新增内容会在这份问卷基础上插入。
               </div>
             )}
-
-            {generateStickyHint}
 
             <div className="border-b border-custom-bg-200 pb-4 text-center">
               <div className="text-[26px] font-semibold tracking-[0.02em] text-custom-primary-200">

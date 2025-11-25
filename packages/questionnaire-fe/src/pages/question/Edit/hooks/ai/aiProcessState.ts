@@ -329,12 +329,37 @@ export const replaceLastAssistantMessage = (messages: AiChatMessage[], nextConte
   return nextMessages
 }
 
-const sanitizeAssistantReply = (content: string) =>
+export const replaceLastAssistantMessageWithSanitizedContent = (
+  messages: AiChatMessage[],
+  nextContent: string
+) => {
+  const nextMessages = [...messages]
+  const lastAssistantIndex = [...nextMessages].map(message => message.role).lastIndexOf('assistant')
+
+  if (lastAssistantIndex === -1) {
+    nextMessages.push({ role: 'assistant', kind: 'chat', content: nextContent })
+    return nextMessages
+  }
+
+  const lastAssistantMessage = nextMessages[lastAssistantIndex]
+  nextMessages[lastAssistantIndex] = {
+    ...lastAssistantMessage,
+    content: nextContent
+  }
+
+  return nextMessages
+}
+
+export const sanitizeAssistantReply = (content: string) =>
   content
     .replace(/\r/g, '')
     .replace(/^<<<[A-Z_]+>>>$/gm, '')
     .replace(/^<<<END_[A-Z_]+>>>$/gm, '')
     .replace(/^<<<END_DRAFT>>>$/gm, '')
+    .replace(/<<<[A-Z_]*$/g, '')
+    .replace(/<<<END_[A-Z_]*$/g, '')
+    .replace(/<<<PAGE_[A-Z_]*$/g, '')
+    .replace(/<<<COMPONENT[A-Z_>]*$/g, '')
     .replace(/^#{1,6}\s*/gm, '')
     .replace(/^\s*[-*•]\s+/gm, '')
     .replace(/^\s*\d+\.\s+/gm, '')

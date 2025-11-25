@@ -100,12 +100,17 @@ const MessageBubble = React.memo(({ message }: { message: AiChatMessage }) => {
   const isUser = message.role === 'user'
   const isProcess = message.role === 'process' || message.kind === 'process'
   const isTool = message.role === 'tool'
+  const isAssistant = message.role === 'assistant'
 
   if (isProcess) {
     return <ProcessMessageCard message={message} />
   }
 
   if (isTool) {
+    return null
+  }
+
+  if (isAssistant && !message.content.trim()) {
     return null
   }
 
@@ -118,9 +123,7 @@ const MessageBubble = React.memo(({ message }: { message: AiChatMessage }) => {
             : 'rounded-tl-sm border border-white/50 bg-white/80 text-custom-text-100 backdrop-blur-md'
         }`}
       >
-        <div className="whitespace-pre-wrap break-words">
-          {message.content || (isUser ? '' : '正在思考中...')}
-        </div>
+        <div className="whitespace-pre-wrap break-words">{message.content}</div>
       </div>
     </div>
   )

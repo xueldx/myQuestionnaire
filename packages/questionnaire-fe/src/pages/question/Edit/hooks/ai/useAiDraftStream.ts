@@ -13,6 +13,7 @@ import {
   finalizeProcessMessage,
   formatAssistantBubbleReply,
   replaceLastAssistantMessage,
+  replaceLastAssistantMessageWithSanitizedContent,
   restartProcessMessage,
   updateProcessByToolEvent
 } from './aiProcessState'
@@ -215,6 +216,14 @@ export const useAiDraftStream = ({
                     break
                   case 'assistant_delta':
                     rawReplyTextRef.current += event.data.delta
+                    setMessages(previousMessages => {
+                      const nextReply = formatAssistantBubbleReply(rawReplyTextRef.current, '')
+                      if (!nextReply) return previousMessages
+                      return replaceLastAssistantMessageWithSanitizedContent(
+                        previousMessages,
+                        nextReply
+                      )
+                    })
                     break
                   case 'tool_call':
                     setMessages(previousMessages =>
