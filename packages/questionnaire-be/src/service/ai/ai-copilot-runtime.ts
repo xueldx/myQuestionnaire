@@ -77,6 +77,13 @@ type ExecuteCopilotStreamDeps = RuntimeDeps & {
     messages: Array<Pick<any, 'role' | 'content'>>,
   ) => Array<{ role: 'user' | 'assistant'; content: string }>;
   pickConversationTitle: (title?: string, fallbackText?: string) => string;
+  registerActiveRequest: (request: {
+    requestId: string;
+    conversationId: number;
+    userId: number;
+    abort: () => void;
+  }) => void;
+  unregisterActiveRequest: (requestId: string) => void;
   saveConversation: (conversation: any) => Promise<any>;
 };
 
@@ -201,6 +208,7 @@ export const collectToolContext = async (
 
     try {
       const payload = await runner();
+      if (isClosed()) return;
       toolContextList.push({
         name: toolName,
         callId,
@@ -217,6 +225,7 @@ export const collectToolContext = async (
         payload,
       );
     } catch (error: any) {
+      if (isClosed()) return;
       await emitToolResult(
         deps,
         res,
@@ -292,6 +301,7 @@ const emitAssistantReplyChunks = async (
   options?: {
     chunkSize?: number;
     delayMs?: number;
+    shouldStop?: () => boolean;
   },
 ) => {
   const normalizedReply = reply.trim();
@@ -301,6 +311,7 @@ const emitAssistantReplyChunks = async (
   const delayMs = options?.delayMs ?? 24;
 
   for (let start = 0; start < normalizedReply.length; start += chunkSize) {
+    if (options?.shouldStop?.()) break;
     const delta = normalizedReply.slice(start, start + chunkSize);
     if (!delta) continue;
     writeSseEvent(res, 'assistant_delta', { delta });
@@ -319,6 +330,7 @@ export const streamPromptRefine = async (
   res: Response,
   toolContextText: string,
   isClosed: () => boolean,
+  shouldStop?: () => boolean,
 ): Promise<{ refinedPrompt: string; reply: string } | null> => {
   const prompt = buildPromptPolishPrompt(dto, toolContextText);
   let refinedPrompt = '';
@@ -368,7 +380,10 @@ export const streamPromptRefine = async (
 
   const reply = 'Prompt 润色完成，已回填到输入框，可继续编辑或直接发送。';
   emitCopilotPhase(res, currentPhaseRef, 'answering', 'polish');
-  await emitAssistantReplyChunks(res, reply);
+  await emitAssistantReplyChunks(res, reply, {
+    shouldStop,
+  });
+  if (isClosed()) return null;
   writeSseEvent(res, 'prompt_refined', {
     prompt: finalPrompt,
     reply,
@@ -519,6 +534,8 @@ export const streamDraftStage = async (
     });
   }
 
+  if (isClosed()) return null;
+
   const reply = parsed.assistantReply || '已生成可应用草稿';
   const summary = buildDiffSummary(
     dto.questionnaire,
@@ -551,19 +568,31 @@ export const executeCopilotStream = async (
   defaultConversationTitle: string,
 ) => {
   const abortController = new AbortController();
-  let closed = false;
+  let stopReason: 'disconnect' | 'cancel' | 'timeout' | null = null;
   let sseInitialized = false;
   let timeoutTriggered = false;
   let timeoutId: NodeJS.Timeout | null = null;
   let conversationId: number | null = null;
+  let requestId: string | null = null;
+  let conversation: any | null = null;
 
-  const handleClose = () => {
-    if (closed) return;
-    closed = true;
+  const stopStream = (reason: 'disconnect' | 'cancel' | 'timeout') => {
+    if (stopReason) return;
+    stopReason = reason;
     abortController.abort();
   };
 
-  req.on('close', handleClose);
+  const handleRequestAborted = () => {
+    stopStream('disconnect');
+  };
+
+  const handleResponseClosed = () => {
+    if (res.writableEnded) return;
+    stopStream('disconnect');
+  };
+
+  req.on('aborted', handleRequestAborted);
+  res.on('close', handleResponseClosed);
 
   try {
     initSseResponse(res);
@@ -588,13 +617,19 @@ export const executeCopilotStream = async (
       resolvedModel.key === deps.defaultModel
         ? deps.openai
         : deps.createClientForModel(resolvedModel.key);
-    const requestId = deps.createRequestId();
+    requestId = deps.createRequestId();
     const workflowStage = getWorkflowStage(safeDto);
-    const conversation = await deps.resolveCopilotConversation(
+    conversation = await deps.resolveCopilotConversation(
       safeDto,
       user.userId,
     );
     conversationId = conversation.id;
+    deps.registerActiveRequest({
+      requestId,
+      conversationId: conversation.id,
+      userId: user.userId,
+      abort: () => stopStream('cancel'),
+    });
 
     const conversationHistory = await deps.loadConversationHistory(
       conversation.id,
@@ -606,6 +641,9 @@ export const executeCopilotStream = async (
     conversation.intent = safeDto.intent;
     conversation.last_model = resolvedModel.key;
     conversation.last_instruction = safeDto.instruction;
+    conversation.last_runtime_status =
+      workflowStage === 'polish' ? 'polishing' : 'connecting';
+    conversation.last_workflow_stage = workflowStage;
     conversation.latest_activity_at = new Date();
     if (conversation.title === defaultConversationTitle) {
       conversation.title = deps.pickConversationTitle(
@@ -631,7 +669,7 @@ export const executeCopilotStream = async (
 
     timeoutId = setTimeout(() => {
       timeoutTriggered = true;
-      abortController.abort();
+      stopStream('timeout');
     }, timeoutMs);
 
     writeSseEvent(res, 'meta', {
@@ -647,7 +685,7 @@ export const executeCopilotStream = async (
       dto: safeDto,
       conversationId: conversation.id,
       res,
-      isClosed: () => closed,
+      isClosed: () => stopReason !== null,
     });
     const toolContextText = buildToolContextBlock(deps, toolContextList);
 
@@ -659,10 +697,13 @@ export const executeCopilotStream = async (
         abortController,
         res,
         toolContextText,
-        () => closed,
+        () => stopReason !== null,
+        () => stopReason !== null,
       );
       if (polishResult) {
         conversation.last_instruction = polishResult.refinedPrompt;
+        conversation.last_runtime_status = 'awaiting_confirmation';
+        conversation.last_workflow_stage = workflowStage;
         conversation.latest_activity_at = new Date();
         await deps.saveConversation(conversation);
         await deps.persistConversationMessage({
@@ -685,12 +726,14 @@ export const executeCopilotStream = async (
         abortController,
         res,
         toolContextText,
-        () => closed,
+        () => stopReason !== null,
       );
       if (draftResult) {
         conversation.last_instruction = safeDto.instruction;
         conversation.latest_draft = draftResult.draft;
         conversation.latest_summary = draftResult.summary;
+        conversation.last_runtime_status = 'draft_ready';
+        conversation.last_workflow_stage = workflowStage;
         conversation.latest_activity_at = new Date();
         await deps.saveConversation(conversation);
         await deps.persistConversationMessage({
@@ -713,46 +756,65 @@ export const executeCopilotStream = async (
         ? undefined
         : getWorkflowStage(deps.sanitizeCopilotDto(dto));
 
-    if (!closed) {
-      console.error('AI copilot stream error:', error);
-      if (conversationId) {
-        await deps.persistConversationMessage({
-          conversationId,
-          role: 'assistant',
-          kind: 'chat',
-          content: error?.message || 'AI 工作台生成失败，请稍后重试',
-          meta: {
-            status: 'error',
-          },
-        });
+    if (stopReason === 'cancel' || stopReason === 'disconnect') {
+      if (conversation && workflowStage) {
+        conversation.last_runtime_status = 'cancelled';
+        conversation.last_workflow_stage = workflowStage;
+        conversation.latest_activity_at = new Date();
+        await deps.saveConversation(conversation);
       }
-      if (sseInitialized) {
-        writeSseEvent(res, 'error', {
-          code: timeoutTriggered
-            ? 'COPILOT_STREAM_TIMEOUT'
-            : 'COPILOT_STREAM_FAILED',
-          message: timeoutTriggered
-            ? 'AI 流式处理超时，请稍后重试'
-            : error?.message || 'AI 工作台生成失败，请稍后重试',
-          stage: workflowStage,
-          retryable: true,
-        });
-      } else if (!res.headersSent) {
-        res.status(500).json({
-          code: timeoutTriggered
-            ? 'COPILOT_STREAM_TIMEOUT'
-            : 'COPILOT_STREAM_FAILED',
-          message: timeoutTriggered
-            ? 'AI 流式处理超时，请稍后重试'
-            : error?.message || 'AI 工作台生成失败，请稍后重试',
-        });
+      return;
+    }
+
+    console.error('AI copilot stream error:', error);
+    if (conversationId) {
+      if (conversation) {
+        conversation.last_runtime_status = 'error';
+        conversation.last_workflow_stage =
+          workflowStage || conversation.last_workflow_stage;
+        conversation.latest_activity_at = new Date();
+        await deps.saveConversation(conversation);
       }
+      await deps.persistConversationMessage({
+        conversationId,
+        role: 'assistant',
+        kind: 'chat',
+        content: error?.message || 'AI 工作台生成失败，请稍后重试',
+        meta: {
+          status: 'error',
+        },
+      });
+    }
+    if (sseInitialized) {
+      writeSseEvent(res, 'error', {
+        code: timeoutTriggered
+          ? 'COPILOT_STREAM_TIMEOUT'
+          : 'COPILOT_STREAM_FAILED',
+        message: timeoutTriggered
+          ? 'AI 流式处理超时，请稍后重试'
+          : error?.message || 'AI 工作台生成失败，请稍后重试',
+        stage: workflowStage,
+        retryable: true,
+      });
+    } else if (!res.headersSent) {
+      res.status(500).json({
+        code: timeoutTriggered
+          ? 'COPILOT_STREAM_TIMEOUT'
+          : 'COPILOT_STREAM_FAILED',
+        message: timeoutTriggered
+          ? 'AI 流式处理超时，请稍后重试'
+          : error?.message || 'AI 工作台生成失败，请稍后重试',
+      });
     }
   } finally {
     if (timeoutId) {
       clearTimeout(timeoutId);
     }
-    req.off('close', handleClose);
+    req.off('aborted', handleRequestAborted);
+    res.off('close', handleResponseClosed);
+    if (requestId) {
+      deps.unregisterActiveRequest(requestId);
+    }
     if (!res.writableEnded) {
       res.end();
     }

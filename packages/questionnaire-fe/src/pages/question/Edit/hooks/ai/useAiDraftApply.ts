@@ -23,10 +23,12 @@ type ModalApi = {
 
 type UseAiDraftApplyParams = {
   mode: AiCopilotIntent
+  status: 'draft_ready' | 'done' | 'cancelled' | string
   version: number
   selectedId: string
   componentList: QuestionnaireDraft['components']
   pageConfig: Pick<QuestionnaireDraft, 'title' | 'description' | 'footerText'>
+  draftPartial: QuestionnaireDraft | null
   finalDraft: QuestionnaireDraft | null
   draftApplied: boolean
   baseVersionRef: { current: number }
@@ -45,10 +47,12 @@ type UseAiDraftApplyParams = {
 
 export const useAiDraftApply = ({
   mode,
+  status,
   version,
   selectedId,
   componentList,
   pageConfig,
+  draftPartial,
   finalDraft,
   draftApplied,
   baseVersionRef,
@@ -60,6 +64,8 @@ export const useAiDraftApply = ({
   onDraftApplied,
   setDraftApplied
 }: UseAiDraftApplyParams) => {
+  const applicableDraft = finalDraft || (status === 'cancelled' ? draftPartial : null)
+
   const applyGenerateDraft = useCallback(
     async (draft: QuestionnaireDraft) => {
       const normalizedComponents = normalizeQuestionnaireComponentList(draft.components)
@@ -205,8 +211,8 @@ export const useAiDraftApply = ({
   )
 
   const applyDraft = useCallback(async () => {
-    if (!finalDraft) {
-      message.warning('请先等待 AI 生成最终草稿')
+    if (!applicableDraft) {
+      message.warning('当前没有可应用的草稿')
       return
     }
 
@@ -216,12 +222,12 @@ export const useAiDraftApply = ({
     }
 
     if (mode === 'generate') {
-      await applyGenerateDraft(finalDraft)
+      await applyGenerateDraft(applicableDraft)
       return
     }
 
     if (version === baseVersionRef.current) {
-      await applyEditDraft(finalDraft)
+      await applyEditDraft(applicableDraft)
       return
     }
 
@@ -231,15 +237,15 @@ export const useAiDraftApply = ({
       okText: '覆盖应用',
       cancelText: '放弃本次草稿',
       onOk: async () => {
-        await applyEditDraft(finalDraft)
+        await applyEditDraft(applicableDraft)
       }
     })
   }, [
+    applicableDraft,
     applyEditDraft,
     applyGenerateDraft,
     baseVersionRef,
     draftApplied,
-    finalDraft,
     message,
     modal,
     mode,

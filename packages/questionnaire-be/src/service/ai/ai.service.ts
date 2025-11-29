@@ -21,6 +21,7 @@ import AiAttachment from '@/service/ai/entities/ai-attachment.entity';
 import Question from '@/service/question/entities/question.entity';
 import { UserToken } from '@/common/decorators/current-user.decorator';
 import {
+  CancelCopilotDto,
   CreateConversationDto,
   UpdateConversationDto,
 } from '@/service/ai/dto/conversation.dto';
@@ -104,10 +105,18 @@ const COPILOT_STREAM_TIMEOUT_MS = 90000;
 const DEFAULT_CONVERSATION_TITLE = '未命名会话';
 const TOOL_CONTEXT_MAX_PREVIEW_LENGTH = 4000;
 
+type ActiveCopilotRequest = {
+  requestId: string;
+  conversationId: number;
+  userId: number;
+  abort: () => void;
+};
+
 @Injectable()
 export class AiService {
   private readonly openai: OpenAI;
   private readonly defaultModel: Model = Model.ModelScopeQwen3;
+  private readonly activeCopilotRequests = new Map<string, ActiveCopilotRequest>();
 
   constructor(
     private readonly answerService: AnswerService,
@@ -374,6 +383,22 @@ export class AiService {
     return deleteConversation(this.getConversationHelperDeps(), id, userId);
   }
 
+  async cancelCopilot(dto: CancelCopilotDto, user: UserToken) {
+    const request = this.findActiveCopilotRequest(dto, user.userId);
+    if (!request) {
+      return {
+        cancelled: false,
+      };
+    }
+
+    request.abort();
+    return {
+      cancelled: true,
+      requestId: request.requestId,
+      conversationId: request.conversationId,
+    };
+  }
+
   private async findPreferredConversation(
     questionnaireId: number,
     userId: number,
@@ -463,6 +488,35 @@ export class AiService {
 
   private sanitizeCopilotDto(dto: CopilotStreamDto): SanitizedCopilotDto {
     return sanitizeCopilotDto(dto);
+  }
+
+  private registerActiveCopilotRequest(request: ActiveCopilotRequest) {
+    this.activeCopilotRequests.set(request.requestId, request);
+  }
+
+  private unregisterActiveCopilotRequest(requestId: string) {
+    this.activeCopilotRequests.delete(requestId);
+  }
+
+  private findActiveCopilotRequest(dto: CancelCopilotDto, userId: number) {
+    const normalizedRequestId = this.ensureString(dto.requestId);
+    if (normalizedRequestId) {
+      const matchedByRequestId = this.activeCopilotRequests.get(normalizedRequestId);
+      if (matchedByRequestId?.userId === userId) {
+        return matchedByRequestId;
+      }
+    }
+
+    if (!dto.conversationId) {
+      return null;
+    }
+
+    return Array.from(this.activeCopilotRequests.values())
+      .reverse()
+      .find(
+        request =>
+          request.userId === userId && request.conversationId === dto.conversationId,
+      );
   }
 
   private buildComponentCatalogPayload() {
@@ -555,6 +609,8 @@ export class AiService {
         sanitizeConversationHistory:
           this.sanitizeConversationHistory.bind(this),
         pickConversationTitle: this.pickConversationTitle.bind(this),
+        registerActiveRequest: this.registerActiveCopilotRequest.bind(this),
+        unregisterActiveRequest: this.unregisterActiveCopilotRequest.bind(this),
         saveConversation: (conversation: AiConversation) =>
           this.aiConversationRepository.save(conversation),
       },

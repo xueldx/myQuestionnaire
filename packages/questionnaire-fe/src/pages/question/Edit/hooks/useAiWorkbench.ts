@@ -27,6 +27,14 @@ import { useAiPromptPolishStream } from '@/pages/question/Edit/hooks/ai/useAiPro
 import { useAiInstructionActions } from '@/pages/question/Edit/hooks/ai/useAiInstructionActions'
 import { useAiWorkbenchRuntime } from '@/pages/question/Edit/hooks/ai/useAiWorkbenchRuntime'
 
+const ACTIVE_STREAM_STATUSES: AiStreamStatus[] = [
+  'connecting',
+  'polishing',
+  'thinking',
+  'answering',
+  'drafting'
+]
+
 const useAiWorkbench = (
   questionnaireId: string,
   options?: {
@@ -213,7 +221,7 @@ const useAiWorkbench = (
     syncRuntimeStatus,
     buildQuestionnaireSnapshot,
     buildMergedGenerateDraft,
-    cancelStream
+    cancelStream: cancelLocalStream
   } = useAiWorkbenchRuntime({
     mode,
     status,
@@ -302,6 +310,84 @@ const useAiWorkbench = (
     hydrateConversationDetail: handleHydrateConversationDetail,
     resetConversationState: handleResetConversationState
   })
+
+  const cancelStream = useCallback(
+    (showMessage = true) => {
+      const activeRequestId = requestId
+      const activeConversationId = activeConversationIdRef.current
+      const pendingBufferedUpdates = bufferedUiUpdatesRef.current
+      const persistedWorkflowStage =
+        mode === 'edit'
+          ? 'edit'
+          : status === 'polishing' || status === 'awaiting_confirmation'
+          ? 'polish'
+          : 'generate'
+      const nextComposerInput = pendingBufferedUpdates.promptDelta
+        ? pendingBufferedUpdates.replacePrompt
+          ? pendingBufferedUpdates.promptDelta
+          : `${composerInput}${pendingBufferedUpdates.promptDelta}`
+        : composerInput
+      const preservedDraft =
+        finalDraft || pendingBufferedUpdates.partialDraft || draftPartial || null
+
+      if (nextComposerInput !== composerInput) {
+        setComposerInputState(nextComposerInput)
+        if (mode === 'generate') {
+          dispatchGenerateFlow({
+            type: 'edit_refined_prompt',
+            prompt: nextComposerInput
+          })
+        }
+      }
+
+      if (!finalDraft && pendingBufferedUpdates.partialDraft) {
+        setDraftPartial(pendingBufferedUpdates.partialDraft)
+        setFinalDraft(null)
+        finalDraftRef.current = null
+      }
+
+      if (controllerRef.current && (activeRequestId || activeConversationId)) {
+        void apis.aiApi
+          .cancelCopilot({
+            requestId: activeRequestId || undefined,
+            conversationId: activeConversationId || undefined
+          })
+          .finally(() => {
+            void persistConversationDraftState({
+              lastInstruction: nextComposerInput.trim() || null,
+              latestDraft: preservedDraft,
+              latestSummary: finalDraft ? summary : null,
+              lastRuntimeStatus: 'cancelled',
+              lastWorkflowStage: persistedWorkflowStage
+            })
+            if (activeConversationId) {
+              void refreshConversationList(activeConversationId)
+            }
+          })
+      }
+
+      cancelLocalStream(showMessage)
+    },
+    [
+      activeConversationIdRef,
+      bufferedUiUpdatesRef,
+      cancelLocalStream,
+      composerInput,
+      draftPartial,
+      dispatchGenerateFlow,
+      finalDraft,
+      finalDraftRef,
+      mode,
+      persistConversationDraftState,
+      refreshConversationList,
+      requestId,
+      setComposerInputState,
+      setDraftPartial,
+      setFinalDraft,
+      status,
+      summary
+    ]
+  )
 
   const resetConversationDraftView = useCallback(
     (nextMode: AiCopilotIntent) => {
@@ -447,10 +533,12 @@ const useAiWorkbench = (
 
   const { applyDraft } = useAiDraftApply({
     mode,
+    status,
     version,
     selectedId,
     componentList,
     pageConfig,
+    draftPartial,
     finalDraft,
     draftApplied,
     baseVersionRef,

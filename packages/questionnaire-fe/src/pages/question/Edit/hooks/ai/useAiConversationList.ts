@@ -326,13 +326,18 @@ export const useAiConversationList = ({
     async (payload: {
       lastInstruction?: string | null
       latestDraft?: QuestionnaireDraft | null
-      latestSummary?: DraftSummary | null
+      latestSummary?: unknown | null
+      lastRuntimeStatus?: AiConversationDetail['lastRuntimeStatus']
+      lastWorkflowStage?: AiConversationDetail['lastWorkflowStage']
     }) => {
       const conversationId = activeConversationIdRef.current
       if (!conversationId) return
 
       try {
-        await apis.aiApi.updateConversation(conversationId, payload)
+        await apis.aiApi.updateConversation(conversationId, {
+          ...payload,
+          latestSummary: (payload.latestSummary as DraftSummary | null | undefined) ?? null
+        })
       } catch (error) {
         console.warn('同步 AI 会话草稿状态失败:', error)
       }

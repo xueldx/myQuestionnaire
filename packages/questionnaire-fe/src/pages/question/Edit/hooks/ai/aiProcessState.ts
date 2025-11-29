@@ -279,16 +279,20 @@ export const updateProcessByToolEvent = (
 const finalizeProcessMetadata = (
   metadata: AiProcessMessageMeta,
   scenario: AiProcessScenario,
-  status: Extract<AiStreamStatus, 'draft_ready' | 'done' | 'error'>
+  status: Extract<AiStreamStatus, 'draft_ready' | 'done' | 'error' | 'cancelled'>
 ): AiProcessMessageMeta => ({
   ...metadata,
-  collapsed: status !== 'error',
+  collapsed: status !== 'error' && status !== 'cancelled',
   summary: getProcessSummary(scenario, status),
   steps: sortProcessSteps(
     metadata.steps.map(step => ({
       ...step,
       status:
-        status === 'error'
+        status === 'cancelled'
+          ? step.status === 'running'
+            ? 'pending'
+            : step.status
+          : status === 'error'
           ? step.status === 'running'
             ? 'error'
             : step.status
@@ -302,7 +306,7 @@ const finalizeProcessMetadata = (
 export const finalizeProcessMessage = (
   messages: AiChatMessage[],
   scenario: AiProcessScenario,
-  status: Extract<AiStreamStatus, 'draft_ready' | 'done' | 'error'>
+  status: Extract<AiStreamStatus, 'draft_ready' | 'done' | 'error' | 'cancelled'>
 ) =>
   updateProcessMessage(
     messages,
@@ -310,6 +314,9 @@ export const finalizeProcessMessage = (
     scenario,
     status
   )
+
+export const cancelProcessMessage = (messages: AiChatMessage[], scenario: AiProcessScenario) =>
+  finalizeProcessMessage(messages, scenario, 'cancelled')
 
 export const replaceLastAssistantMessage = (messages: AiChatMessage[], nextContent: string) => {
   const nextMessages = [...messages]
@@ -379,13 +386,20 @@ export const formatAssistantBubbleReply = (content: string, fallback: string) =>
 const buildHistoryProcessMessage = (
   toolMessages: AiChatMessage[],
   scenario: AiProcessScenario,
-  suffix: string
+  suffix: string,
+  nextMessage?: AiChatMessage | null
 ): AiChatMessage | null => {
   const hasError = toolMessages.some(
     message =>
       message.kind === 'tool_result' && ensurePlainObject(message.metadata).status === 'error'
   )
-  const summaryStatus: Extract<AiStreamStatus, 'done' | 'error'> = hasError ? 'error' : 'done'
+  const hasFollowingAssistantReply =
+    nextMessage?.role === 'assistant' && Boolean(nextMessage.content?.trim())
+  const summaryStatus: Extract<AiStreamStatus, 'done' | 'error' | 'cancelled'> = hasError
+    ? 'error'
+    : hasFollowingAssistantReply
+    ? 'done'
+    : 'cancelled'
   const metadata = toolMessages.reduce<AiProcessMessageMeta>(
     (previousMetadata, message) => {
       const step = getToolProcessStep(scenario, message.toolName || '')
@@ -448,7 +462,8 @@ export const normalizeConversationMessages = (
     const processMessage = buildHistoryProcessMessage(
       toolBuffer,
       scenario,
-      String(nextMessages.length)
+      String(nextMessages.length),
+      nextMessage
     )
     if (processMessage) {
       nextMessages.push(processMessage)

@@ -35,6 +35,8 @@ export type SerializedAiConversationSummary = {
   isPinned: boolean;
   lastModel: string | null;
   lastInstruction: string | null;
+  lastRuntimeStatus: string | null;
+  lastWorkflowStage: string | null;
   messageCount: number;
   attachmentCount: number;
   latestActivityAt: string | null;
@@ -78,6 +80,8 @@ export const serializeConversation = (
   isPinned: conversation.is_pinned,
   lastModel: conversation.last_model,
   lastInstruction: conversation.last_instruction,
+  lastRuntimeStatus: conversation.last_runtime_status,
+  lastWorkflowStage: conversation.last_workflow_stage,
   messageCount: conversation.message_count || 0,
   attachmentCount: conversation.attachment_count || 0,
   latestActivityAt: deps.formatDate(conversation.latest_activity_at),
@@ -264,6 +268,14 @@ export const updateConversation = async (
 
   if (dto.latestSummary !== undefined) {
     conversation.latest_summary = dto.latestSummary;
+  }
+
+  if (dto.lastRuntimeStatus !== undefined) {
+    conversation.last_runtime_status = dto.lastRuntimeStatus || null;
+  }
+
+  if (dto.lastWorkflowStage !== undefined) {
+    conversation.last_workflow_stage = dto.lastWorkflowStage || null;
   }
 
   const saved = await deps.aiConversationRepository.save(conversation);

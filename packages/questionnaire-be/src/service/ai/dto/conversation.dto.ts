@@ -51,4 +51,36 @@ export class UpdateConversationDto {
   @IsOptional()
   @IsObject()
   latestSummary?: Record<string, any> | null;
+
+  @IsOptional()
+  @IsIn([
+    'idle',
+    'connecting',
+    'polishing',
+    'awaiting_confirmation',
+    'thinking',
+    'answering',
+    'drafting',
+    'draft_ready',
+    'done',
+    'cancelled',
+    'error',
+  ])
+  lastRuntimeStatus?: string | null;
+
+  @IsOptional()
+  @IsIn(['polish', 'generate', 'edit'])
+  lastWorkflowStage?: 'polish' | 'generate' | 'edit' | null;
+}
+
+export class CancelCopilotDto {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  requestId?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  conversationId?: number;
 }

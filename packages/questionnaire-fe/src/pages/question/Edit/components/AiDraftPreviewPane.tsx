@@ -10,6 +10,7 @@ interface AiDraftPreviewPaneProps {
   finalDraft: QuestionnaireDraft | null
   summary: DraftSummary | null
   errorMessage: string | null
+  draftApplied?: boolean
   onApply: () => void
   onDiscard: () => void
 }
@@ -44,10 +45,15 @@ const AiDraftPreviewPane: React.FC<AiDraftPreviewPaneProps> = ({
   finalDraft,
   summary,
   errorMessage,
+  draftApplied = false,
   onApply,
   onDiscard
 }) => {
   const previewDraft = finalDraft || draftPartial
+  const canApplyDraft = Boolean(
+    (finalDraft || (status === 'cancelled' ? draftPartial : null)) && !draftApplied
+  )
+  const isCancelledPartialDraft = status === 'cancelled' && Boolean(draftPartial) && !finalDraft
   const isStreaming =
     status === 'connecting' ||
     status === 'thinking' ||
@@ -75,6 +81,11 @@ const AiDraftPreviewPane: React.FC<AiDraftPreviewPaneProps> = ({
                 可应用
               </Tag>
             )}
+            {isCancelledPartialDraft && (
+              <Tag className="m-0" color="warning">
+                已保留已生成部分
+              </Tag>
+            )}
           </div>
           <div
             onClick={!previewDraft && !errorMessage ? undefined : onDiscard}
@@ -87,14 +98,14 @@ const AiDraftPreviewPane: React.FC<AiDraftPreviewPaneProps> = ({
             放弃草稿
           </div>
           <div
-            onClick={!finalDraft ? undefined : onApply}
+            onClick={!canApplyDraft ? undefined : onApply}
             className={`mr-2 flex h-[39px] items-center justify-center rounded-t-lg border border-b-0 px-4 text-[14px] transition-all duration-300 ${
-              !finalDraft
+              !canApplyDraft
                 ? 'cursor-not-allowed border-[#f0f0f0] bg-[#fafafa] text-gray-400'
                 : 'cursor-pointer border-transparent bg-gradient-to-r from-teal-500 to-emerald-400 font-semibold text-white shadow-[0_-2px_10px_rgba(20,184,166,0.3)] hover:opacity-90'
             }`}
           >
-            应用到编辑器
+            {isCancelledPartialDraft ? '应用已生成部分' : '应用到编辑器'}
           </div>
         </div>
       </div>

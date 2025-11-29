@@ -41,6 +41,12 @@ class AiConversation {
   @Column({ type: 'simple-json', nullable: true })
   latest_summary: Record<string, any> | null;
 
+  @Column({ length: 40, nullable: true })
+  last_runtime_status: string | null;
+
+  @Column({ length: 20, nullable: true })
+  last_workflow_stage: string | null;
+
   @Column({ default: 0 })
   message_count: number;
 

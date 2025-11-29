@@ -73,6 +73,8 @@ export type AiConversationSummary = {
   isPinned: boolean
   lastModel: string | null
   lastInstruction: string | null
+  lastRuntimeStatus: AiStreamStatus | null
+  lastWorkflowStage: AiWorkflowStage | null
   messageCount: number
   latestActivityAt: string | null
   updatedAt: string

@@ -10,6 +10,7 @@ import {
   QuestionnaireDraft
 } from '../../components/aiCopilotTypes'
 import {
+  cancelProcessMessage,
   finalizeProcessMessage,
   formatAssistantBubbleReply,
   replaceLastAssistantMessage,
@@ -355,9 +356,8 @@ export const useAiDraftStream = ({
             if (requestIntent === 'generate') {
               dispatchGenerateFlow({ type: 'cancel' })
             }
-            setStatus(currentStatus =>
-              currentStatus === 'draft_ready' ? currentStatus : 'cancelled'
-            )
+            setMessages(previousMessages => cancelProcessMessage(previousMessages, processScenario))
+            setStatus('cancelled')
           } else {
             flushBufferedUiUpdates(true)
             if (requestIntent === 'generate') {

@@ -210,6 +210,7 @@ export const getProcessSummary = (scenario: AiProcessScenario, status: AiStreamS
     if (status === 'answering') return '正在整理润色结果'
     if (status === 'drafting') return '正在输出润色结果'
     if (status === 'draft_ready' || status === 'done') return '已完成输入润色'
+    if (status === 'cancelled') return '已停止输入润色'
     if (status === 'error') return '润色过程中出现异常'
     return '正在准备润色需求'
   }
@@ -219,6 +220,7 @@ export const getProcessSummary = (scenario: AiProcessScenario, status: AiStreamS
     if (status === 'drafting') return '正在生成修改草稿'
     if (status === 'answering') return '正在整理修改说明'
     if (status === 'draft_ready' || status === 'done') return '已完成修改草稿生成'
+    if (status === 'cancelled') return '已停止修改草稿生成'
     if (status === 'error') return '修改过程中出现异常'
     return '正在准备修改问卷'
   }
@@ -228,6 +230,7 @@ export const getProcessSummary = (scenario: AiProcessScenario, status: AiStreamS
   if (status === 'drafting') return '正在生成问卷草稿'
   if (status === 'answering') return '正在整理生成说明'
   if (status === 'draft_ready' || status === 'done') return '已完成问卷草稿生成'
+  if (status === 'cancelled') return '已停止问卷草稿生成'
   if (status === 'error') return '生成过程中出现异常'
   return '正在准备生成问卷'
 }

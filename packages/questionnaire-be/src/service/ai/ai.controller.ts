@@ -23,6 +23,7 @@ import {
   UserToken,
 } from '@/common/decorators/current-user.decorator';
 import {
+  CancelCopilotDto,
   CreateConversationDto,
   UpdateConversationDto,
 } from '@/service/ai/dto/conversation.dto';
@@ -114,5 +115,14 @@ export class AiController {
     @currentUser() user: UserToken,
   ) {
     await this.aiService.streamCopilot(dto, user, req, res);
+  }
+
+  @Post('copilot/cancel')
+  async cancelCopilot(
+    @Body() dto: CancelCopilotDto,
+    @currentUser() user: UserToken,
+  ) {
+    const data = await this.aiService.cancelCopilot(dto, user);
+    return new ResponseBody(1, data, data.cancelled ? '取消成功' : '未找到进行中的会话');
   }
 }

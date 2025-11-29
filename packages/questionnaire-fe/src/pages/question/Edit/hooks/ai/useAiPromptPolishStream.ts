@@ -8,6 +8,7 @@ import {
   QuestionnaireDraft
 } from '../../components/aiCopilotTypes'
 import {
+  cancelProcessMessage,
   finalizeProcessMessage,
   replaceLastAssistantMessage,
   replaceLastAssistantMessageWithSanitizedContent,
@@ -272,6 +273,7 @@ export const useAiPromptPolishStream = ({
         if (controller.signal.aborted) {
           flushBufferedUiUpdates(true)
           dispatchGenerateFlow({ type: 'cancel' })
+          setMessages(previousMessages => cancelProcessMessage(previousMessages, processScenario))
           setStatus('cancelled')
         } else {
           flushBufferedUiUpdates(true)

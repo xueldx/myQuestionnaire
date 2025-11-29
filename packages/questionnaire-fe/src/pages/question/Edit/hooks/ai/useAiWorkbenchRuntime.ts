@@ -11,7 +11,12 @@ import {
 } from '../../components/aiCopilotTypes'
 import { mergeGenerateDraftIntoBase } from '../aiGenerateDraftMerge'
 import { buildPersistedDraft, getEmptyDraftFallback } from './aiShared'
-import { normalizeConversationMessages, updateProcessByStatus } from './aiProcessState'
+import {
+  cancelProcessMessage,
+  finalizeProcessMessage,
+  normalizeConversationMessages,
+  updateProcessByStatus
+} from './aiProcessState'
 
 type MessageApi = {
   info: (content: string) => void
@@ -94,13 +99,29 @@ export const useAiWorkbenchRuntime = ({
       intent: AiCopilotIntent
       messages?: AiChatMessage[]
       lastInstruction?: string | null
+      lastRuntimeStatus?: AiStreamStatus | null
+      lastWorkflowStage?: 'polish' | 'generate' | 'edit' | null
       latestDraft?: QuestionnaireDraft | null
       latestSummary?: DraftSummary | null
     }) => {
       resetBufferedUiUpdates()
       modeRef.current = detail.intent
       setModeState(detail.intent)
-      setMessages(normalizeConversationMessages(detail.messages || [], detail.intent))
+      const processScenario =
+        detail.lastWorkflowStage === 'polish'
+          ? 'polish'
+          : detail.lastWorkflowStage === 'edit'
+          ? 'edit'
+          : detail.intent
+      const normalizedMessages = normalizeConversationMessages(detail.messages || [], detail.intent)
+      const restoredMessages =
+        detail.lastRuntimeStatus === 'cancelled'
+          ? cancelProcessMessage(normalizedMessages, processScenario)
+          : detail.lastRuntimeStatus === 'draft_ready' || detail.lastRuntimeStatus === 'done'
+          ? finalizeProcessMessage(normalizedMessages, processScenario, detail.lastRuntimeStatus)
+          : normalizedMessages
+
+      setMessages(restoredMessages)
       setComposerInputState(detail.lastInstruction || '')
       setRequestId(null)
       setErrorMessage(null)
@@ -115,11 +136,24 @@ export const useAiWorkbenchRuntime = ({
       )
 
       setDraftPartial(restoredDraft)
-      setFinalDraft(restoredDraft)
-      finalDraftRef.current = restoredDraft
+      const shouldRestoreAsFinalDraft =
+        detail.lastRuntimeStatus === 'draft_ready' ||
+        detail.lastRuntimeStatus === 'done' ||
+        (!detail.lastRuntimeStatus && Boolean(detail.latestDraft && detail.latestSummary))
+      setFinalDraft(shouldRestoreAsFinalDraft ? restoredDraft : null)
+      finalDraftRef.current = shouldRestoreAsFinalDraft ? restoredDraft : null
       draftAppliedRef.current = false
       setSummary(detail.latestSummary || null)
-      setStatus(restoredDraft ? 'draft_ready' : detail.messages?.length ? 'done' : 'idle')
+      setStatus(
+        detail.lastRuntimeStatus ||
+          (detail.latestDraft && !detail.latestSummary
+            ? 'cancelled'
+            : restoredDraft
+            ? 'draft_ready'
+            : detail.messages?.length
+            ? 'done'
+            : 'idle')
+      )
 
       dispatchGenerateFlow({ type: 'reset' })
       if (detail.intent === 'generate' && detail.lastInstruction) {
@@ -222,16 +256,35 @@ export const useAiWorkbenchRuntime = ({
       controllerRef.current = null
       resetBufferedUiUpdates()
 
+      const processScenario =
+        mode === 'edit'
+          ? 'edit'
+          : status === 'polishing' || status === 'awaiting_confirmation'
+          ? 'polish'
+          : 'generate'
+
       if (mode === 'generate') {
         dispatchGenerateFlow({ type: 'cancel' })
       }
 
-      setStatus(currentStatus => (currentStatus === 'draft_ready' ? currentStatus : 'cancelled'))
+      setRequestId(null)
+      setMessages(previousMessages => cancelProcessMessage(previousMessages, processScenario))
+      setStatus('cancelled')
       if (showMessage) {
         message.info('已停止当前 AI 会话')
       }
     },
-    [controllerRef, dispatchGenerateFlow, message, mode, resetBufferedUiUpdates, setStatus]
+    [
+      controllerRef,
+      dispatchGenerateFlow,
+      message,
+      mode,
+      resetBufferedUiUpdates,
+      setMessages,
+      setRequestId,
+      setStatus,
+      status
+    ]
   )
 
   return {

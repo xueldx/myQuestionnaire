@@ -118,6 +118,8 @@ const updateConversation = async (
     lastInstruction?: string | null
     latestDraft?: AiConversationDetail['latestDraft']
     latestSummary?: AiConversationDetail['latestSummary']
+    lastRuntimeStatus?: AiConversationDetail['lastRuntimeStatus']
+    lastWorkflowStage?: AiConversationDetail['lastWorkflowStage']
   }
 ) =>
   request.patch<any, RespType<AiConversationSummary>>(
@@ -127,6 +129,12 @@ const updateConversation = async (
 
 const deleteConversation = async (conversationId: number) =>
   request.delete<any, RespType<null>>(`${prefix}/conversations/${conversationId}`)
+
+const cancelCopilot = async (payload: { requestId?: string; conversationId?: number }) =>
+  request.post<any, RespType<{ cancelled: boolean; requestId?: string; conversationId?: number }>>(
+    `${prefix}/copilot/cancel`,
+    payload
+  )
 
 // 生成问卷，支持模型选择和题目数量
 const generateQuestionnaire = (theme: string, count = 10, model?: string) => {
@@ -172,6 +180,7 @@ export default {
   getConversationDetail,
   updateConversation,
   deleteConversation,
+  cancelCopilot,
   generateQuestionnaire,
   analyzeQuestionnaire,
   copilotStream
