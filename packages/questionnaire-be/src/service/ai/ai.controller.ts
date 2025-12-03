@@ -123,6 +123,10 @@ export class AiController {
     @currentUser() user: UserToken,
   ) {
     const data = await this.aiService.cancelCopilot(dto, user);
-    return new ResponseBody(1, data, data.cancelled ? '取消成功' : '未找到进行中的会话');
+    return new ResponseBody(
+      1,
+      data,
+      data.cancelled ? '取消成功' : '未找到进行中的会话',
+    );
   }
 }

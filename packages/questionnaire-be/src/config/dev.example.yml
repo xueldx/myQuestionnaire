@@ -36,6 +36,10 @@ openai:
     model: 'your_model_id_here'
     apiKey: 'your_modelscope_qwen3_api_key'
     baseURL: 'https://api-inference.modelscope.cn/v1'
+  minimax-m2.5:
+    model: 'MiniMax/MiniMax-M2.5'
+    apiKey: 'your_modelscope_minimax_api_key'
+    baseURL: 'https://api-inference.modelscope.cn/v1'
   modelscope-glm-5:
     model: 'your_model_id_here'
     apiKey: 'your_modelscope_glm5_api_key'

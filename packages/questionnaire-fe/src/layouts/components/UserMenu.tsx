@@ -41,7 +41,7 @@ const UserMenu: React.FC = () => {
     {
       key: 'email',
       icon: <SvgIcon name="email" size="1.2em" />,
-      url: 'support@example.com'
+      url: 'xueldx@163.com'
     }
     // {
     //   key: 'juejin',

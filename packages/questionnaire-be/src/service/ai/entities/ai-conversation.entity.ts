@@ -41,6 +41,12 @@ class AiConversation {
   @Column({ type: 'simple-json', nullable: true })
   latest_summary: Record<string, any> | null;
 
+  @Column({ type: 'simple-json', nullable: true })
+  latest_base_questionnaire: Record<string, any> | null;
+
+  @Column({ type: 'simple-json', nullable: true })
+  latest_batches: Record<string, any>[] | null;
+
   @Column({ length: 40, nullable: true })
   last_runtime_status: string | null;
 

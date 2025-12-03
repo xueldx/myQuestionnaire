@@ -21,7 +21,7 @@ const MainLayout: React.FC = () => {
       <footer className="custom-footer shrink-0">
         <div>
           问卷小筑 &copy;2025 - present. Maintained by{' '}
-          <Link to="mailto:support@example.com">project maintainer</Link>
+          <Link to="mailto:xueldx@163.com">project maintainer</Link>
         </div>
       </footer>
       <Spin indicator={<CustomSpin />} spinning={screenSpinning} fullscreen />

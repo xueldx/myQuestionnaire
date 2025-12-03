@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsBoolean,
   IsIn,
   IsNotEmpty,
@@ -51,6 +52,14 @@ export class UpdateConversationDto {
   @IsOptional()
   @IsObject()
   latestSummary?: Record<string, any> | null;
+
+  @IsOptional()
+  @IsObject()
+  latestBaseQuestionnaire?: Record<string, any> | null;
+
+  @IsOptional()
+  @IsArray()
+  latestBatches?: Record<string, any>[] | null;
 
   @IsOptional()
   @IsIn([

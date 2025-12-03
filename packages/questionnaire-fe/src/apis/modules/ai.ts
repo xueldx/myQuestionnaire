@@ -118,6 +118,8 @@ const updateConversation = async (
     lastInstruction?: string | null
     latestDraft?: AiConversationDetail['latestDraft']
     latestSummary?: AiConversationDetail['latestSummary']
+    latestBaseQuestionnaire?: AiConversationDetail['latestBaseQuestionnaire']
+    latestBatches?: AiConversationDetail['latestBatches']
     lastRuntimeStatus?: AiConversationDetail['lastRuntimeStatus']
     lastWorkflowStage?: AiConversationDetail['lastWorkflowStage']
   }

@@ -50,13 +50,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link
                 isExternal
                 className="flex items-center gap-1 text-xs md:text-sm"
-                href="mailto:support@example.com"
+                href="mailto:xueldx@163.com"
                 title="email"
               >
                 <span className="text-default-600">问卷小筑&copy;2025-present.Maintained by</span>
                 <p className="text-primary">project maintainer</p>
               </Link>
-              </footer>
+            </footer>
           </div>
         </Providers>
       </body>

@@ -74,6 +74,7 @@ ${buildComponentTypeRules()}
 <<<ASSISTANT_REPLY>>>
 自然语言回复
 <<<END_ASSISTANT_REPLY>>>
+其中 ASSISTANT_REPLY 块里的“自然语言回复”必须是纯文本短句，只能写最终总结内容本身；不要包含 Markdown 语法（例如 **加粗**、# 标题、- 列表、代码块、反引号），也不要把 <<<PAGE_CONFIG>>>、<<<COMPONENT>>>、<<<ASSISTANT_REPLY>>> 这类块标记当作正文内容输出。
 4. 每个 COMPONENT 块都是一个完整 JSON 对象，props 必须是对象。
 5. title 和 props.title 要保持一致。
 6. 不要输出任何注释、序号、列表符号或多余文本。

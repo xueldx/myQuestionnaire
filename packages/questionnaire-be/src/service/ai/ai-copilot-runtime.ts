@@ -19,6 +19,7 @@ import { buildDiffSummary } from '@/service/ai/utils/build-diff-summary';
 import { buildPromptPolishPrompt } from '@/service/ai/ai-prompt/build-prompt-polish-prompt';
 import { buildCopilotPrompt } from '@/service/ai/ai-prompt/build-copilot-prompt';
 import { SanitizedCopilotDto } from '@/service/ai/ai-copilot-sanitize';
+import { sanitizeAssistantReply } from '@/service/ai/utils/sanitize-assistant-reply';
 import {
   AiMessageKind,
   AiMessageRole,
@@ -317,7 +318,7 @@ const emitAssistantReplyChunks = async (
     writeSseEvent(res, 'assistant_delta', { delta });
 
     if (start + chunkSize < normalizedReply.length && delayMs > 0) {
-      await new Promise(resolve => setTimeout(resolve, delayMs));
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
   }
 };
@@ -466,14 +467,21 @@ export const streamDraftStage = async (
     const parsed = parseCopilotBlocks(accumulatedContent);
     emitParserWarning(parsed.warnings);
 
-    if (parsed.assistantReply.length > lastAssistantReply.length) {
-      const delta = parsed.assistantReply.slice(lastAssistantReply.length);
-      lastAssistantReply = parsed.assistantReply;
+    const nextAssistantReply = sanitizeAssistantReply(parsed.assistantReply);
+
+    if (
+      nextAssistantReply.length >= lastAssistantReply.length &&
+      nextAssistantReply.startsWith(lastAssistantReply)
+    ) {
+      const delta = nextAssistantReply.slice(lastAssistantReply.length);
+      lastAssistantReply = nextAssistantReply;
 
       if (delta) {
         emitCopilotPhase(res, currentPhaseRef, 'answering', workflowStage);
         writeSseEvent(res, 'assistant_delta', { delta });
       }
+    } else if (nextAssistantReply !== lastAssistantReply) {
+      lastAssistantReply = nextAssistantReply;
     }
 
     if (parsed.pageConfig || parsed.components.length > 0) {
@@ -536,7 +544,7 @@ export const streamDraftStage = async (
 
   if (isClosed()) return null;
 
-  const reply = parsed.assistantReply || '已生成可应用草稿';
+  const reply = sanitizeAssistantReply(parsed.assistantReply) || '已生成可应用草稿';
   const summary = buildDiffSummary(
     dto.questionnaire,
     validatedDraft,
@@ -619,10 +627,7 @@ export const executeCopilotStream = async (
         : deps.createClientForModel(resolvedModel.key);
     requestId = deps.createRequestId();
     const workflowStage = getWorkflowStage(safeDto);
-    conversation = await deps.resolveCopilotConversation(
-      safeDto,
-      user.userId,
-    );
+    conversation = await deps.resolveCopilotConversation(safeDto, user.userId);
     conversationId = conversation.id;
     deps.registerActiveRequest({
       requestId,

@@ -46,6 +46,8 @@ export type SerializedAiConversationSummary = {
 export type SerializedAiConversationDetail = SerializedAiConversationSummary & {
   latestDraft: QuestionnaireDraft | null;
   latestSummary: DraftSummary | null;
+  latestBaseQuestionnaire: QuestionnaireDraft | null;
+  latestBatches: Record<string, any>[] | null;
   messages: SerializedAiMessage[];
 };
 
@@ -106,6 +108,11 @@ export const serializeConversationDetail = (
   ...serializeConversation(deps, conversation),
   latestDraft: (conversation.latest_draft as QuestionnaireDraft | null) || null,
   latestSummary: (conversation.latest_summary as DraftSummary | null) || null,
+  latestBaseQuestionnaire:
+    (conversation.latest_base_questionnaire as QuestionnaireDraft | null) ||
+    null,
+  latestBatches:
+    (conversation.latest_batches as Record<string, any>[] | null) || null,
   messages: messages.map((message) => serializeMessage(message)),
 });
 
@@ -268,6 +275,14 @@ export const updateConversation = async (
 
   if (dto.latestSummary !== undefined) {
     conversation.latest_summary = dto.latestSummary;
+  }
+
+  if (dto.latestBaseQuestionnaire !== undefined) {
+    conversation.latest_base_questionnaire = dto.latestBaseQuestionnaire;
+  }
+
+  if (dto.latestBatches !== undefined) {
+    conversation.latest_batches = dto.latestBatches;
   }
 
   if (dto.lastRuntimeStatus !== undefined) {

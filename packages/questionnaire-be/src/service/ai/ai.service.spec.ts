@@ -186,4 +186,22 @@ describe('AiService', () => {
     expect(result).toBe(createdConversation);
     expect(createConversationFromCopilotRequestSpy).toHaveBeenCalledTimes(1);
   });
+
+  it('should reject an explicitly selected model when its config is invalid', () => {
+    jest
+      .spyOn(service as any, 'getModelRuntimeConfig')
+      .mockImplementation((modelName: string) =>
+        modelName === 'modelscope-qwen3-235b'
+          ? {
+              model: 'Qwen/Qwen3-235B-A22B-Instruct-2507',
+              apiKey: 'valid-key',
+              baseURL: 'https://api-inference.modelscope.cn/v1',
+            }
+          : null,
+      );
+
+    expect(() => (service as any).resolveModelSelection('minimax-m2.5')).toThrow(
+      '模型 minimax-m2.5 缺少有效配置',
+    );
+  });
 });

@@ -172,6 +172,11 @@ const applyEnvironmentOverrides = (baseConfig: Record<string, any>) => {
       apiKey: 'MODELSCOPE_QWEN3_API_KEY',
       baseURL: 'MODELSCOPE_QWEN3_BASE_URL',
     },
+    'minimax-m2.5': {
+      model: 'MINIMAX_M2_5_MODEL',
+      apiKey: 'MINIMAX_M2_5_API_KEY',
+      baseURL: 'MINIMAX_M2_5_BASE_URL',
+    },
     'modelscope-glm-5': {
       model: 'MODELSCOPE_GLM5_MODEL',
       apiKey: 'MODELSCOPE_GLM5_API_KEY',
@@ -208,6 +213,10 @@ const collectPlaceholderWarnings = (currentConfig: Record<string, any>) => {
     [
       'openai.modelscope-qwen3-235b.apiKey',
       currentConfig?.openai?.['modelscope-qwen3-235b']?.apiKey,
+    ],
+    [
+      'openai.minimax-m2.5.apiKey',
+      currentConfig?.openai?.['minimax-m2.5']?.apiKey,
     ],
     [
       'openai.modelscope-glm-5.apiKey',

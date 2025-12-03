@@ -67,6 +67,7 @@ import {
 
 enum Model {
   ModelScopeQwen3 = 'modelscope-qwen3-235b',
+  MinimaxM2_5 = 'minimax-m2.5',
   ModelScopeGLM5 = 'modelscope-glm-5',
   ModelScopeKimik2 = 'modelscope-kimi-k2.5',
 }
@@ -89,6 +90,11 @@ const MODEL_INFO_MAP: Record<Model, ModelInfo> = {
     label: 'Qwen3',
     description: '魔搭社区 API Inference 接入的 Qwen3 235B 模型',
   },
+  [Model.MinimaxM2_5]: {
+    value: Model.MinimaxM2_5,
+    label: 'MiniMax M2.5',
+    description: '魔搭社区 API Inference 接入的 MiniMax M2.5 模型',
+  },
   [Model.ModelScopeGLM5]: {
     value: Model.ModelScopeGLM5,
     label: 'GLM5',
@@ -104,6 +110,12 @@ const MODEL_INFO_MAP: Record<Model, ModelInfo> = {
 const COPILOT_STREAM_TIMEOUT_MS = 90000;
 const DEFAULT_CONVERSATION_TITLE = '未命名会话';
 const TOOL_CONTEXT_MAX_PREVIEW_LENGTH = 4000;
+const PLACEHOLDER_MARKERS = [
+  'change_me',
+  'your_',
+  'example.com',
+  'your_model_id_here',
+];
 
 type ActiveCopilotRequest = {
   requestId: string;
@@ -116,7 +128,10 @@ type ActiveCopilotRequest = {
 export class AiService {
   private readonly openai: OpenAI;
   private readonly defaultModel: Model = Model.ModelScopeQwen3;
-  private readonly activeCopilotRequests = new Map<string, ActiveCopilotRequest>();
+  private readonly activeCopilotRequests = new Map<
+    string,
+    ActiveCopilotRequest
+  >();
 
   constructor(
     private readonly answerService: AnswerService,
@@ -147,6 +162,11 @@ export class AiService {
     >;
   }
 
+  private isPlaceholderValue(value: string) {
+    const normalized = value.trim().toLowerCase();
+    return PLACEHOLDER_MARKERS.some((marker) => normalized.includes(marker));
+  }
+
   private getModelRuntimeConfig(modelName: Model): ModelRuntimeConfig | null {
     const modelConfig = this.getConfiguredModelMap()[modelName];
     if (!modelConfig) return null;
@@ -158,6 +178,14 @@ export class AiService {
       !modelConfig.apiKey.trim() ||
       typeof modelConfig.baseURL !== 'string' ||
       !modelConfig.baseURL.trim()
+    ) {
+      return null;
+    }
+
+    if (
+      this.isPlaceholderValue(modelConfig.model) ||
+      this.isPlaceholderValue(modelConfig.apiKey) ||
+      this.isPlaceholderValue(modelConfig.baseURL)
     ) {
       return null;
     }
@@ -184,6 +212,11 @@ export class AiService {
     const fallbackModel = availableModelKeys.includes(this.defaultModel)
       ? this.defaultModel
       : availableModelKeys[0];
+
+    if (preferredModel && !availableModelKeys.includes(preferredModel)) {
+      throw new Error(`模型 ${preferredModel} 缺少有效配置`);
+    }
+
     const selectedModel =
       preferredModel && availableModelKeys.includes(preferredModel)
         ? preferredModel
@@ -501,7 +534,8 @@ export class AiService {
   private findActiveCopilotRequest(dto: CancelCopilotDto, userId: number) {
     const normalizedRequestId = this.ensureString(dto.requestId);
     if (normalizedRequestId) {
-      const matchedByRequestId = this.activeCopilotRequests.get(normalizedRequestId);
+      const matchedByRequestId =
+        this.activeCopilotRequests.get(normalizedRequestId);
       if (matchedByRequestId?.userId === userId) {
         return matchedByRequestId;
       }
@@ -514,8 +548,9 @@ export class AiService {
     return Array.from(this.activeCopilotRequests.values())
       .reverse()
       .find(
-        request =>
-          request.userId === userId && request.conversationId === dto.conversationId,
+        (request) =>
+          request.userId === userId &&
+          request.conversationId === dto.conversationId,
       );
   }
 
