@@ -44,6 +44,7 @@ type UseAiDraftStreamParams = {
   finalDraftRef: { current: QuestionnaireDraft | null }
   draftAppliedRef: { current: boolean }
   rawReplyTextRef: { current: string }
+  baseQuestionnaireRef: { current: QuestionnaireDraft | null }
   generateDraftBaseRef: { current: QuestionnaireDraft | null }
   bufferedUiUpdatesRef: { current: BufferedUiUpdates }
   setActiveConversationId: (value: number | null) => void
@@ -56,15 +57,25 @@ type UseAiDraftStreamParams = {
   setRequestId: React.Dispatch<React.SetStateAction<string | null>>
   setWarningMessage: React.Dispatch<React.SetStateAction<string | null>>
   setDraftApplied: React.Dispatch<React.SetStateAction<boolean>>
+  applyGeneratePageConfig: (draft: QuestionnaireDraft) => void
   dispatchGenerateFlow: (action: any) => void
   ensureActiveConversation: (intent: AiCopilotIntent) => Promise<boolean>
   buildQuestionnaireSnapshot: () => QuestionnaireDraft
+  buildCommittedQuestionnaireSnapshot: () => QuestionnaireDraft
   buildDraftFallback: (intent: AiCopilotIntent) => QuestionnaireDraft
   buildMergedGenerateDraft: (incomingDraft: QuestionnaireDraft) => QuestionnaireDraft
   refreshConversationList: (preferredConversationId?: number | null) => Promise<unknown>
   scheduleBufferedUiFlush: () => void
   flushBufferedUiUpdates: (immediate?: boolean) => void
   resetBufferedUiUpdates: () => void
+  persistConversationDraftState: (payload: {
+    lastInstruction?: string | null
+    latestDraft?: QuestionnaireDraft | null
+    latestSummary?: DraftSummary | null
+    latestBaseQuestionnaire?: QuestionnaireDraft | null
+    lastRuntimeStatus?: string | null
+    lastWorkflowStage?: 'polish' | 'generate' | 'edit' | null
+  }) => Promise<void>
   syncRuntimeStatus: (
     nextStatus: Extract<
       AiStreamStatus,
@@ -88,6 +99,7 @@ export const useAiDraftStream = ({
   finalDraftRef,
   draftAppliedRef,
   rawReplyTextRef,
+  baseQuestionnaireRef,
   generateDraftBaseRef,
   bufferedUiUpdatesRef,
   setActiveConversationId,
@@ -100,15 +112,18 @@ export const useAiDraftStream = ({
   setRequestId,
   setWarningMessage,
   setDraftApplied,
+  applyGeneratePageConfig,
   dispatchGenerateFlow,
   ensureActiveConversation,
   buildQuestionnaireSnapshot,
+  buildCommittedQuestionnaireSnapshot,
   buildDraftFallback,
   buildMergedGenerateDraft,
   refreshConversationList,
   scheduleBufferedUiFlush,
   flushBufferedUiUpdates,
   resetBufferedUiUpdates,
+  persistConversationDraftState,
   syncRuntimeStatus
 }: UseAiDraftStreamParams) =>
   useCallback(
@@ -131,7 +146,10 @@ export const useAiDraftStream = ({
       const hasConversation = await ensureActiveConversation(requestIntent)
       if (!hasConversation) return
 
-      const questionnaire = buildQuestionnaireSnapshot()
+      const questionnaire =
+        requestIntent === 'generate'
+          ? buildCommittedQuestionnaireSnapshot()
+          : buildQuestionnaireSnapshot()
       const baseHistory = getConversationHistory(messages).filter(item => item.content.trim())
       const processScenario = resolveProcessScenario(requestIntent)
       let attempt = 0
@@ -143,8 +161,8 @@ export const useAiDraftStream = ({
         const controller = new AbortController()
         controllerRef.current = controller
         baseVersionRef.current = version
-        generateDraftBaseRef.current =
-          requestIntent === 'generate' ? buildQuestionnaireSnapshot() : null
+        baseQuestionnaireRef.current = questionnaire
+        generateDraftBaseRef.current = requestIntent === 'generate' ? questionnaire : null
 
         resetBufferedUiUpdates()
         setStatus(startStatus)
@@ -276,6 +294,9 @@ export const useAiDraftStream = ({
                         : '已生成修改建议，可在中间预览确认后应用。'
                     const nextReply = event.data.reply || rawReplyTextRef.current || fallbackReply
 
+                    if (requestIntent === 'generate') {
+                      applyGeneratePageConfig(nextDraft)
+                    }
                     setDraftPartial(nextDraft)
                     setFinalDraft(nextDraft)
                     setSummary(event.data.summary)
@@ -292,6 +313,14 @@ export const useAiDraftStream = ({
                     )
                     setStatus('draft_ready')
                     setDraftApplied(false)
+                    void persistConversationDraftState({
+                      lastInstruction: instruction,
+                      latestDraft: nextDraft,
+                      latestSummary: event.data.summary,
+                      latestBaseQuestionnaire: baseQuestionnaireRef.current,
+                      lastRuntimeStatus: 'draft_ready',
+                      lastWorkflowStage: requestIntent === 'generate' ? 'generate' : 'edit'
+                    })
                     break
                   }
                   case 'warning':
@@ -391,10 +420,12 @@ export const useAiDraftStream = ({
       activeConversationIdRef,
       baseVersionRef,
       buildDraftFallback,
+      buildCommittedQuestionnaireSnapshot,
       buildMergedGenerateDraft,
       buildQuestionnaireSnapshot,
       bufferedUiUpdatesRef,
       controllerRef,
+      applyGeneratePageConfig,
       dispatchGenerateFlow,
       draftAppliedRef,
       ensureActiveConversation,
@@ -405,8 +436,10 @@ export const useAiDraftStream = ({
       messages,
       questionnaireId,
       rawReplyTextRef,
+      baseQuestionnaireRef,
       refreshConversationList,
       resetBufferedUiUpdates,
+      persistConversationDraftState,
       scheduleBufferedUiFlush,
       selectedModel,
       setActiveConversationId,

@@ -357,12 +357,15 @@ export const replaceLastAssistantMessageWithSanitizedContent = (
   return nextMessages
 }
 
+const PROTOCOL_MARKER_PATTERN =
+  /<{0,3}(?:END_)?(?:PAGE_CONFIG|COMPONENT|ASSISTANT_REPLY|END_DRAFT)(?:>{0,3})?/g
+
 export const sanitizeAssistantReply = (content: string) =>
   content
     .replace(/\r/g, '')
-    .replace(/^<<<[A-Z_]+>>>$/gm, '')
-    .replace(/^<<<END_[A-Z_]+>>>$/gm, '')
-    .replace(/^<<<END_DRAFT>>>$/gm, '')
+    .replace(PROTOCOL_MARKER_PATTERN, '')
+    .replace(/<<<(?:END_)?[A-Z_]+>>>/g, '')
+    .replace(/<<<END_DRAFT>>>/g, '')
     .replace(/<<<[A-Z_]*$/g, '')
     .replace(/<<<END_[A-Z_]*$/g, '')
     .replace(/<<<PAGE_[A-Z_]*$/g, '')
@@ -371,9 +374,14 @@ export const sanitizeAssistantReply = (content: string) =>
     .replace(/^\s*[-*•]\s+/gm, '')
     .replace(/^\s*\d+\.\s+/gm, '')
     .replace(/^\s*>\s?/gm, '')
+    .replace(/```/g, '')
     .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/__(.*?)__/g, '$1')
     .replace(/`([^`]*)`/g, '$1')
     .replace(/\n{3,}/g, '\n\n')
+    .split('\n')
+    .map(line => line.trimEnd())
+    .join('\n')
     .trim()
 
 export const formatAssistantBubbleReply = (content: string, fallback: string) => {
@@ -443,7 +451,10 @@ export const normalizeConversationMessages = (
     id: message.id,
     role: message.role,
     kind: message.kind || (message.role === 'tool' ? 'tool_result' : 'chat'),
-    content: message.content || '',
+    content:
+      message.role === 'assistant'
+        ? sanitizeAssistantReply(message.content || '')
+        : message.content || '',
     toolName: message.toolName ?? null,
     metadata: message.metadata ?? null,
     createdAt: message.createdAt

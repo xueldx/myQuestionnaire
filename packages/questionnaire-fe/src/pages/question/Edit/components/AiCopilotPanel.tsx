@@ -32,16 +32,17 @@ interface AiCopilotPanelProps {
   composerInput: string
   errorMessage: string | null
   hasGenerateBase: boolean
+  hasPendingAiResult: boolean
   onModeChange: (mode: AiCopilotIntent) => void
   onModelChange: (model: string) => void
   onComposerInputChange: (value: string) => void
   onCreateConversation: () => Promise<unknown> | unknown
-  onSelectConversation: (conversationId: number) => Promise<unknown> | unknown
+  onSelectConversation: (conversationId: number) => Promise<boolean | void> | boolean | void
   onRenameConversation: (conversationId: number, title: string) => Promise<boolean> | boolean
   onToggleConversationPin: (conversationId: number) => Promise<boolean> | boolean
   onDeleteConversation: (conversationId: number) => Promise<unknown> | unknown
-  onSend: (instruction: string) => void
-  onPolish: (instruction?: string) => void
+  onSend: (instruction: string) => Promise<boolean | void> | boolean | void
+  onPolish: (instruction?: string) => Promise<boolean | void> | boolean | void
   onCancel: () => void
 }
 
@@ -58,6 +59,7 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
   composerInput,
   errorMessage,
   hasGenerateBase,
+  hasPendingAiResult,
   onModeChange,
   onModelChange,
   onComposerInputChange,
@@ -137,8 +139,10 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
       if (status === 'draft_ready' || status === 'done') {
         return {
           type: 'success' as const,
-          message: '问卷草稿已生成',
-          tooltip: '可在中间预览查看，不满意可继续编辑后重新润色或发送。'
+          message: hasPendingAiResult ? '请先应用或放弃本轮草稿' : '可继续发起下一轮生成',
+          tooltip: hasPendingAiResult
+            ? '处理完当前草稿后，才能继续发送、切换模式或切换会话。'
+            : '当前草稿已处理完成，可以继续发起下一轮生成。'
         }
       }
     }
@@ -178,8 +182,10 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
     if (status === 'draft_ready' || status === 'done') {
       return {
         type: 'success' as const,
-        message: '修改草稿已生成',
-        tooltip: '可在中间预览查看差异，确认后再应用到编辑器。'
+        message: hasPendingAiResult ? '请先处理完本轮建议' : '可继续发起下一轮修改',
+        tooltip: hasPendingAiResult
+          ? '请把本轮建议逐项应用或拒绝；全部处理完成后，才能继续发送、切换模式或切换会话。'
+          : '当前建议已处理完成，可以继续发起下一轮修改。'
       }
     }
 
@@ -187,10 +193,13 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
       return {
         type: 'warning' as const,
         message: '会话已停止',
-        tooltip:
-          mode === 'generate'
-            ? '输入框里会保留当前内容，你可以继续编辑后再次点"润色"或"发送"。'
-            : '请补充更明确的修改意图后重新发送。'
+        tooltip: hasPendingAiResult
+          ? mode === 'generate'
+            ? '已保留已生成部分，请先应用或放弃当前草稿后再继续。'
+            : '请先处理当前建议后再继续下一轮修改。'
+          : mode === 'generate'
+          ? '输入框里会保留当前内容，你可以继续编辑后再次点"润色"或"发送"。'
+          : '请补充更明确的修改意图后重新发送。'
       }
     }
 
@@ -231,7 +240,8 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
 
     setSwitchingConversationId(conversationId)
     try {
-      await onSelectConversation(conversationId)
+      const switched = (await onSelectConversation(conversationId)) !== false
+      if (!switched) return
       setIsHistoryModalOpen(false)
     } finally {
       setSwitchingConversationId(null)
@@ -264,12 +274,12 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
     }
   }
 
-  const handleSend = (instruction: string) => {
+  const handleSend = async (instruction: string) => {
     if (isComposerExpanded) {
       setIsComposerExpanded(false)
     }
 
-    onSend(instruction)
+    return onSend(instruction)
   }
 
   return (
@@ -487,8 +497,8 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
             placeholder={placeholder}
             mode={mode}
             modeLabels={{
-              generate: hasGenerateBase ? '追加题目' : '新生成',
-              edit: mode === 'edit' ? '继续修改' : '修改'
+              generate: '生成',
+              edit: '修改'
             }}
             modelList={modelList}
             selectedModel={selectedModel}
@@ -517,8 +527,8 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
               placeholder={placeholder}
               mode={mode}
               modeLabels={{
-                generate: hasGenerateBase ? '追加题目' : '新生成',
-                edit: mode === 'edit' ? '继续修改' : '修改'
+                generate: '生成',
+                edit: '修改'
               }}
               modelList={modelList}
               selectedModel={selectedModel}

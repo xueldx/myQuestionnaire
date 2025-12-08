@@ -544,7 +544,8 @@ export const streamDraftStage = async (
 
   if (isClosed()) return null;
 
-  const reply = sanitizeAssistantReply(parsed.assistantReply) || '已生成可应用草稿';
+  const reply =
+    sanitizeAssistantReply(parsed.assistantReply) || '已生成可应用草稿';
   const summary = buildDiffSummary(
     dto.questionnaire,
     validatedDraft,

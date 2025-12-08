@@ -193,22 +193,8 @@ export const useAiConversationList = ({
   )
 
   const openNewConversation = useCallback(async () => {
-    if (finalDraftRef.current && !draftAppliedRef.current) {
-      modal.confirm({
-        title: '切换到新会话',
-        content:
-          '当前会话里还有未应用到编辑器的 AI 草稿。确认新建会话并切换吗？当前草稿会保留在原会话中。',
-        okText: '确认切换',
-        cancelText: '取消',
-        onOk: async () => {
-          await createConversation()
-        }
-      })
-      return null
-    }
-
     return createConversation()
-  }, [createConversation, draftAppliedRef, finalDraftRef, modal])
+  }, [createConversation])
 
   const selectConversation = useCallback(
     async (conversationId: number) => {
@@ -327,6 +313,8 @@ export const useAiConversationList = ({
       lastInstruction?: string | null
       latestDraft?: QuestionnaireDraft | null
       latestSummary?: unknown | null
+      latestBaseQuestionnaire?: AiConversationDetail['latestBaseQuestionnaire']
+      latestBatches?: AiConversationDetail['latestBatches']
       lastRuntimeStatus?: AiConversationDetail['lastRuntimeStatus']
       lastWorkflowStage?: AiConversationDetail['lastWorkflowStage']
     }) => {

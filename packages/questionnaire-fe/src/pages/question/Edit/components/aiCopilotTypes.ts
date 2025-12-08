@@ -39,6 +39,55 @@ export type QuestionnaireDraft = {
   components: ComponentInfoType[]
 }
 
+export type QuestionnairePatch =
+  | {
+      id: string
+      type: 'page_config'
+      changes: Partial<Pick<QuestionnaireDraft, 'title' | 'description' | 'footerText'>>
+    }
+  | {
+      id: string
+      type: 'add'
+      question: ComponentInfoType
+      afterQuestionId: string | null
+      beforeQuestionId: string | null
+    }
+  | {
+      id: string
+      type: 'update'
+      targetQuestionId: string
+      question: ComponentInfoType
+    }
+  | {
+      id: string
+      type: 'delete'
+      targetQuestionId: string
+      previousQuestion: ComponentInfoType
+    }
+
+export type QuestionnairePatchSet = {
+  baseVersion: number
+  baseQuestionnaire: QuestionnaireSnapshot
+  patches: QuestionnairePatch[]
+}
+
+export type AiDraftBatch = {
+  id: string
+  intent: AiCopilotIntent
+  title: string
+  createdAt: string
+  baseVersion: number
+  latestBaseQuestionnaire: QuestionnaireSnapshot | null
+  latestDraft: QuestionnaireDraft | null
+  latestSummary: DraftSummary | null
+  lastRuntimeStatus: AiStreamStatus | null
+  lastWorkflowStage: AiWorkflowStage | null
+  anchorQuestionId: string | null
+  anchorQuestionTitle: string | null
+  selectedPatchIds: string[]
+  rejectedPatchIds: string[]
+}
+
 export type DraftSummary = {
   added: string[]
   updated: string[]
@@ -83,6 +132,8 @@ export type AiConversationSummary = {
 export type AiConversationDetail = AiConversationSummary & {
   latestDraft: QuestionnaireDraft | null
   latestSummary: DraftSummary | null
+  latestBaseQuestionnaire: QuestionnaireSnapshot | null
+  latestBatches: AiDraftBatch[] | null
   messages: AiChatMessage[]
 }
 

@@ -23,8 +23,8 @@ interface AiComposerProps {
   onChange: (value: string) => void
   onModelChange: (value: string) => void
   onModeChange: (mode: AiCopilotIntent) => void
-  onSubmit: (value: string) => void
-  onPolish?: (value: string) => void
+  onSubmit: (value: string) => Promise<boolean | void> | boolean | void
+  onPolish?: (value: string) => Promise<boolean | void> | boolean | void
   onCancel: () => void
   isExpanded?: boolean
   onToggleExpanded?: () => void
@@ -47,17 +47,23 @@ const AiComposer: React.FC<AiComposerProps> = ({
   isExpanded = false,
   onToggleExpanded
 }) => {
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const trimmed = value.trim()
     if (!trimmed) return
-    onSubmit(trimmed)
+    const shouldClear = (await onSubmit(trimmed)) !== false
+    if (!shouldClear) return
     onChange('')
   }
 
-  const handlePolish = () => {
+  const handlePolish = async () => {
     const trimmed = value.trim()
     if (!trimmed || !onPolish) return
-    onPolish(trimmed)
+    const previousValue = value
+    onChange('')
+    const shouldClear = (await onPolish(trimmed)) !== false
+    if (!shouldClear) {
+      onChange(previousValue)
+    }
   }
 
   return (
@@ -130,7 +136,6 @@ const AiComposer: React.FC<AiComposerProps> = ({
             value={value}
             onChange={event => onChange(event.target.value)}
             placeholder={placeholder}
-            disabled={isStreaming}
             autoSize={false}
             style={{
               height: '100%',
@@ -139,7 +144,7 @@ const AiComposer: React.FC<AiComposerProps> = ({
             onPressEnter={event => {
               if ((event.shiftKey || event.ctrlKey) && !isStreaming) {
                 event.preventDefault()
-                handleSubmit()
+                void handleSubmit()
               }
             }}
           />
@@ -179,7 +184,7 @@ const AiComposer: React.FC<AiComposerProps> = ({
                 value: item.value,
                 label: <span className="text-sm font-normal">{item.label}</span>
               }))}
-              className="ai-composer-select min-w-[70px] [&_.ant-select-selection-item]:!text-sm [&_.ant-select-selection-item]:!leading-6 [&_.ant-select-selection-item]:!pr-2"
+              className="ai-composer-select min-w-[70px] [&_.ant-select-selection-item]:!text-sm [&_.ant-select-selection-item]:!leading-6 [&_.ant-select-selection-item]:!pr-6"
             />
 
             {/* Mode Select */}
@@ -231,7 +236,7 @@ const AiComposer: React.FC<AiComposerProps> = ({
                 type="primary"
                 size="small"
                 shape="circle"
-                onClick={isStreaming ? onCancel : handleSubmit}
+                onClick={isStreaming ? onCancel : () => void handleSubmit()}
                 disabled={!isStreaming && !value.trim()}
                 icon={isStreaming ? <StopOutlined /> : <SendOutlined className="!ml-[2px]" />}
                 className="!h-8 !w-8 flex items-center justify-center border-transparent bg-custom-primary-200 text-white shadow-sm shadow-custom-primary-200/20 hover:!bg-custom-primary-100 disabled:!bg-gray-100 disabled:!text-gray-400"

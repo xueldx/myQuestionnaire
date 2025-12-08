@@ -1,10 +1,5 @@
 import { useCallback } from 'react'
-import {
-  AiCopilotIntent,
-  AiGenerateFlowState,
-  QuestionnaireDraft
-} from '../../components/aiCopilotTypes'
-import { shouldConfirmDraftRegenerate } from '../aiDraftInteraction'
+import { AiCopilotIntent, AiGenerateFlowState } from '../../components/aiCopilotTypes'
 import { DraftStreamOptions } from './aiShared'
 
 type MessageApi = {
@@ -15,51 +10,31 @@ type UseAiInstructionActionsParams = {
   mode: AiCopilotIntent
   composerInput: string
   message: MessageApi
-  finalDraftRef: { current: QuestionnaireDraft | null }
-  draftAppliedRef: { current: boolean }
   generateFlowRef: { current: AiGenerateFlowState }
-  pendingDraftInstructionRef: { current: string }
-  setModeState: (value: AiCopilotIntent) => void
   setComposerInputState: (value: string) => void
-  setIsPendingDraftDecisionOpen: (value: boolean) => void
   dispatchGenerateFlow: (action: any) => void
-  clearPendingDraftState: () => void
-  closePendingDraftDecision: () => void
-  persistConversationDraftState: (payload: {
-    lastInstruction?: string | null
-    latestDraft?: QuestionnaireDraft | null
-    latestSummary?: unknown | null
-  }) => Promise<void>
   ensureActiveConversation: (intent: AiCopilotIntent) => Promise<boolean>
   runDraftStream: (options: DraftStreamOptions) => Promise<void>
-  runPromptPolishStream: (instruction: string, isRetry?: boolean) => Promise<void>
+  runPromptPolishStream: (instruction: string, isRetry?: boolean) => Promise<boolean>
 }
 
 export const useAiInstructionActions = ({
   mode,
   composerInput,
   message,
-  finalDraftRef,
-  draftAppliedRef,
   generateFlowRef,
-  pendingDraftInstructionRef,
-  setModeState,
   setComposerInputState,
-  setIsPendingDraftDecisionOpen,
   dispatchGenerateFlow,
-  clearPendingDraftState,
-  closePendingDraftDecision,
-  persistConversationDraftState,
   ensureActiveConversation,
   runDraftStream,
   runPromptPolishStream
 }: UseAiInstructionActionsParams) => {
   const executeSendInstruction = useCallback(
     async (requestIntent: AiCopilotIntent, instruction: string) => {
-      if (!instruction.trim()) return
+      if (!instruction.trim()) return false
 
       const hasConversation = await ensureActiveConversation(requestIntent)
-      if (!hasConversation) return
+      if (!hasConversation) return false
 
       if (requestIntent === 'generate') {
         const prompt = instruction.trim()
@@ -74,7 +49,8 @@ export const useAiInstructionActions = ({
           sourceInstruction: generateFlowRef.current.sourceInstruction || prompt
         })
 
-        await runDraftStream({
+        setComposerInputState('')
+        void runDraftStream({
           requestIntent: 'generate',
           instruction: prompt,
           originalInstruction: generateFlowRef.current.sourceInstruction || prompt,
@@ -82,17 +58,18 @@ export const useAiInstructionActions = ({
           assistantPlaceholder: '正在连接 AI 并准备生成问卷...',
           appendUserMessage: true
         })
-        return
+        return true
       }
 
       setComposerInputState('')
-      await runDraftStream({
+      void runDraftStream({
         requestIntent: 'edit',
         instruction,
         startStatus: 'connecting',
         assistantPlaceholder: '正在连接 AI 并读取当前问卷...',
         appendUserMessage: true
       })
+      return true
     },
     [
       dispatchGenerateFlow,
@@ -103,68 +80,14 @@ export const useAiInstructionActions = ({
     ]
   )
 
-  const appendPendingDraft = useCallback(async () => {
-    const nextInstruction = pendingDraftInstructionRef.current.trim()
-    closePendingDraftDecision()
-    if (!nextInstruction) return
-
-    setModeState('generate')
-    await executeSendInstruction('generate', nextInstruction)
-  }, [closePendingDraftDecision, executeSendInstruction, pendingDraftInstructionRef, setModeState])
-
-  const regeneratePendingDraft = useCallback(async () => {
-    const nextInstruction = pendingDraftInstructionRef.current.trim()
-    closePendingDraftDecision()
-    if (!nextInstruction) return
-
-    clearPendingDraftState()
-    void persistConversationDraftState({
-      lastInstruction: nextInstruction,
-      latestDraft: null,
-      latestSummary: null
-    })
-    setModeState('generate')
-    dispatchGenerateFlow({
-      type: 'edit_refined_prompt',
-      prompt: nextInstruction
-    })
-    await executeSendInstruction('generate', nextInstruction)
-  }, [
-    clearPendingDraftState,
-    closePendingDraftDecision,
-    dispatchGenerateFlow,
-    executeSendInstruction,
-    pendingDraftInstructionRef,
-    persistConversationDraftState,
-    setModeState
-  ])
-
   const sendInstruction = useCallback(
     async (instruction: string) => {
       const nextInstruction = instruction.trim()
-      if (!nextInstruction) return
+      if (!nextInstruction) return false
 
-      if (
-        shouldConfirmDraftRegenerate({
-          mode,
-          hasPendingDraft: Boolean(finalDraftRef.current && !draftAppliedRef.current)
-        })
-      ) {
-        pendingDraftInstructionRef.current = nextInstruction
-        setIsPendingDraftDecisionOpen(true)
-        return
-      }
-
-      await executeSendInstruction(mode, nextInstruction)
+      return executeSendInstruction(mode, nextInstruction)
     },
-    [
-      draftAppliedRef,
-      executeSendInstruction,
-      finalDraftRef,
-      mode,
-      pendingDraftInstructionRef,
-      setIsPendingDraftDecisionOpen
-    ]
+    [executeSendInstruction, mode]
   )
 
   const polishInstruction = useCallback(
@@ -172,10 +95,10 @@ export const useAiInstructionActions = ({
       const nextInstruction = (instruction ?? composerInput).trim()
       if (!nextInstruction) {
         message.warning('请先输入需求后再润色')
-        return
+        return false
       }
 
-      await runPromptPolishStream(nextInstruction)
+      return runPromptPolishStream(nextInstruction)
     },
     [composerInput, message, runPromptPolishStream]
   )
@@ -221,8 +144,6 @@ export const useAiInstructionActions = ({
 
   return {
     executeSendInstruction,
-    appendPendingDraft,
-    regeneratePendingDraft,
     sendInstruction,
     polishInstruction,
     retryPromptPolish,

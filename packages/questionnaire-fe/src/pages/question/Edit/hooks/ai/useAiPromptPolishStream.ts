@@ -91,15 +91,15 @@ export const useAiPromptPolishStream = ({
 }: UseAiPromptPolishStreamParams) =>
   useCallback(
     async (instruction: string, isRetry = false) => {
-      if (!instruction.trim()) return
+      if (!instruction.trim()) return false
 
       if (controllerRef.current) {
         message.warning('当前 AI 会话尚未结束，请先停止后再发送新指令')
-        return
+        return false
       }
 
       const hasConversation = await ensureActiveConversation('generate')
-      if (!hasConversation) return
+      if (!hasConversation) return false
 
       const processScenario: AiProcessScenario = 'polish'
       const controller = new AbortController()
@@ -109,10 +109,12 @@ export const useAiPromptPolishStream = ({
       baseVersionRef.current = version
 
       resetBufferedUiUpdates()
+      bufferedUiUpdatesRef.current.preservedPrompt = instruction
       dispatchGenerateFlow({
         type: 'start_polish',
         instruction
       })
+      setComposerInputState('')
       setStatus('polishing')
       setErrorMessage(null)
       setWarningMessage(null)
@@ -188,6 +190,7 @@ export const useAiPromptPolishStream = ({
                 case 'prompt_delta':
                   if (!hasPromptDelta) {
                     bufferedUiUpdatesRef.current.replacePrompt = true
+                    bufferedUiUpdatesRef.current.preservedPrompt = ''
                     hasPromptDelta = true
                   }
                   bufferedUiUpdatesRef.current.promptDelta += event.data.delta
@@ -215,6 +218,7 @@ export const useAiPromptPolishStream = ({
                   break
                 case 'prompt_refined': {
                   flushBufferedUiUpdates(true)
+                  bufferedUiUpdatesRef.current.preservedPrompt = ''
                   const nextPrompt =
                     event.data.prompt.trim() || generateFlowRef.current.refinedInstruction.trim()
                   setComposerInputState(nextPrompt)
@@ -291,6 +295,8 @@ export const useAiPromptPolishStream = ({
           controllerRef.current = null
         }
       }
+
+      return true
     },
     [
       activeConversationIdRef,

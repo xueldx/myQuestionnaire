@@ -200,8 +200,8 @@ describe('AiService', () => {
           : null,
       );
 
-    expect(() => (service as any).resolveModelSelection('minimax-m2.5')).toThrow(
-      '模型 minimax-m2.5 缺少有效配置',
-    );
+    expect(() =>
+      (service as any).resolveModelSelection('minimax-m2.5'),
+    ).toThrow('模型 minimax-m2.5 缺少有效配置');
   });
 });

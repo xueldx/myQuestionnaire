@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import apis from '@/apis'
 import { RootState } from '@/store'
 import { AppDispatch } from '@/store'
+import { resetPageConfig } from '@/store/modules/pageConfigSlice'
 import {
   AiConversationDetail,
   AiChatMessage,
@@ -12,28 +13,24 @@ import {
   AiModelOption,
   AiStreamStatus,
   DraftSummary,
-  QuestionnaireDraft
+  QuestionnaireDraft,
+  QuestionnairePatchSet
 } from '@/pages/question/Edit/components/aiCopilotTypes'
 import {
   aiGenerateFlowReducer,
   initialAiGenerateFlowState
 } from '@/pages/question/Edit/hooks/aiGenerateFlowMachine'
-import { getComposerGuide } from '@/pages/question/Edit/hooks/aiDraftInteraction'
 import { BufferedUiUpdates, DraftApplyPayload } from '@/pages/question/Edit/hooks/ai/aiShared'
+import { getPatchStatus, getReviewablePatches } from '@/pages/question/Edit/hooks/aiQuestionPatch'
 import { useAiDraftApply } from '@/pages/question/Edit/hooks/ai/useAiDraftApply'
+import { useAiCancelStream } from '@/pages/question/Edit/hooks/ai/useAiCancelStream'
 import { useAiConversationList } from '@/pages/question/Edit/hooks/ai/useAiConversationList'
 import { useAiDraftStream } from '@/pages/question/Edit/hooks/ai/useAiDraftStream'
 import { useAiPromptPolishStream } from '@/pages/question/Edit/hooks/ai/useAiPromptPolishStream'
 import { useAiInstructionActions } from '@/pages/question/Edit/hooks/ai/useAiInstructionActions'
+import { useAiPatchReview } from '@/pages/question/Edit/hooks/ai/useAiPatchReview'
+import { useAiWorkbenchSession } from '@/pages/question/Edit/hooks/ai/useAiWorkbenchSession'
 import { useAiWorkbenchRuntime } from '@/pages/question/Edit/hooks/ai/useAiWorkbenchRuntime'
-
-const ACTIVE_STREAM_STATUSES: AiStreamStatus[] = [
-  'connecting',
-  'polishing',
-  'thinking',
-  'answering',
-  'drafting'
-]
 
 const useAiWorkbench = (
   questionnaireId: string,
@@ -55,7 +52,6 @@ const useAiWorkbench = (
   const [modelList, setModelList] = useState<AiModelOption[]>([])
   const [selectedModel, setSelectedModel] = useState('')
   const [composerInput, setComposerInputState] = useState('')
-  const [isPendingDraftDecisionOpen, setIsPendingDraftDecisionOpen] = useState(false)
   const [draftPartial, setDraftPartial] = useState<QuestionnaireDraft | null>(null)
   const [finalDraft, setFinalDraft] = useState<QuestionnaireDraft | null>(null)
   const [summary, setSummary] = useState<DraftSummary | null>(null)
@@ -63,17 +59,14 @@ const useAiWorkbench = (
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [warningMessage, setWarningMessage] = useState<string | null>(null)
   const [draftApplied, setDraftApplied] = useState(false)
+  const [questionPatchSet, setQuestionPatchSet] = useState<QuestionnairePatchSet | null>(null)
+  const [selectedPatchIds, setSelectedPatchIds] = useState<string[]>([])
+  const [rejectedPatchIds, setRejectedPatchIds] = useState<string[]>([])
   const [generateFlow, dispatchGenerateFlow] = useReducer(
     aiGenerateFlowReducer,
     initialAiGenerateFlowState
   )
   const hasQuestionnaireContent = componentList.length > 0
-  const hasPendingDraft = Boolean(finalDraft && !draftApplied)
-  const composerGuide = getComposerGuide({
-    mode,
-    hasPendingDraft,
-    hasQuestionnaireContent
-  })
 
   const controllerRef = useRef<AbortController | null>(null)
   const baseVersionRef = useRef(version)
@@ -81,13 +74,18 @@ const useAiWorkbench = (
   const rawReplyTextRef = useRef('')
   const finalDraftRef = useRef<QuestionnaireDraft | null>(null)
   const draftAppliedRef = useRef(false)
-  const pendingDraftInstructionRef = useRef('')
+  const baseQuestionnaireRef = useRef<QuestionnaireDraft | null>(null)
   const generateFlowRef = useRef<AiGenerateFlowState>(generateFlow)
+  const hydrateConversationDetailHandlerRef = useRef<(detail: AiConversationDetail) => void>(
+    detail => void detail
+  )
+  const resetConversationStateHandlerRef = useRef<() => void>(() => undefined)
   const rafFlushIdRef = useRef<number | null>(null)
   const generateDraftBaseRef = useRef<QuestionnaireDraft | null>(null)
   const bufferedUiUpdatesRef = useRef<BufferedUiUpdates>({
     promptDelta: '',
     replacePrompt: false,
+    preservedPrompt: '',
     partialDraft: null
   })
 
@@ -97,6 +95,15 @@ const useAiWorkbench = (
 
   useEffect(() => {
     draftAppliedRef.current = draftApplied
+  }, [draftApplied])
+
+  useEffect(() => {
+    if (!draftApplied) return
+
+    setComposerInputState('')
+    if (modeRef.current === 'generate') {
+      dispatchGenerateFlow({ type: 'reset' })
+    }
   }, [draftApplied])
 
   useEffect(() => {
@@ -119,6 +126,7 @@ const useAiWorkbench = (
     bufferedUiUpdatesRef.current = {
       promptDelta: '',
       replacePrompt: false,
+      preservedPrompt: '',
       partialDraft: null
     }
 
@@ -167,6 +175,7 @@ const useAiWorkbench = (
     bufferedUiUpdatesRef.current = {
       promptDelta: '',
       replacePrompt: false,
+      preservedPrompt: '',
       partialDraft: null
     }
   }, [])
@@ -175,33 +184,6 @@ const useAiWorkbench = (
     return () => {
       resetBufferedUiUpdates()
     }
-  }, [resetBufferedUiUpdates])
-
-  const clearDraftAfterApply = useCallback(() => {
-    resetBufferedUiUpdates()
-    setDraftPartial(null)
-    setFinalDraft(null)
-    setSummary(null)
-    setErrorMessage(null)
-    setRequestId(null)
-    setWarningMessage(null)
-    setStatus('done')
-    rawReplyTextRef.current = ''
-  }, [resetBufferedUiUpdates])
-
-  const clearPendingDraftState = useCallback(() => {
-    resetBufferedUiUpdates()
-    finalDraftRef.current = null
-    draftAppliedRef.current = false
-    generateDraftBaseRef.current = null
-    setDraftPartial(null)
-    setFinalDraft(null)
-    setSummary(null)
-    setErrorMessage(null)
-    setWarningMessage(null)
-    setRequestId(null)
-    setDraftApplied(false)
-    rawReplyTextRef.current = ''
   }, [resetBufferedUiUpdates])
 
   useEffect(() => {
@@ -220,6 +202,7 @@ const useAiWorkbench = (
     hydrateConversationDetail,
     syncRuntimeStatus,
     buildQuestionnaireSnapshot,
+    buildCommittedQuestionnaireSnapshot,
     buildMergedGenerateDraft,
     cancelStream: cancelLocalStream
   } = useAiWorkbenchRuntime({
@@ -234,6 +217,7 @@ const useAiWorkbench = (
     rawReplyTextRef,
     finalDraftRef,
     draftAppliedRef,
+    baseQuestionnaireRef,
     generateDraftBaseRef,
     dispatchGenerateFlow,
     resetBufferedUiUpdates,
@@ -250,39 +234,41 @@ const useAiWorkbench = (
     setStatus
   })
 
-  const resetConversationRuntimeState = useCallback(
-    (nextMode: AiCopilotIntent) => {
-      resetBufferedUiUpdates()
-      modeRef.current = nextMode
-      finalDraftRef.current = null
-      draftAppliedRef.current = false
-      setModeState(nextMode)
-      setStatus('idle')
-      setMessages([])
-      setComposerInputState('')
-      setDraftPartial(null)
-      setFinalDraft(null)
-      setSummary(null)
-      setRequestId(null)
-      setErrorMessage(null)
-      setWarningMessage(null)
-      setDraftApplied(false)
-      rawReplyTextRef.current = ''
-      dispatchGenerateFlow({ type: 'reset' })
-    },
-    [resetBufferedUiUpdates]
-  )
+  const getCompatibleConversationDetail = useCallback((detail: AiConversationDetail) => {
+    const hasTopLevelDraftState =
+      detail.latestDraft ||
+      detail.latestSummary ||
+      detail.latestBaseQuestionnaire ||
+      detail.lastRuntimeStatus ||
+      detail.lastWorkflowStage
+    const latestBatch =
+      detail.latestBatches && detail.latestBatches.length > 0
+        ? detail.latestBatches[detail.latestBatches.length - 1]
+        : null
 
-  const handleHydrateConversationDetail = useCallback(
+    if (hasTopLevelDraftState || !latestBatch) return detail
+
+    return {
+      ...detail,
+      latestDraft: latestBatch.latestDraft || detail.latestDraft,
+      latestSummary: latestBatch.latestSummary || detail.latestSummary,
+      latestBaseQuestionnaire:
+        latestBatch.latestBaseQuestionnaire || detail.latestBaseQuestionnaire,
+      lastRuntimeStatus: latestBatch.lastRuntimeStatus || detail.lastRuntimeStatus,
+      lastWorkflowStage: latestBatch.lastWorkflowStage || detail.lastWorkflowStage
+    }
+  }, [])
+
+  const handleConversationDetailProxy = useCallback(
     (detail: AiConversationDetail) => {
-      hydrateConversationDetail(detail)
+      hydrateConversationDetailHandlerRef.current(getCompatibleConversationDetail(detail))
     },
-    [hydrateConversationDetail]
+    [getCompatibleConversationDetail]
   )
 
-  const handleResetConversationState = useCallback(() => {
-    resetConversationRuntimeState(modeRef.current)
-  }, [resetConversationRuntimeState])
+  const handleConversationResetProxy = useCallback(() => {
+    resetConversationStateHandlerRef.current()
+  }, [])
 
   const {
     conversationList,
@@ -307,231 +293,147 @@ const useAiWorkbench = (
     modeRef,
     finalDraftRef,
     draftAppliedRef,
-    hydrateConversationDetail: handleHydrateConversationDetail,
-    resetConversationState: handleResetConversationState
+    hydrateConversationDetail: handleConversationDetailProxy,
+    resetConversationState: handleConversationResetProxy
   })
 
-  const cancelStream = useCallback(
-    (showMessage = true) => {
-      const activeRequestId = requestId
-      const activeConversationId = activeConversationIdRef.current
-      const pendingBufferedUpdates = bufferedUiUpdatesRef.current
-      const persistedWorkflowStage =
-        mode === 'edit'
-          ? 'edit'
-          : status === 'polishing' || status === 'awaiting_confirmation'
-          ? 'polish'
-          : 'generate'
-      const nextComposerInput = pendingBufferedUpdates.promptDelta
-        ? pendingBufferedUpdates.replacePrompt
-          ? pendingBufferedUpdates.promptDelta
-          : `${composerInput}${pendingBufferedUpdates.promptDelta}`
-        : composerInput
-      const preservedDraft =
-        finalDraft || pendingBufferedUpdates.partialDraft || draftPartial || null
+  const clearDraftAfterApply = useCallback(() => {
+    resetBufferedUiUpdates()
+    finalDraftRef.current = null
+    draftAppliedRef.current = false
+    baseQuestionnaireRef.current = null
+    generateDraftBaseRef.current = null
+    setDraftPartial(null)
+    setFinalDraft(null)
+    setSummary(null)
+    setQuestionPatchSet(null)
+    setSelectedPatchIds([])
+    setRejectedPatchIds([])
+    setErrorMessage(null)
+    setRequestId(null)
+    setWarningMessage(null)
+    setStatus('done')
+    rawReplyTextRef.current = ''
+  }, [resetBufferedUiUpdates])
 
-      if (nextComposerInput !== composerInput) {
-        setComposerInputState(nextComposerInput)
-        if (mode === 'generate') {
-          dispatchGenerateFlow({
-            type: 'edit_refined_prompt',
-            prompt: nextComposerInput
-          })
-        }
-      }
+  const clearPendingDraftState = useCallback(() => {
+    resetBufferedUiUpdates()
+    finalDraftRef.current = null
+    draftAppliedRef.current = false
+    baseQuestionnaireRef.current = null
+    generateDraftBaseRef.current = null
+    setDraftPartial(null)
+    setFinalDraft(null)
+    setSummary(null)
+    setQuestionPatchSet(null)
+    setSelectedPatchIds([])
+    setRejectedPatchIds([])
+    setErrorMessage(null)
+    setWarningMessage(null)
+    setRequestId(null)
+    setDraftApplied(false)
+    rawReplyTextRef.current = ''
+  }, [resetBufferedUiUpdates])
 
-      if (!finalDraft && pendingBufferedUpdates.partialDraft) {
-        setDraftPartial(pendingBufferedUpdates.partialDraft)
-        setFinalDraft(null)
-        finalDraftRef.current = null
-      }
-
-      if (controllerRef.current && (activeRequestId || activeConversationId)) {
-        void apis.aiApi
-          .cancelCopilot({
-            requestId: activeRequestId || undefined,
-            conversationId: activeConversationId || undefined
-          })
-          .finally(() => {
-            void persistConversationDraftState({
-              lastInstruction: nextComposerInput.trim() || null,
-              latestDraft: preservedDraft,
-              latestSummary: finalDraft ? summary : null,
-              lastRuntimeStatus: 'cancelled',
-              lastWorkflowStage: persistedWorkflowStage
-            })
-            if (activeConversationId) {
-              void refreshConversationList(activeConversationId)
-            }
-          })
-      }
-
-      cancelLocalStream(showMessage)
-    },
-    [
-      activeConversationIdRef,
-      bufferedUiUpdatesRef,
-      cancelLocalStream,
-      composerInput,
-      draftPartial,
-      dispatchGenerateFlow,
-      finalDraft,
-      finalDraftRef,
-      mode,
-      persistConversationDraftState,
-      refreshConversationList,
-      requestId,
-      setComposerInputState,
-      setDraftPartial,
-      setFinalDraft,
-      status,
-      summary
-    ]
-  )
-
-  const resetConversationDraftView = useCallback(
+  const resetConversationRuntimeState = useCallback(
     (nextMode: AiCopilotIntent) => {
-      activeConversationIdRef.current = null
-      setActiveConversationId(null)
-      resetConversationRuntimeState(nextMode)
-    },
-    [activeConversationIdRef, resetConversationRuntimeState, setActiveConversationId]
-  )
-
-  const setMode = useCallback(
-    (nextMode: AiCopilotIntent) => {
-      if (nextMode === mode) return
-      if (controllerRef.current) {
-        message.warning('请先停止当前 AI 会话，再切换生成模式')
-        return
-      }
-
-      const hasPendingDraft = finalDraftRef.current && !draftAppliedRef.current
-      const hasAppliedPreview = draftAppliedRef.current && !finalDraftRef.current
-
+      resetBufferedUiUpdates()
+      modeRef.current = nextMode
+      finalDraftRef.current = null
+      draftAppliedRef.current = false
+      baseQuestionnaireRef.current = null
+      generateDraftBaseRef.current = null
       setModeState(nextMode)
-      setStatus(hasPendingDraft || hasAppliedPreview ? 'done' : 'idle')
+      setStatus('idle')
+      setMessages([])
+      setComposerInputState('')
+      setDraftPartial(null)
+      setFinalDraft(null)
+      setSummary(null)
       setRequestId(null)
       setErrorMessage(null)
       setWarningMessage(null)
+      setDraftApplied(false)
+      setQuestionPatchSet(null)
+      setSelectedPatchIds([])
+      setRejectedPatchIds([])
       rawReplyTextRef.current = ''
-      resetBufferedUiUpdates()
       dispatchGenerateFlow({ type: 'reset' })
-
-      if (!hasPendingDraft) {
-        setDraftPartial(null)
-        setFinalDraft(null)
-        setSummary(null)
-        if (!hasAppliedPreview) {
-          setDraftApplied(false)
-        }
-      }
-
-      if (activeConversationIdRef.current) {
-        void apis.aiApi
-          .updateConversation(activeConversationIdRef.current, {
-            intent: nextMode
-          })
-          .then(() => refreshConversationList(activeConversationIdRef.current))
-      }
     },
-    [message, mode, refreshConversationList, resetBufferedUiUpdates]
+    [resetBufferedUiUpdates]
   )
 
-  const ensureActiveConversation = useCallback(
-    async (nextIntent: AiCopilotIntent) => {
-      if (activeConversationIdRef.current) return true
+  useEffect(() => {
+    hydrateConversationDetailHandlerRef.current = hydrateConversationDetail
+    resetConversationStateHandlerRef.current = () => resetConversationRuntimeState(modeRef.current)
+  }, [hydrateConversationDetail, resetConversationRuntimeState])
 
-      const existingList = await refreshConversationList(undefined, {
-        hydrateDetail: true
-      })
-      if (activeConversationIdRef.current) return true
-      if (existingList.length > 0) return Boolean(activeConversationIdRef.current)
-
-      const createdConversation = await createConversation(nextIntent)
-      return Boolean(createdConversation)
-    },
-    [createConversation, refreshConversationList]
-  )
-
-  const ensureEntryConversation = useCallback(
-    async (nextIntent: AiCopilotIntent) => {
-      if (controllerRef.current) return
-      if (finalDraftRef.current && !draftAppliedRef.current) return
-      if (activeConversationIdRef.current) return
-
-      const existingList = await refreshConversationList(undefined, {
-        hydrateDetail: true
-      })
-
-      if (existingList.length > 0 || activeConversationIdRef.current) {
-        return
-      }
-
-      resetConversationDraftView(nextIntent)
-    },
-    [refreshConversationList, resetConversationDraftView]
-  )
-
-  const openFreshEditEntrySession = useCallback(async () => {
-    if (!hasQuestionnaireContent) return
-    await ensureEntryConversation('edit')
-  }, [ensureEntryConversation, hasQuestionnaireContent])
-
-  const openFreshGenerateEntrySession = useCallback(async () => {
-    if (hasQuestionnaireContent) return
-    await ensureEntryConversation('generate')
-  }, [ensureEntryConversation, hasQuestionnaireContent])
-
-  const setComposerInput = useCallback(
-    (nextValue: string) => {
-      setComposerInputState(nextValue)
-      if (!nextValue.trim() && draftAppliedRef.current && !finalDraftRef.current) {
-        setDraftApplied(false)
-      }
-      if (mode === 'generate') {
-        dispatchGenerateFlow({
-          type: 'edit_refined_prompt',
-          prompt: nextValue
-        })
-      }
-    },
-    [mode]
-  )
-
-  const discardDraft = useCallback(() => {
-    clearPendingDraftState()
-
-    const nextPrompt = composerInput.trim()
-    void persistConversationDraftState({
-      lastInstruction: nextPrompt || null,
-      latestDraft: null,
-      latestSummary: null
-    })
-
-    if (mode === 'generate' && nextPrompt) {
-      dispatchGenerateFlow({
-        type: 'edit_refined_prompt',
-        prompt: nextPrompt
-      })
-      setStatus('awaiting_confirmation')
-      return
-    }
-
-    dispatchGenerateFlow({ type: 'reset' })
-    if (!ACTIVE_STREAM_STATUSES.includes(status)) {
-      setStatus(messages.length > 0 ? 'done' : 'idle')
-    }
-  }, [
-    clearPendingDraftState,
-    composerInput,
-    messages.length,
+  const cancelStream = useAiCancelStream({
     mode,
+    status,
+    composerInput,
+    requestId,
+    draftPartial,
+    finalDraft,
+    summary,
+    activeConversationIdRef,
+    controllerRef,
+    bufferedUiUpdatesRef,
+    finalDraftRef,
+    baseQuestionnaireRef,
+    dispatchGenerateFlow,
+    setComposerInputState,
+    setDraftPartial,
+    setFinalDraft,
     persistConversationDraftState,
-    status
-  ])
+    refreshConversationList,
+    cancelLocalStream
+  })
 
-  const { applyDraft } = useAiDraftApply({
+  const {
+    setMode,
+    ensureActiveConversation,
+    openFreshEditEntrySession,
+    openFreshGenerateEntrySession,
+    setComposerInput,
+    discardDraft
+  } = useAiWorkbenchSession({
+    mode,
+    status,
+    composerInput,
+    messagesLength: messages.length,
+    hasQuestionnaireContent,
+    controllerRef,
+    activeConversationIdRef,
+    modeRef,
+    finalDraftRef,
+    draftAppliedRef,
+    message,
+    createConversation,
+    refreshConversationList,
+    setActiveConversationId,
+    resetConversationRuntimeState,
+    resetBufferedUiUpdates,
+    persistConversationDraftState,
+    clearPendingDraftState,
+    dispatchGenerateFlow,
+    setModeState,
+    setStatus,
+    setRequestId,
+    setErrorMessage,
+    setWarningMessage,
+    setQuestionPatchSet,
+    setSelectedPatchIds,
+    setRejectedPatchIds,
+    setDraftPartial,
+    setFinalDraft,
+    setSummary,
+    setDraftApplied,
+    setComposerInputState,
+    rawReplyTextRef
+  })
+
+  const { applyDraft: applyDraftInternal, applyPatchSelection } = useAiDraftApply({
     mode,
     status,
     version,
@@ -541,6 +443,9 @@ const useAiWorkbench = (
     draftPartial,
     finalDraft,
     draftApplied,
+    questionPatchSet,
+    selectedPatchIds,
+    rejectedPatchIds,
     baseVersionRef,
     dispatch,
     message,
@@ -550,6 +455,19 @@ const useAiWorkbench = (
     onDraftApplied,
     setDraftApplied
   })
+
+  const applyGeneratePageConfig = useCallback(
+    (draft: QuestionnaireDraft) => {
+      dispatch(
+        resetPageConfig({
+          title: draft.title,
+          description: draft.description,
+          footerText: draft.footerText
+        })
+      )
+    },
+    [dispatch]
+  )
 
   const runDraftStream = useAiDraftStream({
     questionnaireId,
@@ -563,6 +481,7 @@ const useAiWorkbench = (
     finalDraftRef,
     draftAppliedRef,
     rawReplyTextRef,
+    baseQuestionnaireRef,
     generateDraftBaseRef,
     bufferedUiUpdatesRef,
     setActiveConversationId,
@@ -575,15 +494,18 @@ const useAiWorkbench = (
     setRequestId,
     setWarningMessage,
     setDraftApplied,
+    applyGeneratePageConfig,
     dispatchGenerateFlow,
     ensureActiveConversation,
     buildQuestionnaireSnapshot,
+    buildCommittedQuestionnaireSnapshot,
     buildDraftFallback,
     buildMergedGenerateDraft,
     refreshConversationList,
     scheduleBufferedUiFlush,
     flushBufferedUiUpdates,
     resetBufferedUiUpdates,
+    persistConversationDraftState,
     syncRuntimeStatus
   })
 
@@ -617,37 +539,167 @@ const useAiWorkbench = (
     syncRuntimeStatus
   })
 
-  const closePendingDraftDecision = useCallback(() => {
-    pendingDraftInstructionRef.current = ''
-    setIsPendingDraftDecisionOpen(false)
-  }, [])
-
   const {
-    appendPendingDraft,
-    regeneratePendingDraft,
-    sendInstruction,
-    polishInstruction,
-    retryPromptPolish,
-    retryGenerate
-  } = useAiInstructionActions({
+    togglePatchSelection,
+    selectAllPatches,
+    clearPatchSelection,
+    applyPatchById,
+    rejectPatchById,
+    applyDraft
+  } = useAiPatchReview({
     mode,
-    composerInput,
-    message,
-    finalDraftRef,
-    draftAppliedRef,
-    generateFlowRef,
-    pendingDraftInstructionRef,
-    setModeState,
-    setComposerInputState,
-    setIsPendingDraftDecisionOpen,
-    dispatchGenerateFlow,
-    clearPendingDraftState,
-    closePendingDraftDecision,
-    persistConversationDraftState,
-    ensureActiveConversation,
-    runDraftStream,
-    runPromptPolishStream
+    componentList,
+    pageConfig,
+    draftPartial,
+    finalDraft,
+    questionPatchSet,
+    selectedPatchIds,
+    rejectedPatchIds,
+    baseVersionRef,
+    baseQuestionnaireRef,
+    setDraftApplied,
+    setQuestionPatchSet,
+    setSelectedPatchIds,
+    setRejectedPatchIds,
+    applyPatchSelection,
+    applyDraftInternal
   })
+
+  const { sendInstruction, polishInstruction, retryPromptPolish, retryGenerate } =
+    useAiInstructionActions({
+      mode,
+      composerInput,
+      message,
+      generateFlowRef,
+      setComposerInputState,
+      dispatchGenerateFlow,
+      ensureActiveConversation,
+      runDraftStream,
+      runPromptPolishStream
+    })
+
+  const currentQuestionnaire: QuestionnaireDraft = {
+    title: pageConfig.title,
+    description: pageConfig.description,
+    footerText: pageConfig.footerText,
+    components: componentList
+  }
+  const reviewablePatches = getReviewablePatches(mode, questionPatchSet)
+  const reviewablePatchStatuses = reviewablePatches.map(patch =>
+    getPatchStatus(currentQuestionnaire, patch, selectedPatchIds, rejectedPatchIds)
+  )
+  const patchStatusSignature = reviewablePatchStatuses.join('|')
+  const hasUnhandledReviewablePatchChanges = reviewablePatchStatuses.some(
+    patchStatus => patchStatus === 'pending' || patchStatus === 'selected'
+  )
+  const hasPendingPatchResult = reviewablePatches.length > 0 && hasUnhandledReviewablePatchChanges
+  const hasPendingDraftResult =
+    !questionPatchSet?.patches.length &&
+    Boolean((finalDraft || (status === 'cancelled' ? draftPartial : null)) && !draftApplied)
+  const hasPendingAiResult = hasPendingPatchResult || hasPendingDraftResult
+  const notifyPendingAiResult = useCallback(() => {
+    message.warning('请先处理当前 AI 结果（应用或放弃）后再继续。')
+  }, [message])
+
+  useEffect(() => {
+    if (!questionPatchSet || questionPatchSet.patches.length === 0) return
+    if (hasUnhandledReviewablePatchChanges) {
+      return
+    }
+
+    void persistConversationDraftState({
+      lastInstruction: null,
+      latestDraft: null,
+      latestSummary: null,
+      latestBaseQuestionnaire: null,
+      latestBatches: null,
+      lastRuntimeStatus: 'done',
+      lastWorkflowStage: mode
+    })
+  }, [
+    hasUnhandledReviewablePatchChanges,
+    mode,
+    patchStatusSignature,
+    persistConversationDraftState,
+    questionPatchSet
+  ])
+
+  const guardedSetMode = useCallback(
+    (nextMode: AiCopilotIntent) => {
+      if (nextMode === mode) return
+      if (hasPendingAiResult) {
+        notifyPendingAiResult()
+        return
+      }
+
+      setMode(nextMode)
+    },
+    [hasPendingAiResult, mode, notifyPendingAiResult, setMode]
+  )
+
+  const guardedOpenNewConversation = useCallback(() => {
+    if (hasPendingAiResult) {
+      notifyPendingAiResult()
+      return false
+    }
+
+    return openNewConversation()
+  }, [hasPendingAiResult, notifyPendingAiResult, openNewConversation])
+
+  const guardedSelectConversation = useCallback(
+    (conversationId: number) => {
+      if (conversationId === activeConversationId) return true
+      if (hasPendingAiResult) {
+        notifyPendingAiResult()
+        return false
+      }
+
+      return selectConversation(conversationId)
+    },
+    [activeConversationId, hasPendingAiResult, notifyPendingAiResult, selectConversation]
+  )
+
+  const guardedSendInstruction = useCallback(
+    (instruction: string) => {
+      if (hasPendingAiResult) {
+        notifyPendingAiResult()
+        return false
+      }
+
+      return sendInstruction(instruction)
+    },
+    [hasPendingAiResult, notifyPendingAiResult, sendInstruction]
+  )
+
+  const guardedPolishInstruction = useCallback(
+    (instruction?: string) => {
+      if (hasPendingAiResult) {
+        notifyPendingAiResult()
+        return false
+      }
+
+      return polishInstruction(instruction)
+    },
+    [hasPendingAiResult, notifyPendingAiResult, polishInstruction]
+  )
+
+  const guardedRetryPromptPolish = useCallback(() => {
+    if (hasPendingAiResult) {
+      notifyPendingAiResult()
+      return
+    }
+
+    return retryPromptPolish()
+  }, [hasPendingAiResult, notifyPendingAiResult, retryPromptPolish])
+
+  const guardedRetryGenerate = useCallback(() => {
+    if (hasPendingAiResult) {
+      notifyPendingAiResult()
+      return
+    }
+
+    return retryGenerate()
+  }, [hasPendingAiResult, notifyPendingAiResult, retryGenerate])
 
   return {
     mode,
@@ -667,30 +719,33 @@ const useAiWorkbench = (
     errorMessage,
     warningMessage,
     draftApplied,
-    hasPendingDraft,
-    composerGuide,
+    questionPatchSet,
+    selectedPatchIds,
+    rejectedPatchIds,
+    hasPendingAiResult,
     generateFlow,
-    setMode,
+    setMode: guardedSetMode,
     setSelectedModel,
     setComposerInput,
     openFreshEditEntrySession,
     openFreshGenerateEntrySession,
-    openNewConversation,
-    selectConversation,
+    openNewConversation: guardedOpenNewConversation,
+    selectConversation: guardedSelectConversation,
     renameConversation,
     toggleConversationPin,
     removeConversation,
-    sendInstruction,
-    polishInstruction,
+    sendInstruction: guardedSendInstruction,
+    polishInstruction: guardedPolishInstruction,
     cancelStream,
     discardDraft,
     applyDraft,
-    retryPromptPolish,
-    retryGenerate,
-    isPendingDraftDecisionOpen,
-    closePendingDraftDecision,
-    appendPendingDraft,
-    regeneratePendingDraft
+    togglePatchSelection,
+    selectAllPatches,
+    clearPatchSelection,
+    applyPatchById,
+    rejectPatchById,
+    retryPromptPolish: guardedRetryPromptPolish,
+    retryGenerate: guardedRetryGenerate
   }
 }
 

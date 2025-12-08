@@ -34,6 +34,7 @@ type UseAiWorkbenchRuntimeParams = {
   rawReplyTextRef: { current: string }
   finalDraftRef: { current: QuestionnaireDraft | null }
   draftAppliedRef: { current: boolean }
+  baseQuestionnaireRef: { current: QuestionnaireDraft | null }
   generateDraftBaseRef: { current: QuestionnaireDraft | null }
   dispatchGenerateFlow: (action: any) => void
   resetBufferedUiUpdates: () => void
@@ -62,6 +63,7 @@ export const useAiWorkbenchRuntime = ({
   rawReplyTextRef,
   finalDraftRef,
   draftAppliedRef,
+  baseQuestionnaireRef,
   generateDraftBaseRef,
   dispatchGenerateFlow,
   resetBufferedUiUpdates,
@@ -103,6 +105,7 @@ export const useAiWorkbenchRuntime = ({
       lastWorkflowStage?: 'polish' | 'generate' | 'edit' | null
       latestDraft?: QuestionnaireDraft | null
       latestSummary?: DraftSummary | null
+      latestBaseQuestionnaire?: QuestionnaireDraft | null
     }) => {
       resetBufferedUiUpdates()
       modeRef.current = detail.intent
@@ -128,6 +131,7 @@ export const useAiWorkbenchRuntime = ({
       setWarningMessage(null)
       setDraftApplied(false)
       rawReplyTextRef.current = ''
+      baseQuestionnaireRef.current = detail.latestBaseQuestionnaire || null
 
       const restoredDraft = buildPersistedDraft(
         detail.latestDraft || null,
@@ -168,6 +172,7 @@ export const useAiWorkbenchRuntime = ({
       dispatchGenerateFlow,
       draftAppliedRef,
       finalDraftRef,
+      baseQuestionnaireRef,
       modeRef,
       rawReplyTextRef,
       resetBufferedUiUpdates,
@@ -232,6 +237,16 @@ export const useAiWorkbenchRuntime = ({
     }
   }, [componentList, draftAppliedRef, finalDraftRef, pageConfig])
 
+  const buildCommittedQuestionnaireSnapshot = useCallback(
+    () => ({
+      title: pageConfig.title,
+      description: pageConfig.description,
+      footerText: pageConfig.footerText,
+      components: normalizeQuestionnaireComponentList(componentList)
+    }),
+    [componentList, pageConfig]
+  )
+
   const buildMergedGenerateDraft = useCallback(
     (incomingDraft: QuestionnaireDraft) => {
       const baseDraft = generateDraftBaseRef.current
@@ -292,6 +307,7 @@ export const useAiWorkbenchRuntime = ({
     hydrateConversationDetail,
     syncRuntimeStatus,
     buildQuestionnaireSnapshot,
+    buildCommittedQuestionnaireSnapshot,
     buildMergedGenerateDraft,
     cancelStream
   }

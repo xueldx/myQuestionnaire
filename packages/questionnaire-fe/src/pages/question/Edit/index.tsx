@@ -11,7 +11,6 @@ import LeftPanel from '@/pages/question/Edit/components/LeftPanel'
 import RightPanel from '@/pages/question/Edit/components/RightPanel'
 import AiCopilotPanel from '@/pages/question/Edit/components/AiCopilotPanel'
 import AiInlineQuestionnairePreview from '@/pages/question/Edit/components/AiInlineQuestionnairePreview'
-import PendingDraftDecisionModal from '@/pages/question/Edit/components/PendingDraftDecisionModal'
 import useAiWorkbench from '@/pages/question/Edit/hooks/useAiWorkbench'
 import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '@/store'
@@ -384,6 +383,7 @@ const Edit: React.FC = () => {
                   selectedModel={aiWorkbench.selectedModel}
                   composerInput={aiWorkbench.composerInput}
                   errorMessage={aiWorkbench.errorMessage}
+                  hasPendingAiResult={aiWorkbench.hasPendingAiResult}
                   hasGenerateBase={
                     componentList.length > 0 ||
                     Boolean(
@@ -394,12 +394,10 @@ const Edit: React.FC = () => {
                   onModeChange={aiWorkbench.setMode}
                   onModelChange={aiWorkbench.setSelectedModel}
                   onComposerInputChange={aiWorkbench.setComposerInput}
-                  onCreateConversation={() => {
-                    void aiWorkbench.openNewConversation()
-                  }}
-                  onSelectConversation={conversationId => {
-                    void aiWorkbench.selectConversation(conversationId)
-                  }}
+                  onCreateConversation={() => aiWorkbench.openNewConversation()}
+                  onSelectConversation={conversationId =>
+                    aiWorkbench.selectConversation(conversationId)
+                  }
                   onRenameConversation={(conversationId, title) => {
                     return aiWorkbench.renameConversation(conversationId, title)
                   }}
@@ -440,17 +438,25 @@ const Edit: React.FC = () => {
                       footerText: pageConfig.footerText,
                       components: componentList
                     }}
+                    selectedId={selectedId}
                     draftPartial={aiWorkbench.draftPartial}
                     finalDraft={aiWorkbench.finalDraft}
-                    summary={aiWorkbench.summary}
+                    questionPatchSet={aiWorkbench.questionPatchSet}
+                    selectedPatchIds={aiWorkbench.selectedPatchIds}
+                    rejectedPatchIds={aiWorkbench.rejectedPatchIds}
                     errorMessage={aiWorkbench.errorMessage}
                     warningMessage={aiWorkbench.warningMessage}
                     draftApplied={aiWorkbench.draftApplied}
                     isApplyingDraft={applyingDraft}
-                    selectedId={selectedId}
                     onApply={aiWorkbench.applyDraft}
                     onDiscard={aiWorkbench.discardDraft}
                     onBack={() => setLeftPanelActiveKey(lastNonAiPanelKey || 'market')}
+                    onSelectAllPatches={aiWorkbench.selectAllPatches}
+                    onClearPatchSelection={aiWorkbench.clearPatchSelection}
+                    onApplyPatch={patchId => {
+                      void aiWorkbench.applyPatchById(patchId)
+                    }}
+                    onRejectPatch={aiWorkbench.rejectPatchById}
                   />
                 ) : (
                   <div className="h-full overflow-hidden rounded-[22px] border border-custom-bg-200 bg-white/75 shadow-sm isolate">
@@ -472,17 +478,6 @@ const Edit: React.FC = () => {
           </div>
         </div>
       </div>
-
-      <PendingDraftDecisionModal
-        open={aiWorkbench.isPendingDraftDecisionOpen}
-        onClose={aiWorkbench.closePendingDraftDecision}
-        onAppend={() => {
-          void aiWorkbench.appendPendingDraft()
-        }}
-        onRegenerate={() => {
-          void aiWorkbench.regeneratePendingDraft()
-        }}
-      />
     </div>
   )
 }

@@ -90,5 +90,6 @@ export type DraftStreamOptions = {
 export type BufferedUiUpdates = {
   promptDelta: string
   replacePrompt: boolean
+  preservedPrompt: string
   partialDraft: QuestionnaireDraft | null
 }

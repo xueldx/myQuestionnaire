@@ -2,8 +2,14 @@ import { useCallback } from 'react'
 import { resetComponents } from '@/store/modules/componentsSlice'
 import { resetPageConfig } from '@/store/modules/pageConfigSlice'
 import { normalizeQuestionnaireComponentList } from '@/utils/normalizeQuestionComponent'
-import { AiCopilotIntent, DraftSummary, QuestionnaireDraft } from '../../components/aiCopilotTypes'
+import {
+  AiCopilotIntent,
+  DraftSummary,
+  QuestionnaireDraft,
+  QuestionnairePatchSet
+} from '../../components/aiCopilotTypes'
 import { DraftApplyPayload } from './aiShared'
+import { applyQuestionnairePatchSet, isPatchAppliedToQuestionnaire } from '../aiQuestionPatch'
 
 type MessageApi = {
   warning: (content: string) => void
@@ -31,6 +37,9 @@ type UseAiDraftApplyParams = {
   draftPartial: QuestionnaireDraft | null
   finalDraft: QuestionnaireDraft | null
   draftApplied: boolean
+  questionPatchSet: QuestionnairePatchSet | null
+  selectedPatchIds: string[]
+  rejectedPatchIds: string[]
   baseVersionRef: { current: number }
   dispatch: (action: any) => void
   message: MessageApi
@@ -40,6 +49,10 @@ type UseAiDraftApplyParams = {
     lastInstruction?: string | null
     latestDraft?: QuestionnaireDraft | null
     latestSummary?: DraftSummary | null
+    latestBaseQuestionnaire?: QuestionnaireDraft | null
+    latestBatches?: unknown[] | null
+    lastRuntimeStatus?: string | null
+    lastWorkflowStage?: 'polish' | 'generate' | 'edit' | null
   }) => Promise<void>
   onDraftApplied?: (payload: DraftApplyPayload) => Promise<void> | void
   setDraftApplied: (value: boolean) => void
@@ -55,6 +68,9 @@ export const useAiDraftApply = ({
   draftPartial,
   finalDraft,
   draftApplied,
+  questionPatchSet,
+  selectedPatchIds,
+  rejectedPatchIds,
   baseVersionRef,
   dispatch,
   message,
@@ -65,6 +81,122 @@ export const useAiDraftApply = ({
   setDraftApplied
 }: UseAiDraftApplyParams) => {
   const applicableDraft = finalDraft || (status === 'cancelled' ? draftPartial : null)
+  const effectiveSelectedPatchIds = selectedPatchIds.filter(
+    patchId => !rejectedPatchIds.includes(patchId)
+  )
+  const selectedPatches =
+    questionPatchSet?.patches.filter(patch => effectiveSelectedPatchIds.includes(patch.id)) || []
+  const currentQuestionnaire: QuestionnaireDraft = {
+    title: pageConfig.title,
+    description: pageConfig.description,
+    footerText: pageConfig.footerText,
+    components: componentList
+  }
+
+  const applyPatchSelection = useCallback(
+    async (patchIds = effectiveSelectedPatchIds) => {
+      const safePatchIds = patchIds.filter(patchId => !rejectedPatchIds.includes(patchId))
+
+      if (!questionPatchSet || safePatchIds.length === 0) {
+        message.warning('请至少选择一项 AI 变更后再应用')
+        return []
+      }
+
+      const {
+        questionnaire: nextQuestionnaire,
+        appliedPatchIds,
+        skippedPatchIds
+      } = applyQuestionnairePatchSet({
+        questionnaire: currentQuestionnaire,
+        patchSet: questionPatchSet,
+        selectedPatchIds: safePatchIds
+      })
+
+      if (appliedPatchIds.length === 0) {
+        message.warning('当前所选变更无法应用，请刷新问卷后重试')
+        return []
+      }
+
+      const normalizedComponents = normalizeQuestionnaireComponentList(nextQuestionnaire.components)
+      const nextSelectedId =
+        normalizedComponents.find(component => component.fe_id === selectedId)?.fe_id ||
+        normalizedComponents[0]?.fe_id ||
+        ''
+
+      dispatch(
+        resetComponents({
+          selectedId: nextSelectedId,
+          componentList: normalizedComponents,
+          version
+        })
+      )
+
+      dispatch(
+        resetPageConfig({
+          title: nextQuestionnaire.title,
+          description: nextQuestionnaire.description,
+          footerText: nextQuestionnaire.footerText
+        })
+      )
+
+      const allPatchChangesApplied = questionPatchSet.patches.every(patch =>
+        isPatchAppliedToQuestionnaire(nextQuestionnaire, patch)
+      )
+
+      setDraftApplied(allPatchChangesApplied)
+
+      if (allPatchChangesApplied) {
+        void persistConversationDraftState({
+          lastInstruction: null,
+          latestDraft: null,
+          latestSummary: null,
+          latestBaseQuestionnaire: null,
+          latestBatches: null,
+          lastRuntimeStatus: 'done',
+          lastWorkflowStage: mode
+        })
+      }
+
+      const successMessage =
+        safePatchIds.length === questionPatchSet.patches.length - rejectedPatchIds.length
+          ? 'AI 变更已应用到编辑器'
+          : `已应用 ${appliedPatchIds.length} 项已选变更`
+
+      if (onDraftApplied) {
+        await onDraftApplied({
+          questionnaire: {
+            ...nextQuestionnaire,
+            components: normalizedComponents
+          },
+          version,
+          successMessage:
+            skippedPatchIds.length > 0
+              ? `${successMessage}，另有 ${skippedPatchIds.length} 项因问卷已变化被跳过`
+              : successMessage
+        })
+        return appliedPatchIds
+      }
+
+      if (skippedPatchIds.length > 0) {
+        message.warning(`${successMessage}，另有 ${skippedPatchIds.length} 项因问卷已变化被跳过`)
+        return appliedPatchIds
+      }
+
+      message.success(successMessage)
+      return appliedPatchIds
+    },
+    [
+      currentQuestionnaire,
+      dispatch,
+      message,
+      onDraftApplied,
+      questionPatchSet,
+      rejectedPatchIds,
+      selectedId,
+      setDraftApplied,
+      version
+    ]
+  )
 
   const applyGenerateDraft = useCallback(
     async (draft: QuestionnaireDraft) => {
@@ -120,7 +252,11 @@ export const useAiDraftApply = ({
       void persistConversationDraftState({
         lastInstruction: null,
         latestDraft: null,
-        latestSummary: null
+        latestSummary: null,
+        latestBaseQuestionnaire: null,
+        latestBatches: null,
+        lastRuntimeStatus: 'done',
+        lastWorkflowStage: 'generate'
       })
 
       if (onDraftApplied) {
@@ -184,7 +320,11 @@ export const useAiDraftApply = ({
       void persistConversationDraftState({
         lastInstruction: null,
         latestDraft: null,
-        latestSummary: null
+        latestSummary: null,
+        latestBaseQuestionnaire: null,
+        latestBatches: null,
+        lastRuntimeStatus: 'done',
+        lastWorkflowStage: 'edit'
       })
 
       if (onDraftApplied) {
@@ -221,6 +361,29 @@ export const useAiDraftApply = ({
       return
     }
 
+    if (questionPatchSet && questionPatchSet.patches.length > 0) {
+      const shouldConfirmPatchApply =
+        mode === 'edit' &&
+        version !== baseVersionRef.current &&
+        selectedPatches.some(patch => patch.type !== 'add')
+
+      if (!shouldConfirmPatchApply) {
+        await applyPatchSelection()
+        return
+      }
+
+      modal.confirm({
+        title: '检测到问卷已发生变更',
+        content: '所选 AI 变更会覆盖对应题目或问卷头部配置，是否继续应用？',
+        okText: '继续应用',
+        cancelText: '取消',
+        onOk: async () => {
+          await applyPatchSelection(effectiveSelectedPatchIds)
+        }
+      })
+      return
+    }
+
     if (mode === 'generate') {
       await applyGenerateDraft(applicableDraft)
       return
@@ -244,15 +407,20 @@ export const useAiDraftApply = ({
     applicableDraft,
     applyEditDraft,
     applyGenerateDraft,
+    applyPatchSelection,
     baseVersionRef,
     draftApplied,
     message,
     modal,
     mode,
+    questionPatchSet,
+    effectiveSelectedPatchIds,
+    selectedPatches,
     version
   ])
 
   return {
-    applyDraft
+    applyDraft,
+    applyPatchSelection
   }
 }
