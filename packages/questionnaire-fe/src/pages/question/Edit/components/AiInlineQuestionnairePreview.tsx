@@ -123,6 +123,9 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
       patchStatus => patchStatus === 'applied' || patchStatus === 'rejected'
     )
   const hasSelectedPatchItems = selectedReviewablePatchIds.length > 0
+  const allReviewablePatchesSelected =
+    reviewablePatches.length > 0 && selectedReviewablePatchIds.length === reviewablePatches.length
+  const hasSingleReviewablePatch = reviewablePatches.length === 1
   const canApplyDraft = Boolean(
     (reviewablePatches.length
       ? hasSelectedPatchItems
@@ -171,15 +174,19 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
   const hasVisibleContent =
     hasDraftPreview && (currentComponents.length > 0 || draftComponents.length > 0)
   const applyButtonLabel = draftApplied
-    ? '已应用到编辑器'
+    ? '已应用'
     : isApplyingDraft
     ? '应用并保存中...'
     : reviewablePatches.length
-    ? hasSelectedPatchItems
-      ? `应用已选 ${selectedReviewablePatchIds.length} 项`
-      : allPatchChangesHandled
-      ? '已无待应用变更'
-      : '请选择变更'
+    ? allPatchChangesHandled
+      ? '已处理完成'
+      : hasSingleReviewablePatch
+      ? '接受'
+      : allReviewablePatchesSelected
+      ? '应用全部'
+      : hasSelectedPatchItems
+      ? `应用剩余 ${selectedReviewablePatchIds.length} 项`
+      : '请选择要应用的建议'
     : isCancelledPartialDraft
     ? '应用已生成部分'
     : '应用到编辑器'
@@ -188,15 +195,11 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
     <div className="h-full flex flex-col overflow-hidden rounded-[22px] border border-custom-bg-200 bg-white/75 shadow-sm">
       <AiInlinePreviewHeader
         mode={mode}
-        isStreaming={isStreaming}
-        streamingLabel={streamingLabel}
-        status={status}
+        hasExistingQuestionnaireContent={currentComponents.length > 0}
         allPatchChangesHandled={allPatchChangesHandled}
         hasAppliedPatchItems={hasAppliedPatchItems}
-        hasSelectedPatchItems={hasSelectedPatchItems}
         selectedPatchIdsLength={selectedReviewablePatchIds.length}
         patchCount={reviewablePatches.length}
-        isCancelledPartialDraft={isCancelledPartialDraft}
         draftApplied={draftApplied}
         canApplyDraft={canApplyDraft}
         applyButtonLabel={applyButtonLabel}
