@@ -1,9 +1,18 @@
 import { CopilotStreamDto } from '@/service/ai/dto/copilot-stream.dto';
 import { buildComponentTypeRules } from '@/service/ai/ai-prompt/build-component-type-rules';
+import {
+  buildQuestionReferenceMapText,
+  getFocusedQuestionBinding,
+} from '@/service/ai/utils/question-reference';
 
 type CopilotPromptDto = Pick<
   CopilotStreamDto,
-  'intent' | 'instruction' | 'originalInstruction' | 'history' | 'questionnaire'
+  | 'intent'
+  | 'instruction'
+  | 'focusedComponentId'
+  | 'originalInstruction'
+  | 'history'
+  | 'questionnaire'
 >;
 
 export const buildCopilotPrompt = (
@@ -17,6 +26,17 @@ export const buildCopilotPrompt = (
       .map((item) => `${item.role}: ${item.content}`)
       .join('\n') || '无历史消息';
   const hasExistingComponents = dto.questionnaire.components.length > 0;
+  const questionReferenceText =
+    dto.intent === 'edit'
+      ? buildQuestionReferenceMapText(dto.questionnaire.components)
+      : 'generate 模式无需题号映射';
+  const focusedBinding = getFocusedQuestionBinding(
+    dto.focusedComponentId,
+    dto.questionnaire.components,
+  );
+  const focusedComponentText = focusedBinding
+    ? `当前用户明确选中了第${focusedBinding.questionNumber}题，fe_id=${focusedBinding.fe_id}，标题=${focusedBinding.title}。`
+    : '当前没有明确选中的题目。';
   const originalInstruction =
     dto.originalInstruction?.trim() || dto.instruction;
   const instructionBlock =
@@ -43,10 +63,21 @@ ${dto.instruction}`;
             '问卷标题和问卷描述必须根据用户需求重新生成，不能留空，不能写成“未命名问卷”或通用占位文案。',
           ].join('\n')
       : [
-          '当前是 edit 模式。你需要返回本轮修改涉及的原组件，以及需要新增的组件。',
+          focusedBinding
+            ? '当前是 edit 模式。你只需要返回当前选中题目的修改结果。'
+            : '当前是 edit 模式。你需要返回本轮修改涉及的原组件，以及需要新增的组件。',
           '未提到的原组件会由系统自动保留，不要把没改的题目整份重复输出。',
-          '保留未修改组件的 fe_id。',
-          '新增组件请生成新的 fe_id。',
+          focusedBinding
+            ? '当前版本只支持单题 AI 修改。你本轮只能修改当前选中的那一题，不能修改其他旧题，也不能新增题目。'
+            : '如果当前没有明确选中的题目，不要猜测要修改哪一题。',
+          '如果用户指令提到“第 N 题”，必须先根据题号映射找到对应题目，并保留该题原 fe_id。',
+          focusedBinding
+            ? `当前选中的那一题必须保留 fe_id=${focusedBinding.fe_id}。`
+            : '保留未修改组件的 fe_id。',
+          focusedBinding ? '不要返回任何新增题目。' : '新增组件请生成新的 fe_id。',
+          focusedBinding
+            ? '不要修改问卷标题、描述、页脚。'
+            : '如果用户没有明确要求新增题目，不要返回新的 fe_id。',
           '当前版本不要通过省略组件表达删除。',
         ].join('\n');
 
@@ -83,6 +114,12 @@ ${buildComponentTypeRules()}
 
 当前任务模式：${dto.intent}
 ${modeInstruction}
+
+题号映射（仅 edit 模式有效，按当前问卷顺序）：
+${questionReferenceText}
+
+当前选中题目：
+${focusedComponentText}
 
 当前问卷快照：
 ${snapshotJson}

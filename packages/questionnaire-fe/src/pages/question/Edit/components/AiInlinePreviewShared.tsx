@@ -45,6 +45,9 @@ interface PreviewCardProps {
   tone?: AnnotationTone
   component: ComponentInfoType
   extra?: React.ReactNode
+  selected?: boolean
+  selectedAccent?: 'green' | 'red'
+  onSelect?: () => void
 }
 
 const toneClassNameMap: Record<AnnotationTone, string> = {
@@ -63,25 +66,66 @@ const tagClassNameMap: Record<AnnotationTone, string> = {
   anchor: 'bg-[#FDE7C7] text-[#9A6700]'
 }
 
+const selectedClassNameMap = {
+  green: 'ring-2 ring-custom-primary-200 ring-offset-2 border-custom-primary-200/70',
+  red: 'ring-2 ring-[#F08A84] ring-offset-2 border-[#F2B8B5] shadow-[0_0_0_2px_rgba(240,138,132,0.08)]'
+} as const
+
+const selectedTagClassNameMap = {
+  green: '',
+  red: 'bg-[#FDE7E4] text-[#C2410C]'
+} as const
+
 export const PreviewCard: React.FC<PreviewCardProps> = ({
   label,
   note,
   tone = 'current',
   component,
-  extra
+  extra,
+  selected = false,
+  selectedAccent = 'green',
+  onSelect
 }) => {
+  const isInteractive = typeof onSelect === 'function'
+
   return (
-    <div className={`rounded-3xl border px-4 py-4 shadow-sm ${toneClassNameMap[tone]}`}>
+    <div
+      role={isInteractive ? 'button' : undefined}
+      tabIndex={isInteractive ? 0 : undefined}
+      onClick={onSelect}
+      onKeyDown={
+        isInteractive
+          ? event => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                onSelect?.()
+              }
+            }
+          : undefined
+      }
+      className={`rounded-3xl border px-4 py-4 shadow-sm transition-all ${toneClassNameMap[tone]} ${
+        isInteractive ? 'cursor-pointer hover:-translate-y-[1px] hover:shadow-md' : ''
+      } ${selected ? selectedClassNameMap[selectedAccent] : ''}`}
+    >
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <span
-            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${tagClassNameMap[tone]}`}
+            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+              tagClassNameMap[tone]
+            } ${selected ? selectedTagClassNameMap[selectedAccent] : ''}`}
           >
             {label}
           </span>
           {note && <span className="text-xs text-custom-text-200">{note}</span>}
         </div>
-        {extra}
+        {extra ? (
+          <div
+            onClick={event => event.stopPropagation()}
+            onKeyDown={event => event.stopPropagation()}
+          >
+            {extra}
+          </div>
+        ) : null}
       </div>
       <div className="pointer-events-none select-none">
         <ComponentRender component={component} />
@@ -135,7 +179,8 @@ export const PatchActionButtons: React.FC<{
   status: QuestionnairePatchStatus
   onAccept: () => void
   onReject: () => void
-}> = ({ status, onAccept, onReject }) => {
+  disabled?: boolean
+}> = ({ status, onAccept, onReject, disabled = false }) => {
   if (status === 'applied') {
     return (
       <Tag className="m-0" color="success">
@@ -146,7 +191,7 @@ export const PatchActionButtons: React.FC<{
 
   return (
     <div className="flex items-center gap-2">
-      <Button size="small" type="primary" onClick={onAccept}>
+      <Button size="small" type="primary" onClick={onAccept} disabled={disabled}>
         接受
       </Button>
       <Button
@@ -154,6 +199,7 @@ export const PatchActionButtons: React.FC<{
         danger={status !== 'rejected'}
         type={status === 'rejected' ? 'default' : 'text'}
         onClick={onReject}
+        disabled={disabled}
       >
         {status === 'rejected' ? '恢复' : '拒绝'}
       </Button>

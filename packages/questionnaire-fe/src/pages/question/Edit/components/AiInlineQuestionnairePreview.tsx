@@ -21,7 +21,7 @@ import {
   PatchActionButtons,
   PreviewCard
 } from './AiInlinePreviewShared'
-import { AiDraftInsertHint } from './AiDraftBatchBar'
+import { AiDraftContextHint } from './AiDraftBatchBar'
 import AiInlinePreviewHeader from './AiInlinePreviewHeader'
 
 interface AiInlineQuestionnairePreviewProps {
@@ -37,6 +37,7 @@ interface AiInlineQuestionnairePreviewProps {
   warningMessage: string | null
   draftApplied: boolean
   isApplyingDraft: boolean
+  onSelectComponent: (feId: string) => void
   onApply: () => void
   onDiscard: () => void
   onBack: () => void
@@ -60,6 +61,7 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
   warningMessage,
   draftApplied,
   isApplyingDraft,
+  onSelectComponent,
   onApply,
   onDiscard,
   onBack,
@@ -75,6 +77,7 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
     status === 'thinking' ||
     status === 'answering' ||
     status === 'drafting'
+  const reviewActionsDisabled = isStreaming || isApplyingDraft
   const currentComponents = currentQuestionnaire.components || []
   const patchStatusMap = Object.fromEntries(
     (questionPatchSet?.patches || []).map(patch => [
@@ -131,7 +134,7 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
       ? hasSelectedPatchItems
       : finalDraft || (status === 'cancelled' ? draftPartial : null)) &&
       !draftApplied &&
-      !isApplyingDraft
+      !reviewActionsDisabled
   )
   const addedInsertMap =
     mode === 'edit' ? buildAddedInsertMap(currentComponents, draftComponents) : new Map()
@@ -146,6 +149,10 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
       ? -1
       : currentComponents.findIndex(component => component.fe_id === selectedId)
   const generateInsertIndex = anchorIndex >= 0 ? anchorIndex + 1 : currentComponents.length
+  const handleSelectComponent = (feId: string) => {
+    if (!feId) return
+    onSelectComponent(feId)
+  }
   const displayTitle =
     mode === 'generate' && currentComponents.length === 0 && previewDraft
       ? previewDraft.title || '未命名问卷'
@@ -205,6 +212,7 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
         applyButtonLabel={applyButtonLabel}
         previewDraftExists={Boolean(previewDraft)}
         errorMessage={errorMessage}
+        actionsDisabled={reviewActionsDisabled}
         onBack={onBack}
         onDiscard={onDiscard}
         onApply={onApply}
@@ -213,50 +221,37 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
       />
 
       <div className="flex-1 overflow-y-auto bg-white/30 px-4 py-4 custom-no-scrollbar">
-        {mode === 'generate' && (
-          <div className="sticky top-0 z-40 mb-4 space-y-3">
-            <AiDraftInsertHint currentComponents={currentComponents} selectedId={selectedId} />
-            {errorMessage ? (
-              <Alert
-                className="shadow-sm"
-                type="error"
-                showIcon
-                message="AI 草稿生成失败"
-                description={errorMessage}
-              />
-            ) : warningMessage ? (
-              <Alert
-                className="shadow-sm"
-                type="warning"
-                showIcon
-                message="AI 已跳过部分解析失败的题目"
-                description={warningMessage}
-              />
-            ) : null}
-          </div>
-        )}
+        <div className="sticky top-0 z-40 mb-4 space-y-2">
+          <AiDraftContextHint
+            mode={mode}
+            currentComponents={currentComponents}
+            selectedId={selectedId}
+            generateBaseComponentCount={
+              questionPatchSet?.baseQuestionnaire.components.length ?? null
+            }
+            generateReviewCompleted={allPatchChangesHandled}
+          />
 
-        {mode !== 'generate' && (errorMessage || warningMessage) && (
-          <div className="sticky top-0 z-40 mb-4">
-            {errorMessage ? (
-              <Alert
-                className="shadow-sm"
-                type="error"
-                showIcon
-                message="AI 草稿生成失败"
-                description={errorMessage}
-              />
-            ) : warningMessage ? (
-              <Alert
-                className="shadow-sm"
-                type="warning"
-                showIcon
-                message="AI 已跳过部分解析失败的题目"
-                description={warningMessage}
-              />
-            ) : null}
-          </div>
-        )}
+          {errorMessage ? (
+            <Alert
+              className="shadow-sm"
+              type="error"
+              showIcon
+              message="AI 草稿生成失败"
+              description={errorMessage}
+              closable={mode === 'generate'}
+            />
+          ) : warningMessage ? (
+            <Alert
+              className="shadow-sm"
+              type="warning"
+              showIcon
+              message="AI 已跳过部分解析失败的题目"
+              description={warningMessage}
+              closable={mode === 'generate'}
+            />
+          ) : null}
+        </div>
 
         {mode === 'edit' && previewDraft && (
           <PageConfigSuggestion
@@ -268,6 +263,7 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
                   status={patchStatusMap.page_config || 'pending'}
                   onAccept={() => onApplyPatch('page_config')}
                   onReject={() => onRejectPatch('page_config')}
+                  disabled={reviewActionsDisabled}
                 />
               ) : null
             }
@@ -301,6 +297,7 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
                               status={patchStatusMap[`add:${component.fe_id}`] || 'pending'}
                               onAccept={() => onApplyPatch(`add:${component.fe_id}`)}
                               onReject={() => onRejectPatch(`add:${component.fe_id}`)}
+                              disabled={reviewActionsDisabled}
                             />
                           }
                         />
@@ -323,6 +320,7 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
                             status={patchStatusMap[`add:${component.fe_id}`] || 'pending'}
                             onAccept={() => onApplyPatch(`add:${component.fe_id}`)}
                             onReject={() => onRejectPatch(`add:${component.fe_id}`)}
+                            disabled={reviewActionsDisabled}
                           />
                         }
                       />
@@ -348,7 +346,7 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
                   return (
                     <React.Fragment key={component.fe_id}>
                       <PreviewCard
-                        tone={isDeleted ? 'danger' : generateInsertHere ? 'anchor' : 'current'}
+                        tone={isDeleted ? 'danger' : 'current'}
                         label={`当前第 ${index + 1} 项`}
                         note={
                           isDeleted
@@ -358,12 +356,16 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
                             : undefined
                         }
                         component={component}
+                        selected={selectedId === component.fe_id}
+                        selectedAccent={mode === 'edit' && isChanged ? 'red' : 'green'}
+                        onSelect={() => handleSelectComponent(component.fe_id)}
                         extra={
                           isDeleted ? (
                             <PatchActionButtons
                               status={patchStatusMap[`delete:${component.fe_id}`] || 'pending'}
                               onAccept={() => onApplyPatch(`delete:${component.fe_id}`)}
                               onReject={() => onRejectPatch(`delete:${component.fe_id}`)}
+                              disabled={reviewActionsDisabled}
                             />
                           ) : undefined
                         }
@@ -375,11 +377,15 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
                           label={`AI 建议改为第 ${(draftPosition || 0) + 1} 项`}
                           note="下方是 AI 生成的替换内容"
                           component={draftComponent}
+                          selected={selectedId === draftComponent.fe_id}
+                          selectedAccent="green"
+                          onSelect={() => handleSelectComponent(draftComponent.fe_id)}
                           extra={
                             <PatchActionButtons
                               status={patchStatusMap[`update:${draftComponent.fe_id}`] || 'pending'}
                               onAccept={() => onApplyPatch(`update:${draftComponent.fe_id}`)}
                               onReject={() => onRejectPatch(`update:${draftComponent.fe_id}`)}
+                              disabled={reviewActionsDisabled}
                             />
                           }
                         />
@@ -399,6 +405,7 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
                               status={patchStatusMap[`add:${addedComponent.fe_id}`] || 'pending'}
                               onAccept={() => onApplyPatch(`add:${addedComponent.fe_id}`)}
                               onReject={() => onRejectPatch(`add:${addedComponent.fe_id}`)}
+                              disabled={reviewActionsDisabled}
                             />
                           }
                         />
@@ -426,6 +433,7 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
                                 status={patchStatusMap[`add:${draftComponent.fe_id}`] || 'pending'}
                                 onAccept={() => onApplyPatch(`add:${draftComponent.fe_id}`)}
                                 onReject={() => onRejectPatch(`add:${draftComponent.fe_id}`)}
+                                disabled={reviewActionsDisabled}
                               />
                             }
                           />
@@ -449,6 +457,7 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
                           status={patchStatusMap[`add:${component.fe_id}`] || 'pending'}
                           onAccept={() => onApplyPatch(`add:${component.fe_id}`)}
                           onReject={() => onRejectPatch(`add:${component.fe_id}`)}
+                          disabled={reviewActionsDisabled}
                         />
                       }
                     />
@@ -496,6 +505,8 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
                     label={`当前第 ${index + 1} 项`}
                     note="该内容已应用到编辑器"
                     component={component}
+                    selected={selectedId === component.fe_id}
+                    onSelect={() => handleSelectComponent(component.fe_id)}
                   />
                 ))}
               </div>
@@ -512,11 +523,6 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
           </div>
         ) : showCurrentQuestionnaireFallback ? (
           <div className="rounded-[28px] border border-custom-bg-200 bg-white/80 p-5 shadow-inner">
-            <div className="mb-4 rounded-3xl border border-[#CFEAE4] bg-white/80 px-4 py-3 text-sm text-custom-text-100 shadow-sm">
-              {mode === 'edit'
-                ? '当前展示的是可供 AI 修改的问卷内容。发送修改指令后，AI 建议会直接标注在这里。'
-                : '当前展示的是问卷基线内容。切到生成模式后，AI 新增内容会在这份问卷基础上插入。'}
-            </div>
             <div className="border-b border-custom-bg-200 pb-4 text-center">
               <div className="text-[26px] font-semibold tracking-[0.02em] text-custom-primary-200">
                 {currentQuestionnaire.title || '未命名问卷'}
@@ -530,10 +536,12 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
                 {currentComponents.map((component, index) => (
                   <PreviewCard
                     key={`current-edit-${component.fe_id}-${index}`}
-                    tone={mode === 'generate' && anchorIndex === index ? 'anchor' : 'current'}
+                    tone="current"
                     label={`当前第 ${index + 1} 项`}
                     note={mode === 'edit' ? '这是当前问卷内容' : 'AI 会基于这份问卷继续新增内容'}
                     component={component}
+                    selected={selectedId === component.fe_id}
+                    onSelect={() => handleSelectComponent(component.fe_id)}
                   />
                 ))}
               </div>

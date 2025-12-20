@@ -36,6 +36,7 @@ type UseAiDraftStreamParams = {
   questionnaireId: string
   selectedModel: string
   version: number
+  focusedComponentId: string
   messages: AiChatMessage[]
   message: MessageApi
   controllerRef: { current: AbortController | null }
@@ -91,6 +92,7 @@ export const useAiDraftStream = ({
   questionnaireId,
   selectedModel,
   version,
+  focusedComponentId,
   messages,
   message,
   controllerRef,
@@ -206,6 +208,7 @@ export const useAiDraftStream = ({
               baseVersion: version,
               model: selectedModel || undefined,
               instruction,
+              ...(requestIntent === 'edit' && focusedComponentId ? { focusedComponentId } : {}),
               originalInstruction,
               history: baseHistory,
               questionnaire,
@@ -435,6 +438,7 @@ export const useAiDraftStream = ({
       message,
       messages,
       questionnaireId,
+      focusedComponentId,
       rawReplyTextRef,
       baseQuestionnaireRef,
       refreshConversationList,

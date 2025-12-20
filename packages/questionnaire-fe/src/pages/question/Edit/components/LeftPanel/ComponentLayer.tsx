@@ -35,8 +35,8 @@ const ComponentLayer: React.FC = () => {
   return (
     <div className="flex flex-col space-y-2">
       <div className="text-sm text-gray-500 mb-2">已添加 {componentList.length} 个组件</div>
-      {componentList.map(comp => {
-        const { fe_id, title, type } = comp
+      {componentList.map((comp, index) => {
+        const { fe_id, title } = comp
         const isSelected = selectedId === fe_id
 
         return (
@@ -51,8 +51,8 @@ const ComponentLayer: React.FC = () => {
           >
             <div className="flex flex-col">
               <Text strong>{title}</Text>
-              <Text type="secondary" className="text-xs">
-                ID: {fe_id}
+              <Text type="secondary" className="text-xs" title={`内部ID: ${fe_id}`}>
+                题号: q{index + 1}
               </Text>
             </div>
             <Popconfirm

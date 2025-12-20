@@ -473,6 +473,7 @@ const useAiWorkbench = (
     questionnaireId,
     selectedModel,
     version,
+    focusedComponentId: selectedId,
     messages,
     message,
     controllerRef,
@@ -569,6 +570,7 @@ const useAiWorkbench = (
     useAiInstructionActions({
       mode,
       composerInput,
+      selectedId,
       message,
       generateFlowRef,
       setComposerInputState,

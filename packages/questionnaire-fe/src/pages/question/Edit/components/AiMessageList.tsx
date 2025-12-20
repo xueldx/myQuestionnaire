@@ -191,7 +191,7 @@ const AiMessageList: React.FC<AiMessageListProps> = ({ mode, messages, status, e
               <div>
                 {mode === 'generate'
                   ? '先输入你的需求。你可以先点“润色”优化 Prompt，也可以直接点“发送”开始生成问卷草稿。'
-                  : '直接告诉我你想改哪一项，我会在中间预览里标出对应位置和修改建议。'}
+                  : '告诉我你想对当前选中题目做什么修改，我会在中间问卷预览里给出修改后的题目。'}
               </div>
             </div>
           </div>

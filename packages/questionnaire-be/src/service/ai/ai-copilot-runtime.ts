@@ -14,6 +14,11 @@ import {
 import { UserToken } from '@/common/decorators/current-user.decorator';
 import { parseCopilotBlocks } from '@/service/ai/utils/parse-copilot-blocks';
 import { normalizeDraft } from '@/service/ai/utils/draft-normalizer';
+import {
+  getFocusedQuestionBinding,
+  getReferencedQuestionBindings,
+  instructionAllowsAdditions,
+} from '@/service/ai/utils/question-reference';
 import { validateDraft } from '@/service/ai/utils/draft-validator';
 import { buildDiffSummary } from '@/service/ai/utils/build-diff-summary';
 import { buildPromptPolishPrompt } from '@/service/ai/ai-prompt/build-prompt-polish-prompt';
@@ -36,6 +41,17 @@ type ModelRuntimeConfig = {
   model: string;
   apiKey: string;
   baseURL: string;
+};
+
+const isQuestionComponentChanged = (
+  prev: QuestionnaireDraft['components'][number],
+  next: QuestionnaireDraft['components'][number],
+) => {
+  return (
+    prev.title !== next.title ||
+    prev.type !== next.type ||
+    JSON.stringify(prev.props || {}) !== JSON.stringify(next.props || {})
+  );
 };
 
 type RuntimeDeps = {
@@ -489,6 +505,8 @@ export const streamDraftStage = async (
         parsed,
         dto.questionnaire,
         dto.intent,
+        dto.instruction,
+        dto.focusedComponentId,
       );
       const signature = JSON.stringify(draftPartial);
 
@@ -526,7 +544,82 @@ export const streamDraftStage = async (
     parsed,
     dto.questionnaire,
     dto.intent,
+    dto.instruction,
+    dto.focusedComponentId,
   );
+
+  if (dto.intent === 'edit') {
+    const focusedBinding = getFocusedQuestionBinding(
+      dto.focusedComponentId,
+      dto.questionnaire.components || [],
+    );
+    const referencedBindings = getReferencedQuestionBindings(
+      dto.instruction,
+      dto.questionnaire.components || [],
+    );
+    const snapshotIds = new Set(
+      (dto.questionnaire.components || []).map((component) => component.fe_id),
+    );
+    const snapshotComponentMap = new Map(
+      (dto.questionnaire.components || []).map((component) => [
+        component.fe_id,
+        component,
+      ]),
+    );
+    const draftIds = new Set(rawDraft.components.map((component) => component.fe_id));
+
+    if (focusedBinding) {
+      if (!draftIds.has(focusedBinding.fe_id)) {
+        throw new Error('AI 未正确修改当前选中的题目，请重试');
+      }
+
+      const changedExistingComponents = rawDraft.components.filter((component) => {
+        const snapshotComponent = snapshotComponentMap.get(component.fe_id);
+        return snapshotComponent
+          ? isQuestionComponentChanged(snapshotComponent, component)
+          : false;
+      });
+      const touchedOtherExistingComponents = changedExistingComponents.filter(
+        (component) => component.fe_id !== focusedBinding.fe_id,
+      );
+      if (touchedOtherExistingComponents.length > 0) {
+        throw new Error('当前仅支持修改选中的题目，请不要同时修改其他题目');
+      }
+
+      const hasUnexpectedAdditions = rawDraft.components.some(
+        (component) => !snapshotIds.has(component.fe_id),
+      );
+      if (hasUnexpectedAdditions) {
+        throw new Error('当前仅支持修改选中的题目，不能同时新增题目，请重试');
+      }
+
+      const pageConfigChanged =
+        rawDraft.title !== dto.questionnaire.title ||
+        rawDraft.description !== dto.questionnaire.description ||
+        rawDraft.footerText !== dto.questionnaire.footerText;
+      if (pageConfigChanged) {
+        throw new Error('当前仅支持修改选中的题目，不能同时修改问卷标题或描述');
+      }
+    }
+
+    const missingReferencedBindings = referencedBindings.filter(
+      (binding) => !draftIds.has(binding.fe_id),
+    );
+
+    if (missingReferencedBindings.length > 0) {
+      throw new Error('AI 未正确引用你指定的题目，请重试');
+    }
+
+    if (!instructionAllowsAdditions(dto.instruction)) {
+      const hasUnexpectedAdditions = rawDraft.components.some(
+        (component) => !snapshotIds.has(component.fe_id),
+      );
+
+      if (hasUnexpectedAdditions) {
+        throw new Error('本轮修改未请求新增题目，但 AI 返回了新增内容，请重试');
+      }
+    }
+  }
 
   const { draft: validatedDraft, warnings: validationWarnings } = validateDraft(
     rawDraft,
@@ -612,6 +705,32 @@ export const executeCopilotStream = async (
 
     if (!safeDto.instruction) {
       throw new Error('请输入本轮 AI 指令后再发送');
+    }
+    if (
+      safeDto.intent === 'edit' &&
+      !getFocusedQuestionBinding(
+        safeDto.focusedComponentId,
+        safeDto.questionnaire.components || [],
+      )
+    ) {
+      throw new Error('当前仅支持单题 AI 修改，请先选中要修改的题目');
+    }
+    if (safeDto.intent === 'edit') {
+      const focusedBinding = getFocusedQuestionBinding(
+        safeDto.focusedComponentId,
+        safeDto.questionnaire.components || [],
+      );
+      const referencedBindings = getReferencedQuestionBindings(
+        safeDto.instruction,
+        safeDto.questionnaire.components || [],
+      );
+
+      if (
+        focusedBinding &&
+        referencedBindings.some((binding) => binding.fe_id !== focusedBinding.fe_id)
+      ) {
+        throw new Error('当前选中的题目与指令里引用的题目不一致，请重新确认后再试');
+      }
     }
     if (
       safeDto.intent === 'generate' &&

@@ -9,6 +9,7 @@ type MessageApi = {
 type UseAiInstructionActionsParams = {
   mode: AiCopilotIntent
   composerInput: string
+  selectedId: string
   message: MessageApi
   generateFlowRef: { current: AiGenerateFlowState }
   setComposerInputState: (value: string) => void
@@ -21,6 +22,7 @@ type UseAiInstructionActionsParams = {
 export const useAiInstructionActions = ({
   mode,
   composerInput,
+  selectedId,
   message,
   generateFlowRef,
   setComposerInputState,
@@ -61,6 +63,11 @@ export const useAiInstructionActions = ({
         return true
       }
 
+      if (!selectedId) {
+        message.warning('请先在问卷预览区、编辑器或问卷图层中选中要修改的题目')
+        return false
+      }
+
       setComposerInputState('')
       void runDraftStream({
         requestIntent: 'edit',
@@ -75,7 +82,9 @@ export const useAiInstructionActions = ({
       dispatchGenerateFlow,
       ensureActiveConversation,
       generateFlowRef,
+      message,
       runDraftStream,
+      selectedId,
       setComposerInputState
     ]
   )

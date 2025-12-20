@@ -82,6 +82,10 @@ export class CopilotStreamDto {
 
   @IsOptional()
   @IsString()
+  focusedComponentId?: string;
+
+  @IsOptional()
+  @IsString()
   originalInstruction?: string;
 
   @IsArray()

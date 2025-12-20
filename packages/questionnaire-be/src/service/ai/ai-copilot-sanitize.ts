@@ -79,6 +79,33 @@ export const sanitizeCopilotDto = (
   const rawComponents = Array.isArray(snapshot.components)
     ? snapshot.components
     : [];
+  const normalizedFocusedComponentId = ensureString(dto?.focusedComponentId);
+  const sanitizedComponents = rawComponents
+    .map((component, index) => {
+      const componentRecord = ensureObject(component);
+      const type = ensureString(componentRecord.type);
+      if (!type) return null;
+
+      const props = normalizeComponentProps(
+        type,
+        ensureObject(componentRecord.props),
+      );
+      const title =
+        ensureString(componentRecord.title) ||
+        ensureString(props.title) ||
+        `${type}-${index + 1}`;
+
+      return {
+        fe_id: ensureString(componentRecord.fe_id, `${type}-${index + 1}`),
+        type,
+        title,
+        props: {
+          ...props,
+          title,
+        },
+      };
+    })
+    .filter(Boolean) as SanitizedCopilotDto['questionnaire']['components'];
 
   return {
     intent: dto?.intent === 'edit' ? 'edit' : 'generate',
@@ -90,6 +117,11 @@ export const sanitizeCopilotDto = (
     baseVersion: Math.max(1, Number(dto?.baseVersion) || 1),
     model: ensureString(dto?.model) || undefined,
     instruction: ensureString(dto?.instruction),
+    focusedComponentId: sanitizedComponents.some(
+      (component) => component.fe_id === normalizedFocusedComponentId,
+    )
+      ? normalizedFocusedComponentId
+      : undefined,
     originalInstruction: ensureString(dto?.originalInstruction),
     history: Array.isArray(dto?.history)
       ? dto.history
@@ -106,32 +138,7 @@ export const sanitizeCopilotDto = (
       title: ensureString(snapshot.title, '未命名问卷'),
       description: ensureString(snapshot.description),
       footerText: ensureString(snapshot.footerText),
-      components: rawComponents
-        .map((component, index) => {
-          const componentRecord = ensureObject(component);
-          const type = ensureString(componentRecord.type);
-          if (!type) return null;
-
-          const props = normalizeComponentProps(
-            type,
-            ensureObject(componentRecord.props),
-          );
-          const title =
-            ensureString(componentRecord.title) ||
-            ensureString(props.title) ||
-            `${type}-${index + 1}`;
-
-          return {
-            fe_id: ensureString(componentRecord.fe_id, `${type}-${index + 1}`),
-            type,
-            title,
-            props: {
-              ...props,
-              title,
-            },
-          };
-        })
-        .filter(Boolean) as SanitizedCopilotDto['questionnaire']['components'],
+      components: sanitizedComponents,
     },
   };
 };

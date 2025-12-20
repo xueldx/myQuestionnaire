@@ -20,6 +20,7 @@ import {
   setVersion,
   deleteComponent,
   resetComponents,
+  setSelectedId,
   undo,
   redo
 } from '@/store/modules/componentsSlice'
@@ -42,6 +43,8 @@ const Edit: React.FC = () => {
   const historyIndex = useSelector((state: RootState) => state.components.historyIndex)
   const historyLength = useSelector((state: RootState) => state.components.history.length)
   const selectedId = useSelector((state: RootState) => state.components.selectedId)
+  const selectedIndex = componentList.findIndex(component => component.fe_id === selectedId)
+  const selectedComponent = selectedIndex >= 0 ? componentList[selectedIndex] : null
   const dispatch = useDispatch()
   const { isRequestSuccess } = useRequestSuccessChecker()
   const { message, modal } = App.useApp()
@@ -384,6 +387,8 @@ const Edit: React.FC = () => {
                   composerInput={aiWorkbench.composerInput}
                   errorMessage={aiWorkbench.errorMessage}
                   hasPendingAiResult={aiWorkbench.hasPendingAiResult}
+                  focusedComponentTitle={selectedComponent?.title}
+                  focusedComponentOrder={selectedComponent ? selectedIndex + 1 : null}
                   hasGenerateBase={
                     componentList.length > 0 ||
                     Boolean(
@@ -448,6 +453,7 @@ const Edit: React.FC = () => {
                     warningMessage={aiWorkbench.warningMessage}
                     draftApplied={aiWorkbench.draftApplied}
                     isApplyingDraft={applyingDraft}
+                    onSelectComponent={feId => dispatch(setSelectedId(feId))}
                     onApply={aiWorkbench.applyDraft}
                     onDiscard={aiWorkbench.discardDraft}
                     onBack={() => setLeftPanelActiveKey(lastNonAiPanelKey || 'market')}

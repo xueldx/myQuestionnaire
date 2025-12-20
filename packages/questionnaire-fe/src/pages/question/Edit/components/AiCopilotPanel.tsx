@@ -33,6 +33,8 @@ interface AiCopilotPanelProps {
   errorMessage: string | null
   hasGenerateBase: boolean
   hasPendingAiResult: boolean
+  focusedComponentTitle?: string
+  focusedComponentOrder?: number | null
   onModeChange: (mode: AiCopilotIntent) => void
   onModelChange: (model: string) => void
   onComposerInputChange: (value: string) => void
@@ -60,6 +62,8 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
   errorMessage,
   hasGenerateBase,
   hasPendingAiResult,
+  focusedComponentTitle,
+  focusedComponentOrder,
   onModeChange,
   onModelChange,
   onComposerInputChange,
@@ -79,6 +83,7 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
   const [renameSubmitting, setRenameSubmitting] = React.useState(false)
   const [switchingConversationId, setSwitchingConversationId] = React.useState<number | null>(null)
   const [actionConversationId, setActionConversationId] = React.useState<number | null>(null)
+  const hasFocusedComponent = typeof focusedComponentOrder === 'number'
   const isStreaming =
     status === 'connecting' ||
     status === 'polishing' ||
@@ -209,9 +214,13 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
   const placeholder =
     mode === 'generate'
       ? hasGenerateBase
-        ? '请输入想追加的题目需求，例如：在最后一道题后补两道开放建议题'
+        ? hasFocusedComponent
+          ? `当前将在第 ${focusedComponentOrder} 题后追加题目，可直接描述新增要求，例如：在这题后补两道开放建议题`
+          : '请输入想追加的题目需求，例如：在最后一道题后补两道开放建议题'
         : '请输入原始需求，例如：想做一份门店服务满意度问卷，最好有基础信息、服务体验和建议题'
-      : '请输入你的修改需求，建议单次只修改一题，并且写出具体题目和修改要求，例如：把第 3 题改成多选'
+      : hasFocusedComponent
+      ? `当前将修改第 ${focusedComponentOrder} 题，可直接描述修改要求，例如：改成多选，并增加“其他”选项`
+      : '请先在中间预览、问卷图层或编辑器中选中要修改的题目'
 
   const activeConversation = conversationList.find(item => item.id === activeConversationId)
   const formatConversationTime = (value: string | null) => {
@@ -478,6 +487,20 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
             </div>
           </Tooltip>
         ) : null}
+
+        {mode === 'edit' && (
+          <div
+            className={`mb-3 rounded-2xl border px-3 py-2 text-xs leading-5 ${
+              hasFocusedComponent
+                ? 'border-[#CFEAE4] bg-[#F5FFFC] text-[#0F766E]'
+                : 'border-[#F7D9A7] bg-[#FFF9ED] text-[#8C6A12]'
+            }`}
+          >
+            {hasFocusedComponent
+              ? `当前选中第 ${focusedComponentOrder} 题：${focusedComponentTitle || '未命名题目'}`
+              : '当前仅支持单题 AI 修改。请先在中间预览、问卷图层或编辑器中选中一题，再发送修改指令。'}
+          </div>
+        )}
 
         <div className="min-h-0 flex-1">
           <AiMessageList

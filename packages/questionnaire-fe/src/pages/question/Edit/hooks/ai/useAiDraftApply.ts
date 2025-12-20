@@ -92,6 +92,23 @@ export const useAiDraftApply = ({
     footerText: pageConfig.footerText,
     components: componentList
   }
+  const resolveNextSelectedId = useCallback(
+    (
+      normalizedComponents: QuestionnaireDraft['components'],
+      options?: {
+        keepEmptyWhenUnmatched?: boolean
+      }
+    ) => {
+      const matchedSelectedId = normalizedComponents.find(
+        component => component.fe_id === selectedId
+      )?.fe_id
+
+      if (matchedSelectedId) return matchedSelectedId
+      if (options?.keepEmptyWhenUnmatched) return ''
+      return normalizedComponents[0]?.fe_id || ''
+    },
+    [selectedId]
+  )
 
   const applyPatchSelection = useCallback(
     async (patchIds = effectiveSelectedPatchIds) => {
@@ -118,10 +135,10 @@ export const useAiDraftApply = ({
       }
 
       const normalizedComponents = normalizeQuestionnaireComponentList(nextQuestionnaire.components)
-      const nextSelectedId =
-        normalizedComponents.find(component => component.fe_id === selectedId)?.fe_id ||
-        normalizedComponents[0]?.fe_id ||
-        ''
+      const nextSelectedId = resolveNextSelectedId(normalizedComponents, {
+        keepEmptyWhenUnmatched:
+          mode === 'generate' && questionPatchSet.baseQuestionnaire.components.length === 0
+      })
 
       dispatch(
         resetComponents({
@@ -192,8 +209,10 @@ export const useAiDraftApply = ({
       onDraftApplied,
       questionPatchSet,
       rejectedPatchIds,
+      resolveNextSelectedId,
       selectedId,
       setDraftApplied,
+      mode,
       version
     ]
   )
@@ -207,10 +226,9 @@ export const useAiDraftApply = ({
         return
       }
 
-      const nextSelectedId =
-        normalizedComponents.find(component => component.fe_id === selectedId)?.fe_id ||
-        normalizedComponents[0]?.fe_id ||
-        ''
+      const nextSelectedId = resolveNextSelectedId(normalizedComponents, {
+        keepEmptyWhenUnmatched: mode === 'generate' && componentList.length === 0
+      })
 
       dispatch(
         resetComponents({
@@ -278,8 +296,9 @@ export const useAiDraftApply = ({
       onDraftApplied,
       pageConfig,
       persistConversationDraftState,
-      selectedId,
+      resolveNextSelectedId,
       setDraftApplied,
+      mode,
       version
     ]
   )
@@ -287,10 +306,7 @@ export const useAiDraftApply = ({
   const applyEditDraft = useCallback(
     async (draft: QuestionnaireDraft) => {
       const normalizedComponents = normalizeQuestionnaireComponentList(draft.components)
-      const nextSelectedId =
-        normalizedComponents.find(component => component.fe_id === selectedId)?.fe_id ||
-        normalizedComponents[0]?.fe_id ||
-        ''
+      const nextSelectedId = resolveNextSelectedId(normalizedComponents)
 
       dispatch(
         resetComponents({
@@ -344,7 +360,7 @@ export const useAiDraftApply = ({
       message,
       onDraftApplied,
       persistConversationDraftState,
-      selectedId,
+      resolveNextSelectedId,
       setDraftApplied,
       version
     ]

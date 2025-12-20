@@ -108,6 +108,7 @@ export type AiCopilotStreamRequest = {
   baseVersion: number
   model?: string
   instruction: string
+  focusedComponentId?: string
   generateStage?: AiGenerateStage
   originalInstruction?: string
   history: AiChatMessage[]

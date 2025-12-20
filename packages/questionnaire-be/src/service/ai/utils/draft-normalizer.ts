@@ -3,7 +3,12 @@ import {
   QuestionnaireSnapshot,
 } from '@/service/ai/dto/copilot-stream.dto';
 import { ParsedCopilotBlocks } from '@/service/ai/utils/parse-copilot-blocks';
+import {
+  getFocusedQuestionBinding,
+  getReferencedQuestionBindings,
+} from '@/service/ai/utils/question-reference';
 import { QuestionComponent } from '@/common/schemas/question-detail.schema';
+import { v4 as uuidv4 } from 'uuid';
 
 const ensureString = (value: unknown, fallback = '') => {
   return typeof value === 'string' ? value.trim() : fallback;
@@ -43,7 +48,101 @@ const ensureObject = (value: unknown) => {
 };
 
 const createFallbackId = (intent: 'generate' | 'edit', index: number) => {
-  return `${intent}-${Date.now()}-${index + 1}`;
+  return `question-${intent}-${index + 1}-${uuidv4()}`;
+};
+
+const claimGeneratedId = (
+  intent: 'generate' | 'edit',
+  usedIds: Set<string>,
+  reservedIds: Set<string>,
+  index: number,
+) => {
+  let candidate = createFallbackId(intent, index);
+
+  while (usedIds.has(candidate) || reservedIds.has(candidate)) {
+    candidate = createFallbackId(intent, index);
+  }
+
+  usedIds.add(candidate);
+  return candidate;
+};
+
+const resolveUniqueDraftIds = (
+  components: QuestionComponent[],
+  snapshotComponents: QuestionComponent[],
+  intent: 'generate' | 'edit',
+  instruction = '',
+  focusedComponentId = '',
+) => {
+  const snapshotIds = new Set(
+    snapshotComponents.map((component) => ensureString(component.fe_id)).filter(Boolean),
+  );
+  const focusedBinding = getFocusedQuestionBinding(
+    focusedComponentId,
+    snapshotComponents,
+  );
+  const referencedBindings = getReferencedQuestionBindings(
+    instruction,
+    snapshotComponents,
+  );
+  const usedIds = new Set<string>();
+  const matchedSnapshotIds = new Set<string>();
+  const pendingReferencedIds = [
+    ...(focusedBinding ? [focusedBinding.fe_id] : []),
+    ...referencedBindings
+      .map((binding) => binding.fe_id)
+      .filter((fe_id) => fe_id !== focusedBinding?.fe_id),
+  ];
+
+  const claimReferencedId = () => {
+    while (pendingReferencedIds.length > 0) {
+      const nextId = pendingReferencedIds.shift();
+      if (!nextId || matchedSnapshotIds.has(nextId)) continue;
+
+      matchedSnapshotIds.add(nextId);
+      usedIds.add(nextId);
+      return nextId;
+    }
+
+    return null;
+  };
+
+  return components.map((component, index) => {
+    const preferredId = ensureString(component.fe_id);
+
+    if (
+      intent === 'edit' &&
+      preferredId &&
+      snapshotIds.has(preferredId) &&
+      (!focusedBinding || preferredId === focusedBinding.fe_id) &&
+      !matchedSnapshotIds.has(preferredId)
+    ) {
+      matchedSnapshotIds.add(preferredId);
+      usedIds.add(preferredId);
+      return component;
+    }
+
+    if (intent === 'edit') {
+      const referencedId = claimReferencedId();
+      if (referencedId) {
+        return {
+          ...component,
+          fe_id: referencedId,
+        };
+      }
+    }
+
+    if (preferredId && !usedIds.has(preferredId) && !snapshotIds.has(preferredId)) {
+      usedIds.add(preferredId);
+      return component;
+    }
+
+    const nextId = claimGeneratedId(intent, usedIds, snapshotIds, index);
+    return {
+      ...component,
+      fe_id: nextId,
+    };
+  });
 };
 
 const normalizeComponent = (
@@ -146,6 +245,8 @@ export const normalizeDraft = (
   parsed: ParsedCopilotBlocks,
   snapshot: QuestionnaireSnapshot,
   intent: 'generate' | 'edit',
+  instruction = '',
+  focusedComponentId = '',
 ): QuestionnaireDraft => {
   const pageConfig = ensureObject(parsed.pageConfig);
   const fallbackTitle =
@@ -156,10 +257,17 @@ export const normalizeDraft = (
   const normalizedComponents = parsed.components.map((component, index) =>
     normalizeComponent(component, intent, index),
   );
+  const resolvedComponents = resolveUniqueDraftIds(
+    normalizedComponents,
+    snapshot.components || [],
+    intent,
+    instruction,
+    focusedComponentId,
+  );
   const finalComponents =
     intent === 'edit'
-      ? mergeEditComponents(snapshot.components || [], normalizedComponents)
-      : normalizedComponents;
+      ? mergeEditComponents(snapshot.components || [], resolvedComponents)
+      : resolvedComponents;
 
   return {
     title: ensureString(pageConfig.title, fallbackTitle),

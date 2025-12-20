@@ -15,6 +15,7 @@ interface AiInlinePreviewHeaderProps {
   applyButtonLabel: string
   previewDraftExists: boolean
   errorMessage: string | null
+  actionsDisabled: boolean
   onBack: () => void
   onDiscard: () => void
   onApply: () => void
@@ -34,6 +35,7 @@ const AiInlinePreviewHeader: React.FC<AiInlinePreviewHeaderProps> = ({
   applyButtonLabel,
   previewDraftExists,
   errorMessage,
+  actionsDisabled,
   onBack,
   onDiscard,
   onApply,
@@ -53,12 +55,12 @@ const AiInlinePreviewHeader: React.FC<AiInlinePreviewHeaderProps> = ({
     {
       key: 'select-all',
       label: '全选全部建议',
-      disabled: selectedPatchIdsLength === patchCount
+      disabled: actionsDisabled || selectedPatchIdsLength === patchCount
     },
     {
       key: 'clear-all',
       label: '取消全选',
-      disabled: selectedPatchIdsLength === 0
+      disabled: actionsDisabled || selectedPatchIdsLength === 0
     }
   ]
 
@@ -88,10 +90,11 @@ const AiInlinePreviewHeader: React.FC<AiInlinePreviewHeaderProps> = ({
           <div className="pb-[1px]">
             <Dropdown
               menu={{ items: batchActionItems, onClick: handleBatchActionClick }}
-              trigger={['click']}
+              trigger={actionsDisabled ? [] : ['click']}
             >
               <Button
                 type="text"
+                disabled={actionsDisabled}
                 className="!h-[39px] rounded-t-lg !px-4 !text-[14px] !text-custom-text-200 hover:!text-[#167c72]"
               >
                 批量操作 <DownOutlined className="text-xs" />
@@ -104,15 +107,21 @@ const AiInlinePreviewHeader: React.FC<AiInlinePreviewHeaderProps> = ({
         </button>
         <button
           type="button"
-          onClick={canDiscardDraft ? onDiscard : undefined}
-          className={canDiscardDraft ? secondaryButtonClass : disabledSecondaryButtonClass}
+          onClick={canDiscardDraft && !actionsDisabled ? onDiscard : undefined}
+          className={
+            canDiscardDraft && !actionsDisabled
+              ? secondaryButtonClass
+              : disabledSecondaryButtonClass
+          }
         >
           {discardButtonLabel}
         </button>
         <button
           type="button"
-          onClick={!canApplyDraft ? undefined : onApply}
-          className={canApplyDraft ? primaryButtonClass : disabledPrimaryButtonClass}
+          onClick={canApplyDraft && !actionsDisabled ? onApply : undefined}
+          className={
+            canApplyDraft && !actionsDisabled ? primaryButtonClass : disabledPrimaryButtonClass
+          }
         >
           {applyButtonLabel}
         </button>

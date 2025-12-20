@@ -1,7 +1,160 @@
 import React from 'react'
+import { EditOutlined, PushpinOutlined } from '@ant-design/icons'
+import { Tooltip } from 'antd'
 import { ComponentInfoType } from '@/store/modules/componentsSlice'
+import { AiCopilotIntent } from './aiCopilotTypes'
 
-export const AiDraftInsertHint: React.FC<{
+const CHINESE_CHAR_LIMIT = 14
+const NON_CHINESE_CHAR_LIMIT = 35
+
+const isChineseChar = (char: string) => /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/.test(char)
+
+const truncateTitleText = (text: string): string => {
+  let chineseCount = 0
+  let nonChineseCount = 0
+  let result = ''
+
+  for (const char of text) {
+    if (isChineseChar(char)) {
+      if (chineseCount >= CHINESE_CHAR_LIMIT) {
+        return `${result}...`
+      }
+      chineseCount += 1
+    } else {
+      if (nonChineseCount >= NON_CHINESE_CHAR_LIMIT) {
+        return `${result}...`
+      }
+      nonChineseCount += 1
+    }
+
+    result += char
+  }
+
+  return result
+}
+
+const TruncatedTitle: React.FC<{
+  text: string
+  className?: string
+}> = ({ text, className = '' }) => {
+  if (!text) return null
+
+  const displayText = truncateTitleText(text)
+
+  return (
+    <Tooltip title={text}>
+      <span className={`inline-block max-w-[280px] align-bottom ${className}`}>{displayText}</span>
+    </Tooltip>
+  )
+}
+
+const MetaLine: React.FC<{
+  items: string[]
+}> = ({ items }) => (
+  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-custom-text-200">
+    {items.map((item, index) => (
+      <React.Fragment key={item}>
+        {index > 0 && <span className="text-custom-text-200/40">|</span>}
+        <span>{item}</span>
+      </React.Fragment>
+    ))}
+  </div>
+)
+
+const GenerateHint: React.FC<{
+  currentComponents: ComponentInfoType[]
+  selectedId: string
+  baseComponentCount?: number | null
+  reviewCompleted?: boolean
+}> = ({ currentComponents, selectedId, baseComponentCount, reviewCompleted = false }) => {
+  const selectedIndex =
+    selectedId == null
+      ? -1
+      : currentComponents.findIndex(component => component.fe_id === selectedId)
+  const selectedComponent = selectedIndex >= 0 ? currentComponents[selectedIndex] : null
+
+  const generateBaseCount = baseComponentCount ?? currentComponents.length
+  const startedFromEmpty = generateBaseCount === 0
+  const hasAcceptedGeneratedItems = startedFromEmpty && currentComponents.length > 0
+  const showInitialCreateHint = startedFromEmpty && !hasAcceptedGeneratedItems
+  const showDraftOrderHint = startedFromEmpty && hasAcceptedGeneratedItems && !reviewCompleted
+  const showInsertPositionHint = !showInitialCreateHint && !showDraftOrderHint
+
+  return (
+    <div className="rounded-2xl border border-[#BFE7DE] bg-[linear-gradient(135deg,rgba(248,255,252,0.98),rgba(235,247,242,0.96))] px-4 py-3 shadow-sm backdrop-blur-sm">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#DDF5EF] text-[#0F766E]">
+          <PushpinOutlined />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-6 text-custom-text-100">
+            <span className="font-semibold text-[#0F766E]">
+              {showInsertPositionHint ? '插入位置' : '问卷状态'}
+            </span>
+            {showInitialCreateHint ? (
+              <>
+                <span>当前为</span>
+                <span className="font-semibold text-[#0F766E]">新建问卷</span>
+                <span>，AI 将从</span>
+                <span className="font-semibold text-custom-text-100">第 1 题</span>
+                <span>开始生成内容</span>
+              </>
+            ) : showDraftOrderHint ? (
+              <>
+                <span>当前为</span>
+                <span className="font-semibold text-[#0F766E]">从零创建问卷</span>
+                <span>，建议按</span>
+                <span className="font-semibold text-[#0F766E]">AI 草稿顺序</span>
+                <span>逐项确认</span>
+              </>
+            ) : selectedComponent ? (
+              <>
+                <span>新增题目将插入到</span>
+                <span className="font-semibold text-[#0F766E]">第 {selectedIndex + 1} 题之后</span>
+                <span className="text-custom-text-200">（</span>
+                <TruncatedTitle
+                  text={selectedComponent.title || '未命名题目'}
+                  className="max-w-[320px] text-custom-text-200"
+                />
+                <span className="text-custom-text-200">）</span>
+              </>
+            ) : (
+              <>
+                <span>新增题目将插入到</span>
+                <span className="font-semibold text-[#0F766E]">当前问卷末尾</span>
+              </>
+            )}
+          </div>
+
+          <MetaLine
+            items={
+              showInitialCreateHint
+                ? [
+                    '从零创建问卷',
+                    '生成后可逐题接受应用',
+                    '如顺序不合适，可返回主编辑器拖拽调整顺序'
+                  ]
+                : showDraftOrderHint
+                ? [
+                    '可逐项接受或拒绝，也可通过顶部工具栏批量操作',
+                    '如顺序不合适，可返回主编辑器拖拽调整顺序'
+                  ]
+                : [
+                    startedFromEmpty
+                      ? '当前问卷已创建完成，可继续在此基础上新增'
+                      : '基于已有问卷生成',
+                    '可选中相关问题切换插入位置',
+                    '如修改位置不合适，可返回主编辑器拖拽调整顺序'
+                  ]
+            }
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const EditHint: React.FC<{
   currentComponents: ComponentInfoType[]
   selectedId: string
 }> = ({ currentComponents, selectedId }) => {
@@ -12,37 +165,66 @@ export const AiDraftInsertHint: React.FC<{
   const selectedComponent = selectedIndex >= 0 ? currentComponents[selectedIndex] : null
 
   return (
-    <div className="rounded-2xl border border-[#F7D9A7] bg-[#FFF9ED]/95 px-4 py-3 text-sm text-[#7C5C00] shadow-sm backdrop-blur-sm">
-      <div className="font-semibold text-[#9A6700]">新增题目插入位置</div>
-      <div className="mt-1 leading-6">
-        {currentComponents.length === 0 ? (
-          '本批题目会按 AI 草稿顺序，从第 1 项开始依次创建到当前问卷中。'
-        ) : selectedComponent ? (
-          <>
-            当前已选中
-            <span className="mx-1 font-semibold text-[#9A6700]">第 {selectedIndex + 1} 项</span>
-            之后：
-            <span className="ml-1 font-medium text-custom-text-100">
-              {selectedComponent.title || '未命名题目'}
-            </span>
-          </>
-        ) : (
-          '当前未选中题目，本批新增会直接追加到当前问卷末尾。'
-        )}
+    <div className="rounded-2xl border border-[#F6D79B] bg-[linear-gradient(135deg,rgba(255,251,239,0.98),rgba(255,246,222,0.96))] px-4 py-3 shadow-sm backdrop-blur-sm">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#FDE7C7] text-[#9A6700]">
+          <EditOutlined />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-6 text-[#7C5C00]">
+            <span className="font-semibold text-[#9A6700]">修改目标</span>
+            {selectedComponent ? (
+              <>
+                <span>当前将修改</span>
+                <span className="font-semibold text-[#7C5C00]">第 {selectedIndex + 1} 题</span>
+                <span className="text-[#B07A10]">（</span>
+                <TruncatedTitle
+                  text={selectedComponent.title || '未命名题目'}
+                  className="max-w-[320px] text-[#B07A10]"
+                />
+                <span className="text-[#B07A10]">）</span>
+              </>
+            ) : (
+              <>
+                <span>当前未选中题目，暂时无法发起</span>
+                <span className="font-semibold text-[#7C5C00]">单题修改</span>
+              </>
+            )}
+          </div>
+          <MetaLine
+            items={
+              selectedComponent
+                ? ['仅修改当前选中题目', '如选错题目，重新选择后再发送']
+                : ['请先选中要修改的题目', '如选错题目，重新选择即可']
+            }
+          />
+        </div>
       </div>
-      {currentComponents.length === 0 ? (
-        <div className="mt-1 text-xs text-[#8C6A12]">
-          你可以逐题接受，已接受内容会按草稿顺序连续加入问卷。
-        </div>
-      ) : selectedComponent ? (
-        <div className="mt-1 text-xs text-[#8C6A12]">
-          切换问卷图层中的选中题目后，这里的插入位置会实时更新。
-        </div>
-      ) : (
-        <div className="mt-1 text-xs text-[#8C6A12]">
-          选中问卷图层中的某一题后，这里的插入位置会实时更新。
-        </div>
-      )}
     </div>
+  )
+}
+
+export const AiDraftContextHint: React.FC<{
+  mode: AiCopilotIntent
+  currentComponents: ComponentInfoType[]
+  selectedId: string
+  generateBaseComponentCount?: number | null
+  generateReviewCompleted?: boolean
+}> = ({
+  mode,
+  currentComponents,
+  selectedId,
+  generateBaseComponentCount,
+  generateReviewCompleted
+}) => {
+  return mode === 'generate' ? (
+    <GenerateHint
+      currentComponents={currentComponents}
+      selectedId={selectedId}
+      baseComponentCount={generateBaseComponentCount}
+      reviewCompleted={generateReviewCompleted}
+    />
+  ) : (
+    <EditHint currentComponents={currentComponents} selectedId={selectedId} />
   )
 }
