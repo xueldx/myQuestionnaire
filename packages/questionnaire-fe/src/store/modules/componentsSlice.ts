@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { ComponentPropsType, ComponentType } from '@/components/QuestionComponents'
+import { claimUniqueComponentFeId, createComponentFeId } from '@/utils/componentId'
 
 export type ComponentInfoType = {
   fe_id: string
@@ -25,11 +26,6 @@ const initialState: ComponentsStateType = {
   version: 1,
   history: [],
   historyIndex: -1
-}
-
-// 生成唯一ID
-const generateID = () => {
-  return Math.floor(Math.random() * 1000000).toString()
 }
 
 // 保存历史记录
@@ -80,8 +76,12 @@ export const componentsSlice = createSlice({
       }>
     ) => {
       const { type, title, props } = action.payload
+      const nextComponentId = claimUniqueComponentFeId(
+        new Set(state.componentList.map(component => component.fe_id)),
+        createComponentFeId()
+      )
       const newComponent: ComponentInfoType = {
-        fe_id: generateID(),
+        fe_id: nextComponentId,
         type,
         title,
         props

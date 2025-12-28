@@ -1,5 +1,6 @@
 import { ComponentType } from '@/components/QuestionComponents'
 import { getComponentDefaultProps } from '@/utils/getComponentDefaultProps'
+import { assignUniqueComponentFeIds } from '@/utils/componentId'
 import { ComponentInfoType } from '@/store/modules/componentsSlice'
 
 const DISPLAY_TEXT_KEYS = ['label', 'text', 'value', 'title', 'content', 'name'] as const
@@ -98,10 +99,18 @@ export const normalizeQuestionnaireComponent = (
   }
 }
 
-export const normalizeQuestionnaireComponentList = (components: ComponentInfoType[] = []) => {
-  return components
+export const normalizeQuestionnaireComponentList = (
+  components: ComponentInfoType[] = [],
+  options?: {
+    reservedIds?: Iterable<string>
+    fallbackPrefix?: string
+  }
+) => {
+  const normalizedComponents = components
     .map((component, index) =>
       normalizeQuestionnaireComponent(component, `normalized-component-${index + 1}`)
     )
     .filter(Boolean) as ComponentInfoType[]
+
+  return assignUniqueComponentFeIds(normalizedComponents, options)
 }

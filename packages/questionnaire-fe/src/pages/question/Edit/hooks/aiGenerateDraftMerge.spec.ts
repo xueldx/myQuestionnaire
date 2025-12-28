@@ -78,4 +78,27 @@ describe('aiGenerateDraftMerge', () => {
     expect(merged.title).toBe('新问卷')
     expect(merged.components.map(component => component.fe_id)).toEqual(['a1'])
   })
+
+  it('reassigns a new fe_id instead of dropping additions that collide with existing component ids', () => {
+    const merged = mergeGenerateDraftIntoBase({
+      baseDraft: {
+        title: '问卷',
+        description: '',
+        footerText: '',
+        components: [createComponent('c1', '现有题目')]
+      },
+      additionDraft: {
+        title: '问卷',
+        description: '',
+        footerText: '',
+        components: [createComponent('c1', '本轮新增题目')]
+      },
+      selectedId: 'c1',
+      currentComponents: [createComponent('c1', '现有题目')]
+    })
+
+    expect(merged.components).toHaveLength(2)
+    expect(merged.components[1].title).toBe('本轮新增题目')
+    expect(merged.components[1].fe_id).not.toBe('c1')
+  })
 })

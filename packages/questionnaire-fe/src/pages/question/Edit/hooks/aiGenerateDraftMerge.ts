@@ -1,5 +1,6 @@
 import { ComponentInfoType } from '@/store/modules/componentsSlice'
 import { QuestionnaireDraft } from '@/pages/question/Edit/components/aiCopilotTypes'
+import { claimUniqueComponentFeId } from '@/utils/componentId'
 import { normalizeQuestionnaireComponentList } from '@/utils/normalizeQuestionComponent'
 
 type MergeGenerateDraftOptions = {
@@ -9,12 +10,30 @@ type MergeGenerateDraftOptions = {
   currentComponents: ComponentInfoType[]
 }
 
+const hasSameStructure = (left: ComponentInfoType, right: ComponentInfoType) =>
+  left.type === right.type &&
+  left.title === right.title &&
+  JSON.stringify(left.props ?? null) === JSON.stringify(right.props ?? null)
+
 const dedupeNewComponents = (
   baseComponents: ComponentInfoType[],
   additionComponents: ComponentInfoType[]
 ) => {
-  const baseIds = new Set(baseComponents.map(component => component.fe_id))
-  return additionComponents.filter(component => !baseIds.has(component.fe_id))
+  const usedIds = new Set(baseComponents.map(component => component.fe_id))
+  const baseComponentMap = new Map(baseComponents.map(component => [component.fe_id, component]))
+
+  return additionComponents.reduce<ComponentInfoType[]>((result, component, index) => {
+    const existingComponent = baseComponentMap.get(component.fe_id)
+
+    if (existingComponent && hasSameStructure(existingComponent, component)) {
+      return result
+    }
+
+    const nextId = claimUniqueComponentFeId(usedIds, component.fe_id, `ai-generate-${index + 1}`)
+
+    result.push(nextId === component.fe_id ? component : { ...component, fe_id: nextId })
+    return result
+  }, [])
 }
 
 const getGenerateInsertionIndex = (
