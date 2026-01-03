@@ -50,15 +50,16 @@ const TruncatedTitle: React.FC<{
 
 const MetaLine: React.FC<{
   items: string[]
-}> = ({ items }) => (
-  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-custom-text-200">
-    {items.map((item, index) => (
-      <React.Fragment key={item}>
-        {index > 0 && <span className="text-custom-text-200/40">|</span>}
+  className?: string
+}> = ({ items, className = 'text-custom-text-200' }) => (
+  <ul className={`mt-2 space-y-1 text-xs ${className}`}>
+    {items.map(item => (
+      <li key={item} className="flex items-start gap-1.5 leading-5">
+        <span className="mt-[0.55em] text-[10px] leading-none text-current">•</span>
         <span>{item}</span>
-      </React.Fragment>
+      </li>
     ))}
-  </div>
+  </ul>
 )
 
 const GenerateHint: React.FC<{
@@ -87,7 +88,7 @@ const GenerateHint: React.FC<{
           <PushpinOutlined />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-6 text-custom-text-100">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-6 text-[#355E59]">
             <span className="font-semibold text-[#0F766E]">
               {showInsertPositionHint ? '插入位置' : '问卷状态'}
             </span>
@@ -96,7 +97,7 @@ const GenerateHint: React.FC<{
                 <span>当前为</span>
                 <span className="font-semibold text-[#0F766E]">新建问卷</span>
                 <span>，AI 将从</span>
-                <span className="font-semibold text-custom-text-100">第 1 题</span>
+                <span className="font-semibold text-[#0F766E]">第 1 题</span>
                 <span>开始生成内容</span>
               </>
             ) : showDraftOrderHint ? (
@@ -111,12 +112,12 @@ const GenerateHint: React.FC<{
               <>
                 <span>新增题目将插入到</span>
                 <span className="font-semibold text-[#0F766E]">第 {selectedIndex + 1} 题之后</span>
-                <span className="text-custom-text-200">（</span>
+                <span className="text-[#6F8F89]">（</span>
                 <TruncatedTitle
                   text={selectedComponent.title || '未命名题目'}
-                  className="max-w-[320px] text-custom-text-200"
+                  className="max-w-[320px] text-[#6F8F89]"
                 />
-                <span className="text-custom-text-200">）</span>
+                <span className="text-[#6F8F89]">）</span>
               </>
             ) : (
               <>
@@ -127,16 +128,16 @@ const GenerateHint: React.FC<{
           </div>
 
           <MetaLine
+            className="text-[#6B8C86]"
             items={
               showInitialCreateHint
                 ? [
-                    '从零创建问卷',
-                    '生成后可逐题接受应用',
-                    '如顺序不合适，可返回主编辑器拖拽调整顺序'
+                    'AI生成后可逐题审核，也可通过顶部工具栏批量操作',
+                    '如顺序不合适，可返回编辑器拖拽调整顺序'
                   ]
                 : showDraftOrderHint
                 ? [
-                    '可逐项接受或拒绝，也可通过顶部工具栏批量操作',
+                    'AI生成后可逐题审核，也可通过顶部工具栏批量操作',
                     '如顺序不合适，可返回主编辑器拖拽调整顺序'
                   ]
                 : [
@@ -171,27 +172,28 @@ const EditHint: React.FC<{
           <EditOutlined />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-6 text-[#7C5C00]">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-6 text-[#7A5A22]">
             <span className="font-semibold text-[#9A6700]">修改目标</span>
             {selectedComponent ? (
               <>
                 <span>当前将修改</span>
-                <span className="font-semibold text-[#7C5C00]">第 {selectedIndex + 1} 题</span>
-                <span className="text-[#B07A10]">（</span>
+                <span className="font-semibold text-[#9A6700]">第 {selectedIndex + 1} 题</span>
+                <span className="text-[#B4874F]">（</span>
                 <TruncatedTitle
                   text={selectedComponent.title || '未命名题目'}
-                  className="max-w-[320px] text-[#B07A10]"
+                  className="max-w-[320px] text-[#B4874F]"
                 />
-                <span className="text-[#B07A10]">）</span>
+                <span className="text-[#B4874F]">）</span>
               </>
             ) : (
               <>
                 <span>当前未选中题目，暂时无法发起</span>
-                <span className="font-semibold text-[#7C5C00]">单题修改</span>
+                <span className="font-semibold text-[#9A6700]">单题修改</span>
               </>
             )}
           </div>
           <MetaLine
+            className="text-[#A07A45]"
             items={
               selectedComponent
                 ? ['仅修改当前选中题目', '如选错题目，重新选择后再发送']

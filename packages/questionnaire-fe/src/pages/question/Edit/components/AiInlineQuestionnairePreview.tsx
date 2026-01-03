@@ -346,7 +346,7 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
                   return (
                     <React.Fragment key={component.fe_id}>
                       <PreviewCard
-                        tone={isDeleted ? 'danger' : 'current'}
+                        tone={isDeleted || isChanged ? 'danger' : 'current'}
                         label={`当前第 ${index + 1} 项`}
                         note={
                           isDeleted

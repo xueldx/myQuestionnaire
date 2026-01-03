@@ -68,7 +68,7 @@ const tagClassNameMap: Record<AnnotationTone, string> = {
 
 const selectedClassNameMap = {
   green: 'ring-2 ring-custom-primary-200 ring-offset-2 border-custom-primary-200/70',
-  red: 'ring-2 ring-[#F08A84] ring-offset-2 border-[#F2B8B5] shadow-[0_0_0_2px_rgba(240,138,132,0.08)]'
+  red: 'ring-2 ring-[#F08A84] ring-offset-2 !border-[#F2B8B5] shadow-[0_0_0_2px_rgba(240,138,132,0.08)]'
 } as const
 
 const selectedTagClassNameMap = {
