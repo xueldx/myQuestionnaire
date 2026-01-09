@@ -9,6 +9,7 @@ import UserFavorite from '@/service/question/entities/user-favorite.entity';
 import User from '@/service/auth/entities/user.entity';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { QuestionnaireAnswer } from '@/common/schemas/answer.schema';
 import { QuestionnaireDetail } from '@/common/schemas/question-detail.schema';
 
 @Injectable()
@@ -22,9 +23,63 @@ export class QuestionService {
     private userRepository: Repository<User>,
     @InjectDataSource()
     private dataSource: DataSource,
+    @InjectModel(QuestionnaireAnswer.name)
+    private readonly questionnaireAnswerModel: Model<QuestionnaireAnswer>,
     @InjectModel(QuestionnaireDetail.name)
     private readonly questionnaireDetailModel: Model<QuestionnaireDetail>,
   ) {}
+
+  private async getAnswerCountMap(
+    questionIds: number[],
+  ): Promise<Map<number, number>> {
+    if (!questionIds.length) {
+      return new Map();
+    }
+
+    const answerCounts = await this.questionnaireAnswerModel
+      .aggregate<{ _id: number; count: number }>([
+        {
+          $match: {
+            questionnaire_id: {
+              $in: questionIds,
+            },
+          },
+        },
+        {
+          $group: {
+            _id: '$questionnaire_id',
+            count: { $sum: 1 },
+          },
+        },
+      ])
+      .exec();
+
+    return new Map(
+      answerCounts.map((item) => [Number(item._id), Number(item.count)]),
+    );
+  }
+
+  private async hydrateAnswerCounts<T extends { id: number; answer_count: number }>(
+    questions: T[],
+  ): Promise<T[]> {
+    if (!questions.length) {
+      return questions;
+    }
+
+    try {
+      const answerCountMap = await this.getAnswerCountMap(
+        questions.map((question) => question.id),
+      );
+
+      return questions.map((question) => ({
+        ...question,
+        answer_count: answerCountMap.get(question.id) ?? 0,
+      }));
+    } catch (error) {
+      console.error('[QuestionService] 获取真实答卷数量失败:', error);
+      return questions;
+    }
+  }
 
   // 创建问卷
   async create(createQuestionDto: CreateQuestionDto) {
@@ -115,8 +170,10 @@ export class QuestionService {
       };
     });
 
+    const hydratedList = await this.hydrateAnswerCounts(resultList);
+
     return {
-      list: resultList,
+      list: hydratedList,
       count,
     };
   }
@@ -279,8 +336,12 @@ export class QuestionService {
     });
     const is_favorated = userFavorites.find((item) => item.question_id === id);
     const question = await this.questionRepository.findOneBy({ id });
+    const [hydratedQuestion] = await this.hydrateAnswerCounts(
+      question ? [question] : [],
+    );
+
     return {
-      ...question,
+      ...hydratedQuestion,
       is_favorated: !!is_favorated,
     };
   }
@@ -328,8 +389,10 @@ export class QuestionService {
       .take(limit)
       .getManyAndCount();
 
+    const hydratedList = await this.hydrateAnswerCounts(list);
+
     return {
-      list,
+      list: hydratedList,
       count,
     };
   }

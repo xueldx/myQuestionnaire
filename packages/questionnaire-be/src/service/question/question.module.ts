@@ -7,6 +7,10 @@ import Question from '@/service/question/entities/question.entity';
 import UserFavorite from '@/service/question/entities/user-favorite.entity';
 import User from '@/service/auth/entities/user.entity';
 import {
+  QuestionnaireAnswer,
+  QuestionnaireAnswerSchema,
+} from '@/common/schemas/answer.schema';
+import {
   QuestionnaireDetail,
   QuestionnaireDetailSchema,
 } from '@/common/schemas/question-detail.schema';
@@ -15,6 +19,7 @@ import {
   imports: [
     TypeOrmModule.forFeature([Question, UserFavorite, User]),
     MongooseModule.forFeature([
+      { name: QuestionnaireAnswer.name, schema: QuestionnaireAnswerSchema },
       { name: QuestionnaireDetail.name, schema: QuestionnaireDetailSchema },
     ]),
   ],

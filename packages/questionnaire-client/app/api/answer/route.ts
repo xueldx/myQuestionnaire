@@ -17,13 +17,21 @@ async function notifyBackend(questionnaireId: number) {
   const backendApiBaseUrl = getBackendApiBaseUrl();
 
   try {
-    await fetch(`${backendApiBaseUrl}/question/increment-answer-count/${questionnaireId}`, {
+    const response = await fetch(`${backendApiBaseUrl}/question/increment-answer-count/${questionnaireId}`, {
       method: "PATCH",
       headers: {
         "x-internal-secret": internalApiSecret
       },
       cache: "no-store"
     });
+
+    if (!response.ok) {
+      const message = await response.text();
+      console.error(
+        `[client/api/answer] 通知后端更新答卷计数失败: ${response.status} ${response.statusText}`,
+        message
+      );
+    }
   } catch (error) {
     console.error("[client/api/answer] 通知后端更新答卷计数失败:", error);
   }
