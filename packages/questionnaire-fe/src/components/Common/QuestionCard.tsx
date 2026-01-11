@@ -1,15 +1,12 @@
-import React, { useMemo } from 'react'
-import { Button, Divider, Popconfirm, Space, Tag, Tooltip } from 'antd'
+import React from 'react'
+import { Button, Popconfirm, Tooltip } from 'antd'
 import {
-  CheckCircleOutlined,
-  ClockCircleOutlined,
   CopyOutlined,
   DeleteOutlined,
   EditOutlined,
   LineChartOutlined,
   QuestionCircleOutlined,
   StarOutlined,
-  FieldTimeOutlined,
   QrcodeOutlined,
   SendOutlined
 } from '@ant-design/icons'
@@ -132,16 +129,16 @@ const QuestionCard: React.FC<PropsType> = (props: PropsType) => {
           </div>
         </div>
 
-        <div className="flex-1 w-0">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center font-semibold text-gray-800 truncate pr-2 text-[15px]">
+        <div className="flex-1 min-w-0">
+          <div className="mb-2 flex items-center gap-3">
+            <Tooltip title={title} placement="topLeft">
               <Link
                 to={`${QUESTION_DETAIL_PATH}/${id}`}
-                className="hover:text-[#26a69a] text-inherit"
+                className="block min-w-0 flex-1 truncate text-[15px] font-semibold text-gray-800 hover:text-[#26a69a]"
               >
                 {title}
               </Link>
-            </div>
+            </Tooltip>
             {isPublished ? (
               <span className="shrink-0 px-2.5 py-0.5 bg-[#4b847a] text-white text-[11px] rounded-full">
                 已发布
