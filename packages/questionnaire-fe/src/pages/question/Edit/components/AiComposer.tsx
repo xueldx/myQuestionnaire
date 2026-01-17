@@ -121,6 +121,14 @@ const AiComposer: React.FC<AiComposerProps> = ({
         .ai-composer-select .ant-select-selector {
           padding: 0 !important;
         }
+
+        .ai-composer-mode-select .ant-select-arrow {
+          right: 2px !important;
+        }
+
+        .ai-composer-mode-select .ant-select-selection-item {
+          padding-right: 16px !important;
+        }
       `}</style>
       <div
         className={`relative flex h-full flex-col rounded-[22px] border transition-all duration-300 ${
@@ -212,7 +220,7 @@ const AiComposer: React.FC<AiComposerProps> = ({
                   label: <span className="text-sm font-normal">{modeLabels.edit}</span>
                 }
               ]}
-              className="ai-composer-select min-w-[80px] [&_.ant-select-selection-item]:!text-sm [&_.ant-select-selection-item]:!leading-6 [&_.ant-select-selection-item]:!pr-2"
+              className="ai-composer-select ai-composer-mode-select min-w-0 w-auto [&_.ant-select-selection-item]:!text-sm [&_.ant-select-selection-item]:!leading-6"
             />
           </div>
 
