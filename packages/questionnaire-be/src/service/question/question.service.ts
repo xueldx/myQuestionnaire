@@ -12,6 +12,12 @@ import { Model } from 'mongoose';
 import { QuestionnaireAnswer } from '@/common/schemas/answer.schema';
 import { QuestionnaireDetail } from '@/common/schemas/question-detail.schema';
 
+type QuestionnaireTimestampDoc = {
+  questionnaire_id: number;
+  createdAt?: Date;
+  updatedAt?: Date;
+};
+
 @Injectable()
 export class QuestionService {
   constructor(
@@ -59,9 +65,9 @@ export class QuestionService {
     );
   }
 
-  private async hydrateAnswerCounts<T extends { id: number; answer_count: number }>(
-    questions: T[],
-  ): Promise<T[]> {
+  private async hydrateAnswerCounts<
+    T extends { id: number; answer_count: number },
+  >(questions: T[]): Promise<T[]> {
     if (!questions.length) {
       return questions;
     }
@@ -77,6 +83,68 @@ export class QuestionService {
       }));
     } catch (error) {
       console.error('[QuestionService] 获取真实答卷数量失败:', error);
+      return questions;
+    }
+  }
+
+  private async getQuestionnaireTimestampMap(
+    questionIds: number[],
+  ): Promise<Map<number, QuestionnaireTimestampDoc>> {
+    if (!questionIds.length) {
+      return new Map();
+    }
+
+    const questionnaireDetails = await this.questionnaireDetailModel
+      .find(
+        {
+          questionnaire_id: {
+            $in: questionIds,
+          },
+        },
+        {
+          questionnaire_id: 1,
+          createdAt: 1,
+          updatedAt: 1,
+        },
+      )
+      .lean<QuestionnaireTimestampDoc[]>()
+      .exec();
+
+    return new Map(
+      questionnaireDetails.map((detail) => [
+        Number(detail.questionnaire_id),
+        detail,
+      ]),
+    );
+  }
+
+  private async hydrateQuestionnaireTimestamps<
+    T extends { id: number; create_time: Date; update_time: Date },
+  >(questions: T[]): Promise<T[]> {
+    if (!questions.length) {
+      return questions;
+    }
+
+    try {
+      const timestampMap = await this.getQuestionnaireTimestampMap(
+        questions.map((question) => question.id),
+      );
+
+      return questions.map((question) => {
+        const detail = timestampMap.get(question.id);
+
+        if (!detail) {
+          return question;
+        }
+
+        return {
+          ...question,
+          create_time: detail.createdAt ?? question.create_time,
+          update_time: detail.updatedAt ?? question.update_time,
+        };
+      });
+    } catch (error) {
+      console.error('[QuestionService] 获取真实问卷时间失败:', error);
       return questions;
     }
   }
@@ -170,7 +238,9 @@ export class QuestionService {
       };
     });
 
-    const hydratedList = await this.hydrateAnswerCounts(resultList);
+    const timestampHydratedList =
+      await this.hydrateQuestionnaireTimestamps(resultList);
+    const hydratedList = await this.hydrateAnswerCounts(timestampHydratedList);
 
     return {
       list: hydratedList,
@@ -336,8 +406,10 @@ export class QuestionService {
     });
     const is_favorated = userFavorites.find((item) => item.question_id === id);
     const question = await this.questionRepository.findOneBy({ id });
+    const timestampHydratedQuestions =
+      await this.hydrateQuestionnaireTimestamps(question ? [question] : []);
     const [hydratedQuestion] = await this.hydrateAnswerCounts(
-      question ? [question] : [],
+      timestampHydratedQuestions,
     );
 
     return {
@@ -389,7 +461,9 @@ export class QuestionService {
       .take(limit)
       .getManyAndCount();
 
-    const hydratedList = await this.hydrateAnswerCounts(list);
+    const timestampHydratedList =
+      await this.hydrateQuestionnaireTimestamps(list);
+    const hydratedList = await this.hydrateAnswerCounts(timestampHydratedList);
 
     return {
       list: hydratedList,
