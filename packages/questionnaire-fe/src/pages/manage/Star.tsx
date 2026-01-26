@@ -129,11 +129,6 @@ const Star: React.FC = () => {
       key: 'author'
     },
     {
-      title: '描述',
-      dataIndex: 'description',
-      key: 'description'
-    },
-    {
       title: '操作',
       key: 'action',
       fixed: 'right',
