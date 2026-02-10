@@ -106,6 +106,12 @@ const List: React.FC = () => {
       render: (text: string) => dayjs(text).format('YYYY-MM-DD HH:mm:ss')
     },
     {
+      title: '更新时间',
+      dataIndex: 'update_time',
+      key: 'update_time',
+      render: (text: string) => dayjs(text).format('YYYY-MM-DD HH:mm:ss')
+    },
+    {
       title: '操作',
       key: 'action',
       render: (_: any, record: any) => {
