@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React from 'react'
 import clsx from 'clsx'
 import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '@/store'
@@ -21,7 +21,6 @@ const ComponentWapper: React.FC<ComponentWapperProps> = ({
 }) => {
   const selectedId = useSelector((state: RootState) => state.components.selectedId)
   const dispatch = useDispatch()
-  const dragHandleRef = useRef<HTMLDivElement>(null)
 
   // 点击组件时选中
   const handleClick = () => {
@@ -32,20 +31,6 @@ const ComponentWapper: React.FC<ComponentWapperProps> = ({
     }
   }
 
-  // 调试拖拽手柄属性
-  useEffect(() => {
-    if (dragHandleRef.current && dragHandleProps) {
-      console.log(`拖拽手柄 (${fe_id}) 属性:`, dragHandleProps)
-      // 确保dragHandleProps中的事件处理程序能够正确绑定
-      if (dragHandleProps.onMouseDown) {
-        console.log(`拖拽手柄 (${fe_id}) 已绑定 onMouseDown 事件`)
-      } else {
-        console.warn(`拖拽手柄 (${fe_id}) 缺少 onMouseDown 事件`)
-      }
-    }
-  }, [dragHandleProps, fe_id])
-
-  // 确保draggableProps正确应用到组件上
   return (
     <div
       className={clsx(
@@ -58,10 +43,8 @@ const ComponentWapper: React.FC<ComponentWapperProps> = ({
       {/* 拖拽手柄 - 使用自定义事件监听，确保拖拽可以触发 */}
       <Tooltip title="拖拽排序" placement="top" mouseEnterDelay={0.5}>
         <div
-          ref={dragHandleRef}
           {...dragHandleProps}
           onMouseDown={e => {
-            console.log(`拖拽手柄 (${fe_id}) 鼠标按下事件触发`)
             if (dragHandleProps?.onMouseDown) {
               dragHandleProps.onMouseDown(e)
             }
