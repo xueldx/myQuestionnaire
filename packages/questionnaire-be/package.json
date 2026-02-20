@@ -11,7 +11,8 @@
     "start:dev": "node scripts/run-backend.cjs development",
     "start:prod": "node scripts/run-backend.cjs production",
     "start:docker": "node scripts/run-backend.cjs docker",
-    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
+    "lint:fix": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage"

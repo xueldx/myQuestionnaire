@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 echo "😈Starting pre-commit hook..."
 . "$(dirname -- "$0")/_/husky.sh"
-echo "😈Running npm run lint..."
+echo "😈Running workspace lint checks..."
 npm run lint
-echo "😈Ready to commit. Note: unstaged files were format/linted but NOT automatically staged."
+echo "😈Ready to commit. Workspace lint passed without rewriting files."
 echo "😈Pre-commit hook completed."

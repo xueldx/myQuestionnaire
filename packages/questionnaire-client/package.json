@@ -6,7 +6,8 @@
 		"dev": "node scripts/next-with-port.cjs dev",
 		"build": "next build",
 		"start": "node scripts/next-with-port.cjs start",
-		"lint": "eslint . --ext .ts,.tsx -c .eslintrc.json --fix",
+		"lint": "eslint . --ext .ts,.tsx -c .eslintrc.json",
+		"lint:fix": "eslint . --ext .ts,.tsx -c .eslintrc.json --fix",
 		"format": "prettier --write \"**/*.{js,ts,jsx,tsx}\""
 	},
 	"dependencies": {
