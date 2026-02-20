@@ -8,22 +8,23 @@ async function notifyBackend(questionnaireId: number) {
   const internalApiSecret = getInternalApiSecret();
 
   if (!internalApiSecret) {
-    console.warn(
-      "[client/api/answer] INTERNAL_API_SECRET 未配置，已跳过后端答卷计数同步"
-    );
+    console.warn("[client/api/answer] INTERNAL_API_SECRET 未配置，已跳过后端答卷计数同步");
     return;
   }
 
   const backendApiBaseUrl = getBackendApiBaseUrl();
 
   try {
-    const response = await fetch(`${backendApiBaseUrl}/question/increment-answer-count/${questionnaireId}`, {
-      method: "PATCH",
-      headers: {
-        "x-internal-secret": internalApiSecret
-      },
-      cache: "no-store"
-    });
+    const response = await fetch(
+      `${backendApiBaseUrl}/question/increment-answer-count/${questionnaireId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "x-internal-secret": internalApiSecret
+        },
+        cache: "no-store"
+      }
+    );
 
     if (!response.ok) {
       const message = await response.text();

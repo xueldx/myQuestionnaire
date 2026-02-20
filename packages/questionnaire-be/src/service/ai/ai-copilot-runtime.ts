@@ -566,19 +566,23 @@ export const streamDraftStage = async (
         component,
       ]),
     );
-    const draftIds = new Set(rawDraft.components.map((component) => component.fe_id));
+    const draftIds = new Set(
+      rawDraft.components.map((component) => component.fe_id),
+    );
 
     if (focusedBinding) {
       if (!draftIds.has(focusedBinding.fe_id)) {
         throw new Error('AI 未正确修改当前选中的题目，请重试');
       }
 
-      const changedExistingComponents = rawDraft.components.filter((component) => {
-        const snapshotComponent = snapshotComponentMap.get(component.fe_id);
-        return snapshotComponent
-          ? isQuestionComponentChanged(snapshotComponent, component)
-          : false;
-      });
+      const changedExistingComponents = rawDraft.components.filter(
+        (component) => {
+          const snapshotComponent = snapshotComponentMap.get(component.fe_id);
+          return snapshotComponent
+            ? isQuestionComponentChanged(snapshotComponent, component)
+            : false;
+        },
+      );
       const touchedOtherExistingComponents = changedExistingComponents.filter(
         (component) => component.fe_id !== focusedBinding.fe_id,
       );
@@ -727,9 +731,13 @@ export const executeCopilotStream = async (
 
       if (
         focusedBinding &&
-        referencedBindings.some((binding) => binding.fe_id !== focusedBinding.fe_id)
+        referencedBindings.some(
+          (binding) => binding.fe_id !== focusedBinding.fe_id,
+        )
       ) {
-        throw new Error('当前选中的题目与指令里引用的题目不一致，请重新确认后再试');
+        throw new Error(
+          '当前选中的题目与指令里引用的题目不一致，请重新确认后再试',
+        );
       }
     }
     if (

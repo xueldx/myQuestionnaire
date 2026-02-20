@@ -28,14 +28,8 @@ const parseChineseQuestionNumber = (token: string) => {
 
   const [tensPart, onesPart] = token.split('十');
   if (token.includes('十')) {
-    const tens =
-      tensPart === ''
-        ? 1
-        : CHINESE_DIGIT_MAP[tensPart] ?? null;
-    const ones =
-      onesPart === ''
-        ? 0
-        : CHINESE_DIGIT_MAP[onesPart] ?? null;
+    const tens = tensPart === '' ? 1 : (CHINESE_DIGIT_MAP[tensPart] ?? null);
+    const ones = onesPart === '' ? 0 : (CHINESE_DIGIT_MAP[onesPart] ?? null);
 
     if (tens == null || ones == null) return null;
     return tens * 10 + ones;
@@ -55,7 +49,9 @@ export const extractReferencedQuestionNumbers = (instruction: string) => {
   const referencedNumbers: number[] = [];
   const seenNumbers = new Set<number>();
 
-  for (const match of normalizedInstruction.matchAll(QUESTION_REFERENCE_REGEXP)) {
+  for (const match of normalizedInstruction.matchAll(
+    QUESTION_REFERENCE_REGEXP,
+  )) {
     const rawToken = match[1]?.trim() || '';
     const parsedNumber = parseChineseQuestionNumber(rawToken);
 
@@ -75,7 +71,7 @@ export const getReferencedQuestionBindings = (
   snapshotComponents: QuestionComponent[],
 ) =>
   extractReferencedQuestionNumbers(instruction)
-    .map(questionNumber => {
+    .map((questionNumber) => {
       const component = snapshotComponents[questionNumber - 1];
       if (!component) return null;
 

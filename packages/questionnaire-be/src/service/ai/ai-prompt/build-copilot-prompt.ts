@@ -74,7 +74,9 @@ ${dto.instruction}`;
           focusedBinding
             ? `当前选中的那一题必须保留 fe_id=${focusedBinding.fe_id}。`
             : '保留未修改组件的 fe_id。',
-          focusedBinding ? '不要返回任何新增题目。' : '新增组件请生成新的 fe_id。',
+          focusedBinding
+            ? '不要返回任何新增题目。'
+            : '新增组件请生成新的 fe_id。',
           focusedBinding
             ? '不要修改问卷标题、描述、页脚。'
             : '如果用户没有明确要求新增题目，不要返回新的 fe_id。',

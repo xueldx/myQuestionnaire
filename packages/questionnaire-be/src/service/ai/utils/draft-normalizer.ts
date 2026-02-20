@@ -75,7 +75,9 @@ const resolveUniqueDraftIds = (
   focusedComponentId = '',
 ) => {
   const snapshotIds = new Set(
-    snapshotComponents.map((component) => ensureString(component.fe_id)).filter(Boolean),
+    snapshotComponents
+      .map((component) => ensureString(component.fe_id))
+      .filter(Boolean),
   );
   const focusedBinding = getFocusedQuestionBinding(
     focusedComponentId,
@@ -132,7 +134,11 @@ const resolveUniqueDraftIds = (
       }
     }
 
-    if (preferredId && !usedIds.has(preferredId) && !snapshotIds.has(preferredId)) {
+    if (
+      preferredId &&
+      !usedIds.has(preferredId) &&
+      !snapshotIds.has(preferredId)
+    ) {
       usedIds.add(preferredId);
       return component;
     }

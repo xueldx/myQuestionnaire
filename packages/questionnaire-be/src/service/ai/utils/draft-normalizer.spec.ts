@@ -29,7 +29,9 @@ const createParsedDraft = (
   warnings: [],
 });
 
-const createSnapshot = (components: QuestionComponent[]): QuestionnaireSnapshot => ({
+const createSnapshot = (
+  components: QuestionComponent[],
+): QuestionnaireSnapshot => ({
   title: '测试问卷',
   description: '',
   footerText: '',
@@ -62,7 +64,9 @@ describe('draft-normalizer', () => {
     );
 
     expect(draft.components).toHaveLength(2);
-    expect(new Set(draft.components.map((component) => component.fe_id)).size).toBe(2);
+    expect(
+      new Set(draft.components.map((component) => component.fe_id)).size,
+    ).toBe(2);
   });
 
   it('keeps the first matched edit component id and reassigns later duplicates as new additions', () => {
