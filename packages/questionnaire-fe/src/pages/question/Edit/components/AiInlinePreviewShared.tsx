@@ -4,42 +4,10 @@ import ComponentRender from '@/pages/question/Edit/components/ComponentRender'
 import { ComponentInfoType } from '@/store/modules/componentsSlice'
 import { QuestionnaireDraft } from './aiCopilotTypes'
 import { QuestionnairePatchStatus } from '../hooks/aiQuestionPatch'
-
-export type AnnotationTone = 'current' | 'suggestion' | 'danger' | 'info' | 'anchor'
-
-const stringifyValue = (value: unknown) => JSON.stringify(value ?? null)
-
-export const hasComponentChanged = (current: ComponentInfoType, next: ComponentInfoType) => {
-  return (
-    current.type !== next.type ||
-    current.title !== next.title ||
-    stringifyValue(current.props) !== stringifyValue(next.props)
-  )
-}
-
-export const buildAddedInsertMap = (
-  currentComponents: ComponentInfoType[],
-  draftComponents: ComponentInfoType[]
-) => {
-  const currentIds = new Set(currentComponents.map(component => component.fe_id))
-  const insertMap = new Map<string, ComponentInfoType[]>()
-  let anchorKey = '__start__'
-
-  draftComponents.forEach(component => {
-    if (currentIds.has(component.fe_id)) {
-      anchorKey = component.fe_id
-      return
-    }
-
-    const targetList = insertMap.get(anchorKey) || []
-    targetList.push(component)
-    insertMap.set(anchorKey, targetList)
-  })
-
-  return insertMap
-}
+import { AnnotationTone } from './aiInlinePreviewUtils'
 
 interface PreviewCardProps {
+  cardId?: string
   label: string
   note?: string
   tone?: AnnotationTone
@@ -48,6 +16,9 @@ interface PreviewCardProps {
   selected?: boolean
   selectedAccent?: 'green' | 'red'
   onSelect?: () => void
+  onInteract?: () => void
+  cardRef?: (node: HTMLDivElement | null) => void
+  scrollMarginTop?: number
 }
 
 const toneClassNameMap: Record<AnnotationTone, string> = {
@@ -77,6 +48,7 @@ const selectedTagClassNameMap = {
 } as const
 
 export const PreviewCard: React.FC<PreviewCardProps> = ({
+  cardId,
   label,
   note,
   tone = 'current',
@@ -84,20 +56,34 @@ export const PreviewCard: React.FC<PreviewCardProps> = ({
   extra,
   selected = false,
   selectedAccent = 'green',
-  onSelect
+  onSelect,
+  onInteract,
+  cardRef,
+  scrollMarginTop
 }) => {
   const isInteractive = typeof onSelect === 'function'
 
   return (
     <div
+      ref={cardRef}
+      data-preview-card-id={cardId}
       role={isInteractive ? 'button' : undefined}
       tabIndex={isInteractive ? 0 : undefined}
-      onClick={onSelect}
+      style={scrollMarginTop ? { scrollMarginTop } : undefined}
+      onClick={
+        isInteractive
+          ? () => {
+              onInteract?.()
+              onSelect?.()
+            }
+          : undefined
+      }
       onKeyDown={
         isInteractive
           ? event => {
               if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault()
+                onInteract?.()
                 onSelect?.()
               }
             }
@@ -120,6 +106,8 @@ export const PreviewCard: React.FC<PreviewCardProps> = ({
         </div>
         {extra ? (
           <div
+            onClickCapture={() => onInteract?.()}
+            onKeyDownCapture={() => onInteract?.()}
             onClick={event => event.stopPropagation()}
             onKeyDown={event => event.stopPropagation()}
           >
