@@ -27,10 +27,8 @@ import {
 } from '@/service/ai/dto/conversation.dto';
 import { promises as fs } from 'fs';
 import { join } from 'path';
-import {
-  executeCopilotStream,
-  shouldCollectAnswerStats,
-} from '@/service/ai/ai-copilot-runtime';
+import { executeCopilotStream } from '@/service/ai/ai-copilot-runtime';
+import { shouldCollectAnswerStats } from '@/service/ai/ai-copilot-tools';
 import {
   ensureObject,
   ensureString,

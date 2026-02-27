@@ -70,6 +70,8 @@ export class UpdateConversationDto {
     'thinking',
     'answering',
     'drafting',
+    'background_running',
+    'resume_available',
     'draft_ready',
     'done',
     'cancelled',
