@@ -10,6 +10,8 @@ import {
   AiChatMessage,
   AiCopilotIntent,
   AiGenerateFlowState,
+  AiLocalConnectionState,
+  AiLocalInterruptedStreamKind,
   AiModelOption,
   AiStreamStatus,
   DraftSummary,
@@ -26,7 +28,9 @@ import { useAiDraftApply } from '@/pages/question/Edit/hooks/ai/useAiDraftApply'
 import { useAiCancelStream } from '@/pages/question/Edit/hooks/ai/useAiCancelStream'
 import { useAiConversationList } from '@/pages/question/Edit/hooks/ai/useAiConversationList'
 import { useAiDraftStream } from '@/pages/question/Edit/hooks/ai/useAiDraftStream'
+import { useAiInterruptedRunRecovery } from '@/pages/question/Edit/hooks/ai/useAiInterruptedRunRecovery'
 import { useAiPromptPolishStream } from '@/pages/question/Edit/hooks/ai/useAiPromptPolishStream'
+import { useAiWorkbenchStateReset } from '@/pages/question/Edit/hooks/ai/useAiWorkbenchStateReset'
 import { useAiInstructionActions } from '@/pages/question/Edit/hooks/ai/useAiInstructionActions'
 import { useAiPatchReview } from '@/pages/question/Edit/hooks/ai/useAiPatchReview'
 import { useAiWorkbenchSession } from '@/pages/question/Edit/hooks/ai/useAiWorkbenchSession'
@@ -58,6 +62,12 @@ const useAiWorkbench = (
   const [requestId, setRequestId] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [warningMessage, setWarningMessage] = useState<string | null>(null)
+  const [isBrowserOffline, setIsBrowserOffline] = useState(() =>
+    typeof navigator === 'undefined' ? false : !navigator.onLine
+  )
+  const [localConnectionState, setLocalConnectionState] = useState<AiLocalConnectionState>('idle')
+  const [localInterruptedStreamKind, setLocalInterruptedStreamKind] =
+    useState<AiLocalInterruptedStreamKind | null>(null)
   const [draftApplied, setDraftApplied] = useState(false)
   const [questionPatchSet, setQuestionPatchSet] = useState<QuestionnairePatchSet | null>(null)
   const [selectedPatchIds, setSelectedPatchIds] = useState<string[]>([])
@@ -69,6 +79,8 @@ const useAiWorkbench = (
   const hasQuestionnaireContent = componentList.length > 0
 
   const controllerRef = useRef<AbortController | null>(null)
+  const streamAbortReasonRef = useRef<'user' | 'offline' | null>(null)
+  const activeStreamKindRef = useRef<AiLocalInterruptedStreamKind | null>(null)
   const baseVersionRef = useRef(version)
   const modeRef = useRef<AiCopilotIntent>(mode)
   const rawReplyTextRef = useRef('')
@@ -180,6 +192,11 @@ const useAiWorkbench = (
     }
   }, [])
 
+  const resetLocalConnectionState = useCallback(() => {
+    setLocalConnectionState('idle')
+    setLocalInterruptedStreamKind(null)
+  }, [])
+
   useEffect(() => {
     return () => {
       resetBufferedUiUpdates()
@@ -261,9 +278,10 @@ const useAiWorkbench = (
 
   const handleConversationDetailProxy = useCallback(
     (detail: AiConversationDetail) => {
+      resetLocalConnectionState()
       hydrateConversationDetailHandlerRef.current(getCompatibleConversationDetail(detail))
     },
-    [getCompatibleConversationDetail]
+    [getCompatibleConversationDetail, resetLocalConnectionState]
   )
 
   const handleConversationResetProxy = useCallback(() => {
@@ -276,6 +294,7 @@ const useAiWorkbench = (
     conversationLoading,
     conversationListLoading,
     activeConversationIdRef,
+    loadConversationDetail,
     setActiveConversationId,
     refreshConversationList,
     createConversation,
@@ -297,71 +316,32 @@ const useAiWorkbench = (
     resetConversationState: handleConversationResetProxy
   })
 
-  const clearDraftAfterApply = useCallback(() => {
-    resetBufferedUiUpdates()
-    finalDraftRef.current = null
-    draftAppliedRef.current = false
-    baseQuestionnaireRef.current = null
-    generateDraftBaseRef.current = null
-    setDraftPartial(null)
-    setFinalDraft(null)
-    setSummary(null)
-    setQuestionPatchSet(null)
-    setSelectedPatchIds([])
-    setRejectedPatchIds([])
-    setErrorMessage(null)
-    setRequestId(null)
-    setWarningMessage(null)
-    setStatus('done')
-    rawReplyTextRef.current = ''
-  }, [resetBufferedUiUpdates])
-
-  const clearPendingDraftState = useCallback(() => {
-    resetBufferedUiUpdates()
-    finalDraftRef.current = null
-    draftAppliedRef.current = false
-    baseQuestionnaireRef.current = null
-    generateDraftBaseRef.current = null
-    setDraftPartial(null)
-    setFinalDraft(null)
-    setSummary(null)
-    setQuestionPatchSet(null)
-    setSelectedPatchIds([])
-    setRejectedPatchIds([])
-    setErrorMessage(null)
-    setWarningMessage(null)
-    setRequestId(null)
-    setDraftApplied(false)
-    rawReplyTextRef.current = ''
-  }, [resetBufferedUiUpdates])
-
-  const resetConversationRuntimeState = useCallback(
-    (nextMode: AiCopilotIntent) => {
-      resetBufferedUiUpdates()
-      modeRef.current = nextMode
-      finalDraftRef.current = null
-      draftAppliedRef.current = false
-      baseQuestionnaireRef.current = null
-      generateDraftBaseRef.current = null
-      setModeState(nextMode)
-      setStatus('idle')
-      setMessages([])
-      setComposerInputState('')
-      setDraftPartial(null)
-      setFinalDraft(null)
-      setSummary(null)
-      setRequestId(null)
-      setErrorMessage(null)
-      setWarningMessage(null)
-      setDraftApplied(false)
-      setQuestionPatchSet(null)
-      setSelectedPatchIds([])
-      setRejectedPatchIds([])
-      rawReplyTextRef.current = ''
-      dispatchGenerateFlow({ type: 'reset' })
-    },
-    [resetBufferedUiUpdates]
-  )
+  const { clearDraftAfterApply, clearPendingDraftState, resetConversationRuntimeState } =
+    useAiWorkbenchStateReset({
+      modeRef,
+      finalDraftRef,
+      draftAppliedRef,
+      baseQuestionnaireRef,
+      generateDraftBaseRef,
+      rawReplyTextRef,
+      dispatchGenerateFlow,
+      resetBufferedUiUpdates,
+      resetLocalConnectionState,
+      setModeState,
+      setStatus,
+      setMessages,
+      setComposerInputState,
+      setDraftPartial,
+      setFinalDraft,
+      setSummary,
+      setRequestId,
+      setErrorMessage,
+      setWarningMessage,
+      setDraftApplied,
+      setQuestionPatchSet,
+      setSelectedPatchIds,
+      setRejectedPatchIds
+    })
 
   useEffect(() => {
     hydrateConversationDetailHandlerRef.current = hydrateConversationDetail
@@ -378,10 +358,13 @@ const useAiWorkbench = (
     summary,
     activeConversationIdRef,
     controllerRef,
+    streamAbortReasonRef,
     bufferedUiUpdatesRef,
     finalDraftRef,
     baseQuestionnaireRef,
     dispatchGenerateFlow,
+    setLocalConnectionState,
+    setLocalInterruptedStreamKind,
     setComposerInputState,
     setDraftPartial,
     setFinalDraft,
@@ -477,6 +460,8 @@ const useAiWorkbench = (
     messages,
     message,
     controllerRef,
+    streamAbortReasonRef,
+    activeStreamKindRef,
     activeConversationIdRef,
     baseVersionRef,
     finalDraftRef,
@@ -489,6 +474,8 @@ const useAiWorkbench = (
     setStatus,
     setMessages,
     setErrorMessage,
+    setLocalConnectionState,
+    setLocalInterruptedStreamKind,
     setDraftPartial,
     setFinalDraft,
     setSummary,
@@ -517,6 +504,8 @@ const useAiWorkbench = (
     messages,
     message,
     controllerRef,
+    streamAbortReasonRef,
+    activeStreamKindRef,
     activeConversationIdRef,
     baseVersionRef,
     rawReplyTextRef,
@@ -526,6 +515,8 @@ const useAiWorkbench = (
     setStatus,
     setMessages,
     setErrorMessage,
+    setLocalConnectionState,
+    setLocalInterruptedStreamKind,
     setWarningMessage,
     setRequestId,
     setDraftApplied,
@@ -580,6 +571,28 @@ const useAiWorkbench = (
       runPromptPolishStream
     })
 
+  const { refreshBackgroundRunStatus, stopBackgroundRun, recoverInterruptedRun } =
+    useAiInterruptedRunRecovery({
+      status,
+      version,
+      selectedModel,
+      message,
+      controllerRef,
+      streamAbortReasonRef,
+      activeStreamKindRef,
+      activeConversationIdRef,
+      localConnectionState,
+      localInterruptedStreamKind,
+      setIsBrowserOffline,
+      setLocalConnectionState,
+      resetLocalConnectionState,
+      setSelectedModel,
+      setComposerInputState,
+      loadConversationDetail,
+      refreshConversationList,
+      runDraftStream
+    })
+
   const currentQuestionnaire: QuestionnaireDraft = {
     title: pageConfig.title,
     description: pageConfig.description,
@@ -595,13 +608,26 @@ const useAiWorkbench = (
     patchStatus => patchStatus === 'pending' || patchStatus === 'selected'
   )
   const hasPendingPatchResult = reviewablePatches.length > 0 && hasUnhandledReviewablePatchChanges
+  const hasInterruptedRun = status === 'background_running' || status === 'resume_available'
+  const hasLocalInterruptedRun = localConnectionState !== 'idle'
   const hasPendingDraftResult =
     !questionPatchSet?.patches.length &&
     Boolean((finalDraft || (status === 'cancelled' ? draftPartial : null)) && !draftApplied)
-  const hasPendingAiResult = hasPendingPatchResult || hasPendingDraftResult
+  const hasPendingAiResult =
+    hasPendingPatchResult || hasPendingDraftResult || hasInterruptedRun || hasLocalInterruptedRun
   const notifyPendingAiResult = useCallback(() => {
+    if (hasLocalInterruptedRun) {
+      message.warning('请先处理当前中断任务（等待刷新、恢复或放弃）后再继续。')
+      return
+    }
+
+    if (hasInterruptedRun) {
+      message.warning('请先处理当前中断任务（恢复或放弃）后再继续。')
+      return
+    }
+
     message.warning('请先处理当前 AI 结果（应用或放弃）后再继续。')
-  }, [message])
+  }, [hasInterruptedRun, hasLocalInterruptedRun, message])
 
   useEffect(() => {
     if (!questionPatchSet || questionPatchSet.patches.length === 0) return
@@ -720,6 +746,9 @@ const useAiWorkbench = (
     requestId,
     errorMessage,
     warningMessage,
+    isBrowserOffline,
+    localConnectionState,
+    localInterruptedStreamKind,
     draftApplied,
     questionPatchSet,
     selectedPatchIds,
@@ -739,6 +768,9 @@ const useAiWorkbench = (
     sendInstruction: guardedSendInstruction,
     polishInstruction: guardedPolishInstruction,
     cancelStream,
+    recoverInterruptedRun,
+    refreshBackgroundRunStatus,
+    stopBackgroundRun,
     discardDraft,
     applyDraft,
     togglePatchSelection,

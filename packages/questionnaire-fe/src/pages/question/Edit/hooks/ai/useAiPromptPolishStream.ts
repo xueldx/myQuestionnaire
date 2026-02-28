@@ -3,6 +3,8 @@ import apis from '@/apis'
 import {
   AiChatMessage,
   AiGenerateFlowState,
+  AiLocalConnectionState,
+  AiLocalInterruptedStreamKind,
   AiProcessScenario,
   AiStreamStatus,
   QuestionnaireDraft
@@ -10,6 +12,7 @@ import {
 import {
   cancelProcessMessage,
   finalizeProcessMessage,
+  interruptProcessMessage,
   replaceLastAssistantMessage,
   replaceLastAssistantMessageWithSanitizedContent,
   restartProcessMessage,
@@ -29,6 +32,8 @@ type UseAiPromptPolishStreamParams = {
   messages: AiChatMessage[]
   message: MessageApi
   controllerRef: { current: AbortController | null }
+  streamAbortReasonRef: { current: 'user' | 'offline' | null }
+  activeStreamKindRef: { current: AiLocalInterruptedStreamKind | null }
   activeConversationIdRef: { current: number | null }
   baseVersionRef: { current: number }
   rawReplyTextRef: { current: string }
@@ -38,6 +43,10 @@ type UseAiPromptPolishStreamParams = {
   setStatus: React.Dispatch<React.SetStateAction<AiStreamStatus>>
   setMessages: React.Dispatch<React.SetStateAction<AiChatMessage[]>>
   setErrorMessage: React.Dispatch<React.SetStateAction<string | null>>
+  setLocalConnectionState: React.Dispatch<React.SetStateAction<AiLocalConnectionState>>
+  setLocalInterruptedStreamKind: React.Dispatch<
+    React.SetStateAction<AiLocalInterruptedStreamKind | null>
+  >
   setWarningMessage: React.Dispatch<React.SetStateAction<string | null>>
   setRequestId: React.Dispatch<React.SetStateAction<string | null>>
   setDraftApplied: React.Dispatch<React.SetStateAction<boolean>>
@@ -67,6 +76,8 @@ export const useAiPromptPolishStream = ({
   messages,
   message,
   controllerRef,
+  streamAbortReasonRef,
+  activeStreamKindRef,
   activeConversationIdRef,
   baseVersionRef,
   rawReplyTextRef,
@@ -76,6 +87,8 @@ export const useAiPromptPolishStream = ({
   setStatus,
   setMessages,
   setErrorMessage,
+  setLocalConnectionState,
+  setLocalInterruptedStreamKind,
   setWarningMessage,
   setRequestId,
   setDraftApplied,
@@ -104,10 +117,17 @@ export const useAiPromptPolishStream = ({
       const processScenario: AiProcessScenario = 'polish'
       const controller = new AbortController()
       const baseHistory = getConversationHistory(messages).filter(item => item.content.trim())
+      const clearLocalConnectionState = () => {
+        setLocalConnectionState('idle')
+        setLocalInterruptedStreamKind(null)
+      }
       let hasPromptDelta = false
+      streamAbortReasonRef.current = null
+      activeStreamKindRef.current = 'polish'
       controllerRef.current = controller
       baseVersionRef.current = version
 
+      clearLocalConnectionState()
       resetBufferedUiUpdates()
       bufferedUiUpdatesRef.current.preservedPrompt = instruction
       dispatchGenerateFlow({
@@ -275,11 +295,32 @@ export const useAiPromptPolishStream = ({
         )
       } catch (error: any) {
         if (controller.signal.aborted) {
-          flushBufferedUiUpdates(true)
-          dispatchGenerateFlow({ type: 'cancel' })
-          setMessages(previousMessages => cancelProcessMessage(previousMessages, processScenario))
-          setStatus('cancelled')
+          if (streamAbortReasonRef.current === 'offline') {
+            const offlineMessage = '网络已断开，当前润色已中止，请联网后重试'
+            flushBufferedUiUpdates(true)
+            dispatchGenerateFlow({ type: 'fail' })
+            setErrorMessage(offlineMessage)
+            setWarningMessage(null)
+            setStatus('error')
+            setLocalConnectionState('offline_interrupted')
+            setLocalInterruptedStreamKind('polish')
+            setMessages(previousMessages =>
+              interruptProcessMessage(
+                replaceLastAssistantMessage(previousMessages, `${offlineMessage}。`),
+                processScenario,
+                '连接已断开，当前润色已中止'
+              )
+            )
+            message.error(offlineMessage)
+          } else {
+            clearLocalConnectionState()
+            flushBufferedUiUpdates(true)
+            dispatchGenerateFlow({ type: 'cancel' })
+            setMessages(previousMessages => cancelProcessMessage(previousMessages, processScenario))
+            setStatus('cancelled')
+          }
         } else {
+          clearLocalConnectionState()
           flushBufferedUiUpdates(true)
           dispatchGenerateFlow({ type: 'fail' })
           const nextMessage = error?.message || 'Prompt 润色请求失败，请稍后重试'
@@ -294,6 +335,10 @@ export const useAiPromptPolishStream = ({
         if (controllerRef.current === controller) {
           controllerRef.current = null
         }
+        if (activeStreamKindRef.current === 'polish') {
+          activeStreamKindRef.current = null
+        }
+        streamAbortReasonRef.current = null
       }
 
       return true
@@ -320,10 +365,14 @@ export const useAiPromptPolishStream = ({
       setComposerInputState,
       setDraftApplied,
       setErrorMessage,
+      setLocalConnectionState,
+      setLocalInterruptedStreamKind,
       setMessages,
       setRequestId,
       setStatus,
       setWarningMessage,
+      streamAbortReasonRef,
+      activeStreamKindRef,
       syncRuntimeStatus,
       version
     ]

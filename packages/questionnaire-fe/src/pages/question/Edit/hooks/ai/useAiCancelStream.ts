@@ -1,6 +1,12 @@
 import { useCallback } from 'react'
 import apis from '@/apis'
-import { AiCopilotIntent, DraftSummary, QuestionnaireDraft } from '../../components/aiCopilotTypes'
+import {
+  AiCopilotIntent,
+  AiLocalConnectionState,
+  AiLocalInterruptedStreamKind,
+  DraftSummary,
+  QuestionnaireDraft
+} from '../../components/aiCopilotTypes'
 import { BufferedUiUpdates } from './aiShared'
 
 type UseAiCancelStreamParams = {
@@ -13,10 +19,15 @@ type UseAiCancelStreamParams = {
   summary: DraftSummary | null
   activeConversationIdRef: { current: number | null }
   controllerRef: { current: AbortController | null }
+  streamAbortReasonRef: { current: 'user' | 'offline' | null }
   bufferedUiUpdatesRef: { current: BufferedUiUpdates }
   finalDraftRef: { current: QuestionnaireDraft | null }
   baseQuestionnaireRef: { current: QuestionnaireDraft | null }
   dispatchGenerateFlow: (action: any) => void
+  setLocalConnectionState: React.Dispatch<React.SetStateAction<AiLocalConnectionState>>
+  setLocalInterruptedStreamKind: React.Dispatch<
+    React.SetStateAction<AiLocalInterruptedStreamKind | null>
+  >
   setComposerInputState: (value: string) => void
   setDraftPartial: (value: QuestionnaireDraft | null) => void
   setFinalDraft: (value: QuestionnaireDraft | null) => void
@@ -42,10 +53,13 @@ export const useAiCancelStream = ({
   summary,
   activeConversationIdRef,
   controllerRef,
+  streamAbortReasonRef,
   bufferedUiUpdatesRef,
   finalDraftRef,
   baseQuestionnaireRef,
   dispatchGenerateFlow,
+  setLocalConnectionState,
+  setLocalInterruptedStreamKind,
   setComposerInputState,
   setDraftPartial,
   setFinalDraft,
@@ -109,6 +123,9 @@ export const useAiCancelStream = ({
           })
       }
 
+      streamAbortReasonRef.current = 'user'
+      setLocalConnectionState('idle')
+      setLocalInterruptedStreamKind(null)
       cancelLocalStream(showMessage)
     },
     [
@@ -129,7 +146,10 @@ export const useAiCancelStream = ({
       setComposerInputState,
       setDraftPartial,
       setFinalDraft,
+      setLocalConnectionState,
+      setLocalInterruptedStreamKind,
       status,
+      streamAbortReasonRef,
       summary
     ]
   )

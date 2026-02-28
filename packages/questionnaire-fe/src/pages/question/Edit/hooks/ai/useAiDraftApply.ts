@@ -80,6 +80,7 @@ export const useAiDraftApply = ({
   onDraftApplied,
   setDraftApplied
 }: UseAiDraftApplyParams) => {
+  const isInterruptedPreviewOnly = status === 'background_running' || status === 'resume_available'
   const applicableDraft = finalDraft || (status === 'cancelled' ? draftPartial : null)
   const effectiveSelectedPatchIds = selectedPatchIds.filter(
     patchId => !rejectedPatchIds.includes(patchId)
@@ -112,6 +113,11 @@ export const useAiDraftApply = ({
 
   const applyPatchSelection = useCallback(
     async (patchIds = effectiveSelectedPatchIds) => {
+      if (isInterruptedPreviewOnly) {
+        message.warning('当前中断草稿仅供预览，请先恢复本轮或放弃后再继续。')
+        return []
+      }
+
       const safePatchIds = patchIds.filter(patchId => !rejectedPatchIds.includes(patchId))
 
       if (!questionPatchSet || safePatchIds.length === 0) {
@@ -205,6 +211,7 @@ export const useAiDraftApply = ({
     [
       currentQuestionnaire,
       dispatch,
+      isInterruptedPreviewOnly,
       message,
       onDraftApplied,
       questionPatchSet,
@@ -219,6 +226,11 @@ export const useAiDraftApply = ({
 
   const applyGenerateDraft = useCallback(
     async (draft: QuestionnaireDraft) => {
+      if (isInterruptedPreviewOnly) {
+        message.warning('当前中断草稿仅供预览，请先恢复本轮或放弃后再继续。')
+        return
+      }
+
       const normalizedComponents = normalizeQuestionnaireComponentList(draft.components)
 
       if (normalizedComponents.length === 0) {
@@ -292,6 +304,7 @@ export const useAiDraftApply = ({
       clearDraftAfterApply,
       componentList,
       dispatch,
+      isInterruptedPreviewOnly,
       message,
       onDraftApplied,
       pageConfig,
@@ -305,6 +318,11 @@ export const useAiDraftApply = ({
 
   const applyEditDraft = useCallback(
     async (draft: QuestionnaireDraft) => {
+      if (isInterruptedPreviewOnly) {
+        message.warning('当前中断草稿仅供预览，请先恢复本轮或放弃后再继续。')
+        return
+      }
+
       const normalizedComponents = normalizeQuestionnaireComponentList(draft.components)
       const nextSelectedId = resolveNextSelectedId(normalizedComponents)
 
@@ -357,6 +375,7 @@ export const useAiDraftApply = ({
     [
       clearDraftAfterApply,
       dispatch,
+      isInterruptedPreviewOnly,
       message,
       onDraftApplied,
       persistConversationDraftState,
@@ -367,6 +386,11 @@ export const useAiDraftApply = ({
   )
 
   const applyDraft = useCallback(async () => {
+    if (isInterruptedPreviewOnly) {
+      message.warning('当前中断草稿仅供预览，请先恢复本轮或放弃后再继续。')
+      return
+    }
+
     if (!applicableDraft) {
       message.warning('当前没有可应用的草稿')
       return
@@ -426,6 +450,7 @@ export const useAiDraftApply = ({
     applyPatchSelection,
     baseVersionRef,
     draftApplied,
+    isInterruptedPreviewOnly,
     message,
     modal,
     mode,

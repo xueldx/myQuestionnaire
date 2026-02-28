@@ -6,8 +6,10 @@ export type AiWorkflowStage = AiGenerateStage | 'edit'
 export type AiRuntimePhase = 'polishing' | 'thinking' | 'answering' | 'drafting'
 export type AiChatMessageRole = 'user' | 'assistant' | 'tool' | 'process'
 export type AiChatMessageKind = 'chat' | 'tool_call' | 'tool_result' | 'process'
-export type AiProcessStepStatus = 'pending' | 'running' | 'done' | 'error'
+export type AiProcessStepStatus = 'pending' | 'running' | 'paused' | 'done' | 'error'
 export type AiProcessScenario = AiCopilotIntent | 'polish'
+export type AiLocalConnectionState = 'idle' | 'offline_interrupted' | 'reconnected_refreshing'
+export type AiLocalInterruptedStreamKind = 'generate_draft' | 'edit_draft' | 'polish'
 
 export type AiProcessStep = {
   id: string
@@ -243,6 +245,8 @@ export type AiStreamStatus =
   | 'thinking'
   | 'answering'
   | 'drafting'
+  | 'background_running'
+  | 'resume_available'
   | 'draft_ready'
   | 'done'
   | 'cancelled'

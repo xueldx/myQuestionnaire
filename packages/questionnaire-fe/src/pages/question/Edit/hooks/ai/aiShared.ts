@@ -85,6 +85,10 @@ export type DraftStreamOptions = {
   startStatus: AiStreamStatus
   assistantPlaceholder: string
   appendUserMessage: boolean
+  overrideQuestionnaire?: QuestionnaireDraft
+  overrideModel?: string
+  overrideFocusedComponentId?: string
+  overrideBaseVersion?: number
 }
 
 export type BufferedUiUpdates = {

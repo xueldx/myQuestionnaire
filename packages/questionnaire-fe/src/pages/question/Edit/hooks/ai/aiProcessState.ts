@@ -54,7 +54,7 @@ const normalizeProcessMetadata = (
       if (
         typeof nextStep.id !== 'string' ||
         typeof nextStep.label !== 'string' ||
-        !['pending', 'running', 'done', 'error'].includes(String(status))
+        !['pending', 'running', 'paused', 'done', 'error'].includes(String(status))
       ) {
         return null
       }
@@ -275,6 +275,28 @@ export const updateProcessByToolEvent = (
     'thinking'
   )
 }
+
+export const interruptProcessMessage = (
+  messages: AiChatMessage[],
+  scenario: AiProcessScenario,
+  summary: string
+) =>
+  updateProcessMessage(
+    messages,
+    metadata => ({
+      ...metadata,
+      collapsed: false,
+      summary,
+      steps: sortProcessSteps(
+        metadata.steps.map(step => ({
+          ...step,
+          status: step.status === 'running' ? 'paused' : step.status
+        }))
+      )
+    }),
+    scenario,
+    'background_running'
+  )
 
 const finalizeProcessMetadata = (
   metadata: AiProcessMessageMeta,

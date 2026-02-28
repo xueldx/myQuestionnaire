@@ -15,6 +15,8 @@ import {
   AiConversationSummary,
   AiCopilotIntent,
   AiChatMessage,
+  AiLocalConnectionState,
+  AiLocalInterruptedStreamKind,
   AiModelOption,
   AiStreamStatus
 } from './aiCopilotTypes'
@@ -22,6 +24,8 @@ import {
 interface AiCopilotPanelProps {
   mode: AiCopilotIntent
   status: AiStreamStatus
+  localConnectionState: AiLocalConnectionState
+  localInterruptedStreamKind: AiLocalInterruptedStreamKind | null
   messages: AiChatMessage[]
   conversationList: AiConversationSummary[]
   activeConversationId: number | null
@@ -46,11 +50,17 @@ interface AiCopilotPanelProps {
   onSend: (instruction: string) => Promise<boolean | void> | boolean | void
   onPolish: (instruction?: string) => Promise<boolean | void> | boolean | void
   onCancel: () => void
+  onRecoverInterruptedRun: () => Promise<boolean | void> | boolean | void
+  onRefreshBackgroundRunStatus: () => Promise<boolean | void> | boolean | void
+  onStopBackgroundRun: () => Promise<boolean | void> | boolean | void
+  onDiscardInterruptedRun: () => Promise<boolean | void> | boolean | void
 }
 
 const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
   mode,
   status,
+  localConnectionState,
+  localInterruptedStreamKind,
   messages,
   conversationList,
   activeConversationId,
@@ -74,7 +84,11 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
   onDeleteConversation,
   onSend,
   onPolish,
-  onCancel
+  onCancel,
+  onRecoverInterruptedRun,
+  onRefreshBackgroundRunStatus,
+  onStopBackgroundRun,
+  onDiscardInterruptedRun
 }) => {
   const [isComposerExpanded, setIsComposerExpanded] = React.useState(false)
   const [isHistoryModalOpen, setIsHistoryModalOpen] = React.useState(false)
@@ -85,13 +99,43 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
   const [actionConversationId, setActionConversationId] = React.useState<number | null>(null)
   const hasFocusedComponent = typeof focusedComponentOrder === 'number'
   const isStreaming =
-    status === 'connecting' ||
-    status === 'polishing' ||
-    status === 'thinking' ||
-    status === 'answering' ||
-    status === 'drafting'
+    localConnectionState === 'idle' &&
+    (status === 'connecting' ||
+      status === 'polishing' ||
+      status === 'thinking' ||
+      status === 'answering' ||
+      status === 'drafting')
+  const isConversationLocked =
+    isStreaming ||
+    localConnectionState !== 'idle' ||
+    status === 'background_running' ||
+    status === 'resume_available'
 
   const statusInfo = (() => {
+    if (localConnectionState === 'reconnected_refreshing') {
+      return {
+        type: 'warning' as const,
+        message: '网络已恢复，正在刷新当前任务状态',
+        tooltip: '浏览器已重新联网，正在同步当前这轮 AI 任务的最新状态。'
+      }
+    }
+
+    if (localConnectionState === 'offline_interrupted') {
+      if (localInterruptedStreamKind === 'polish') {
+        return {
+          type: 'warning' as const,
+          message: '网络已断开，当前润色已中止',
+          tooltip: '当前润色不支持后台恢复，请联网后重新点击“润色”。'
+        }
+      }
+
+      return {
+        type: 'warning' as const,
+        message: '连接已断开，后台可能继续生成',
+        tooltip: '浏览器连接已断开。若服务端仍在处理，本轮会在联网后恢复状态。'
+      }
+    }
+
     if (mode === 'generate') {
       if (status === 'polishing') {
         return {
@@ -150,6 +194,22 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
             : '当前草稿已处理完成，可以继续发起下一轮生成。'
         }
       }
+
+      if (status === 'background_running') {
+        return {
+          type: 'warning' as const,
+          message: 'AI 正在后台继续生成',
+          tooltip: '当前连接已中断，但服务端仍在后台继续处理这一轮请求。'
+        }
+      }
+
+      if (status === 'resume_available') {
+        return {
+          type: 'warning' as const,
+          message: '本轮因连接中断未完成',
+          tooltip: '当前草稿仅供预览，不能直接应用。你可以恢复本轮，或放弃这次中断任务。'
+        }
+      }
     }
 
     if (status === 'connecting') {
@@ -191,6 +251,22 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
         tooltip: hasPendingAiResult
           ? '请把本轮建议逐项应用或拒绝；全部处理完成后，才能继续发送、切换模式或切换会话。'
           : '当前建议已处理完成，可以继续发起下一轮修改。'
+      }
+    }
+
+    if (status === 'background_running') {
+      return {
+        type: 'warning' as const,
+        message: 'AI 正在后台继续生成',
+        tooltip: '当前连接已中断，但服务端仍在后台继续处理这一轮请求。'
+      }
+    }
+
+    if (status === 'resume_available') {
+      return {
+        type: 'warning' as const,
+        message: '本轮因连接中断未完成',
+        tooltip: '当前草稿仅供预览，不能直接应用。你可以恢复本轮，或放弃这次中断任务。'
       }
     }
 
@@ -360,7 +436,7 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
                             type="text"
                             size="small"
                             icon={<EditOutlined />}
-                            disabled={isStreaming || isSwitching}
+                            disabled={isConversationLocked || isSwitching}
                             onClick={event => {
                               event.stopPropagation()
                               setRenameTarget(item)
@@ -374,7 +450,7 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
                             size="small"
                             icon={<PushpinOutlined />}
                             loading={isOperating}
-                            disabled={isStreaming || isSwitching}
+                            disabled={isConversationLocked || isSwitching}
                             onClick={event => {
                               event.stopPropagation()
                               void handleConversationAction(item.id, () =>
@@ -390,7 +466,7 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
                             danger
                             icon={<DeleteOutlined />}
                             loading={isOperating}
-                            disabled={isStreaming || isSwitching}
+                            disabled={isConversationLocked || isSwitching}
                             onClick={event => {
                               event.stopPropagation()
                               void handleConversationAction(item.id, () =>
@@ -457,7 +533,7 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
               <Button
                 shape="circle"
                 icon={<PlusOutlined />}
-                disabled={conversationLoading || isStreaming}
+                disabled={conversationLoading || isConversationLocked}
                 onClick={() => void onCreateConversation()}
               />
             </Tooltip>
@@ -487,6 +563,28 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
             </div>
           </Tooltip>
         ) : null}
+
+        {localConnectionState === 'idle' && status === 'background_running' && (
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <Button size="small" type="primary" onClick={() => void onRefreshBackgroundRunStatus()}>
+              恢复状态
+            </Button>
+            <Button size="small" onClick={() => void onStopBackgroundRun()}>
+              停止后台生成
+            </Button>
+          </div>
+        )}
+
+        {localConnectionState === 'idle' && status === 'resume_available' && (
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <Button size="small" type="primary" onClick={() => void onRecoverInterruptedRun()}>
+              恢复本轮
+            </Button>
+            <Button size="small" onClick={() => void onDiscardInterruptedRun()}>
+              放弃本轮
+            </Button>
+          </div>
+        )}
 
         {mode === 'edit' && (
           <div

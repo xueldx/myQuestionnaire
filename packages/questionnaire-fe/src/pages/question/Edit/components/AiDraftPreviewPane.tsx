@@ -54,6 +54,8 @@ const AiDraftPreviewPane: React.FC<AiDraftPreviewPaneProps> = ({
     (finalDraft || (status === 'cancelled' ? draftPartial : null)) && !draftApplied
   )
   const isCancelledPartialDraft = status === 'cancelled' && Boolean(draftPartial) && !finalDraft
+  const isResumeAvailablePreview =
+    status === 'resume_available' && Boolean(draftPartial) && !finalDraft
   const isStreaming =
     status === 'connecting' ||
     status === 'thinking' ||
@@ -84,6 +86,11 @@ const AiDraftPreviewPane: React.FC<AiDraftPreviewPaneProps> = ({
             {isCancelledPartialDraft && (
               <Tag className="m-0" color="warning">
                 已保留已生成部分
+              </Tag>
+            )}
+            {isResumeAvailablePreview && (
+              <Tag className="m-0" color="warning">
+                中断草稿仅供预览
               </Tag>
             )}
           </div>
@@ -118,6 +125,16 @@ const AiDraftPreviewPane: React.FC<AiDraftPreviewPaneProps> = ({
             showIcon
             message="AI 草稿生成失败"
             description={errorMessage}
+          />
+        )}
+
+        {isResumeAvailablePreview && (
+          <Alert
+            className="mb-4"
+            type="warning"
+            showIcon
+            message="中断草稿仅供预览"
+            description="当前草稿来自中断任务的最后一次 checkpoint，不能直接应用。请先恢复本轮，或放弃这次中断任务。"
           />
         )}
 

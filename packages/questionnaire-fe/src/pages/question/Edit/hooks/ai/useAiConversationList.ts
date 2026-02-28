@@ -345,6 +345,7 @@ export const useAiConversationList = ({
     conversationLoading,
     conversationListLoading,
     activeConversationIdRef,
+    loadConversationDetail,
     setActiveConversationId,
     refreshConversationList,
     createConversation,

@@ -2,6 +2,8 @@ import React, { useMemo } from 'react'
 import { Alert, Button, Empty } from 'antd'
 import {
   AiCopilotIntent,
+  AiLocalConnectionState,
+  AiLocalInterruptedStreamKind,
   AiStreamStatus,
   QuestionnaireDraft,
   QuestionnairePatchSet
@@ -22,6 +24,8 @@ import { useAiPreviewAutoFollow } from '../hooks/useAiPreviewAutoFollow'
 interface AiInlineQuestionnairePreviewProps {
   mode: AiCopilotIntent
   status: AiStreamStatus
+  localConnectionState: AiLocalConnectionState
+  localInterruptedStreamKind: AiLocalInterruptedStreamKind | null
   currentQuestionnaire: QuestionnaireDraft
   selectedId: string
   draftPartial: QuestionnaireDraft | null
@@ -46,6 +50,8 @@ interface AiInlineQuestionnairePreviewProps {
 const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> = ({
   mode,
   status,
+  localConnectionState,
+  localInterruptedStreamKind,
   currentQuestionnaire,
   selectedId,
   draftPartial,
@@ -67,12 +73,24 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
   onRejectPatch
 }) => {
   const isCancelledPartialDraft = status === 'cancelled' && Boolean(draftPartial) && !finalDraft
+  const isResumeAvailablePreview =
+    status === 'resume_available' && Boolean(draftPartial) && !finalDraft
+  const isOfflineInterruptedPreview =
+    localConnectionState === 'offline_interrupted' && localInterruptedStreamKind !== 'polish'
+  const isOfflineInterruptedPartialPreview =
+    isOfflineInterruptedPreview && Boolean(draftPartial) && !finalDraft
   const isStreaming =
-    status === 'connecting' ||
-    status === 'thinking' ||
-    status === 'answering' ||
-    status === 'drafting'
-  const reviewActionsDisabled = isStreaming || isApplyingDraft
+    localConnectionState === 'idle' &&
+    (status === 'connecting' ||
+      status === 'thinking' ||
+      status === 'answering' ||
+      status === 'drafting')
+  const reviewActionsDisabled =
+    isStreaming ||
+    isApplyingDraft ||
+    localConnectionState !== 'idle' ||
+    status === 'background_running' ||
+    status === 'resume_available'
   const currentComponents = currentQuestionnaire.components || []
   const patchStatusMap = Object.fromEntries(
     (questionPatchSet?.patches || []).map(patch => [
@@ -201,9 +219,18 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
       : hasSelectedPatchItems
       ? `应用剩余 ${selectedReviewablePatchIds.length} 项`
       : '请选择要应用的建议'
+    : isResumeAvailablePreview || isOfflineInterruptedPartialPreview
+    ? '中断草稿仅供预览'
     : isCancelledPartialDraft
     ? '应用已生成部分'
     : '应用到编辑器'
+  const draftEmptyDescription = isOfflineInterruptedPreview
+    ? '网络已断开，请恢复联网后刷新当前 AI 任务状态'
+    : mode === 'generate' && isStreaming
+    ? 'AI 正在生成问卷草稿，内容会持续显示在这里'
+    : mode === 'generate'
+    ? '左侧输入需求后，可先点“润色”，也可直接点“发送”；开始生成后这里会显示 AI 问卷草稿'
+    : '左侧输入修改指令后，AI 建议会直接标注在原问卷对应位置'
 
   const renderEmptyState = (description: string) => (
     <div className="mt-5 flex min-h-[320px] items-center justify-center rounded-3xl border-2 border-dashed border-custom-bg-200 bg-white/90">
@@ -302,6 +329,18 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
               description={errorMessage}
               closable={mode === 'generate'}
             />
+          ) : isOfflineInterruptedPreview ? (
+            <Alert
+              className="shadow-sm"
+              type="warning"
+              showIcon
+              message="连接已断开"
+              description={
+                isOfflineInterruptedPartialPreview
+                  ? '网络已断开，以下仅为已收到的草稿片段，最终结果请在联网后恢复状态。'
+                  : '网络已断开，请恢复联网后刷新当前 AI 任务状态。'
+              }
+            />
           ) : warningMessage ? (
             <Alert
               className="shadow-sm"
@@ -310,6 +349,14 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
               message="AI 已跳过部分解析失败的题目"
               description={warningMessage}
               closable={mode === 'generate'}
+            />
+          ) : isResumeAvailablePreview ? (
+            <Alert
+              className="shadow-sm"
+              type="warning"
+              showIcon
+              message="中断草稿仅供预览"
+              description="当前草稿来自中断任务的最后一次 checkpoint，不能直接应用。请先恢复本轮，或放弃这次中断任务。"
             />
           ) : null}
         </div>
@@ -337,12 +384,7 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
               description: displayDescription,
               footerText: displayFooterText,
               entries: previewEntries,
-              emptyDescription:
-                mode === 'generate' && isStreaming
-                  ? 'AI 正在生成问卷草稿，内容会持续显示在这里'
-                  : mode === 'generate'
-                  ? '左侧输入需求后，可先点“润色”，也可直接点“发送”；开始生成后这里会显示 AI 问卷草稿'
-                  : '左侧输入修改指令后，AI 建议会直接标注在原问卷对应位置'
+              emptyDescription: draftEmptyDescription
             })
           : showAppliedQuestionnaire
           ? renderQuestionnaireCard({
@@ -368,13 +410,7 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
                   ? '当前问卷暂无题目，输入修改指令后 AI 建议会显示在这里'
                   : '当前问卷暂无题目，切到生成模式后 AI 新增内容会显示在这里'
             })
-          : renderEmptyState(
-              mode === 'generate' && isStreaming
-                ? 'AI 正在生成问卷草稿，内容会持续显示在这里'
-                : mode === 'generate'
-                ? '左侧输入需求后，可先点“润色”，也可直接点“发送”；开始生成后这里会显示 AI 问卷草稿'
-                : '左侧输入修改指令后，AI 建议会直接标注在原问卷对应位置'
-            )}
+          : renderEmptyState(draftEmptyDescription)}
       </div>
 
       {showJumpToLatest ? (

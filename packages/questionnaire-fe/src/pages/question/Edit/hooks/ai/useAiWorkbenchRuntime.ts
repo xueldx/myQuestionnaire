@@ -128,7 +128,13 @@ export const useAiWorkbenchRuntime = ({
       setComposerInputState(detail.lastInstruction || '')
       setRequestId(null)
       setErrorMessage(null)
-      setWarningMessage(null)
+      setWarningMessage(
+        detail.lastRuntimeStatus === 'background_running'
+          ? '连接已断开，AI 仍在后台继续生成，可点击“恢复状态”查看结果。'
+          : detail.lastRuntimeStatus === 'resume_available'
+          ? '本轮因连接中断未完成，当前草稿仅供预览，请先恢复本轮或放弃。'
+          : null
+      )
       setDraftApplied(false)
       rawReplyTextRef.current = ''
       baseQuestionnaireRef.current = detail.latestBaseQuestionnaire || null

@@ -1,5 +1,5 @@
 import { LeftOutlined, SendOutlined } from '@ant-design/icons'
-import { Button, Tooltip, App } from 'antd'
+import { Alert, Button, Tooltip, App } from 'antd'
 import React, { useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import EditorButtonGroup from '@/pages/question/Edit/components/EditorButtonGroup'
@@ -322,7 +322,7 @@ const Edit: React.FC = () => {
               type="text"
               shape="circle"
               icon={<LeftOutlined className="text-gray-600" />}
-              onClick={() => navigate(-1)}
+              onClick={() => navigate(MANAGE_PERSONAL_PATH)}
               className="flex justify-center items-center hover:!bg-gray-200"
             />
           </Tooltip>
@@ -354,6 +354,12 @@ const Edit: React.FC = () => {
 
       {/* 面板容器 */}
       <div className="flex-1 relative overflow-hidden">
+        {aiWorkbench.isBrowserOffline ? (
+          <div className="absolute left-3 right-3 top-2 z-[60]">
+            <Alert type="warning" showIcon message="网络已断开，当前页面无法继续实时同步。" />
+          </div>
+        ) : null}
+
         <div
           className={`absolute left-0 right-0 flex justify-between gap-3 px-3 pb-3 transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] will-change-transform ${
             isAiWorkbenchActive ? '-translate-y-[44px]' : 'translate-y-0'
@@ -377,6 +383,8 @@ const Edit: React.FC = () => {
                 <AiCopilotPanel
                   mode={aiWorkbench.mode}
                   status={aiWorkbench.status}
+                  localConnectionState={aiWorkbench.localConnectionState}
+                  localInterruptedStreamKind={aiWorkbench.localInterruptedStreamKind}
                   messages={aiWorkbench.messages}
                   conversationList={aiWorkbench.conversationList}
                   activeConversationId={aiWorkbench.activeConversationId}
@@ -415,6 +423,10 @@ const Edit: React.FC = () => {
                   onSend={aiWorkbench.sendInstruction}
                   onPolish={aiWorkbench.polishInstruction}
                   onCancel={aiWorkbench.cancelStream}
+                  onRecoverInterruptedRun={aiWorkbench.recoverInterruptedRun}
+                  onRefreshBackgroundRunStatus={aiWorkbench.refreshBackgroundRunStatus}
+                  onStopBackgroundRun={aiWorkbench.stopBackgroundRun}
+                  onDiscardInterruptedRun={aiWorkbench.discardDraft}
                 />
               }
             />
@@ -437,6 +449,8 @@ const Edit: React.FC = () => {
                   <AiInlineQuestionnairePreview
                     mode={aiWorkbench.mode}
                     status={aiWorkbench.status}
+                    localConnectionState={aiWorkbench.localConnectionState}
+                    localInterruptedStreamKind={aiWorkbench.localInterruptedStreamKind}
                     currentQuestionnaire={{
                       title: pageConfig.title,
                       description: pageConfig.description,

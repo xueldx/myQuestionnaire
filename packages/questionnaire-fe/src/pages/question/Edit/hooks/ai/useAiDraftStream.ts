@@ -4,6 +4,8 @@ import {
   AiChatMessage,
   AiCopilotIntent,
   AiCopilotStreamRequest,
+  AiLocalConnectionState,
+  AiLocalInterruptedStreamKind,
   AiProcessScenario,
   AiStreamStatus,
   DraftSummary,
@@ -13,6 +15,7 @@ import {
   cancelProcessMessage,
   finalizeProcessMessage,
   formatAssistantBubbleReply,
+  interruptProcessMessage,
   replaceLastAssistantMessage,
   replaceLastAssistantMessageWithSanitizedContent,
   restartProcessMessage,
@@ -40,6 +43,8 @@ type UseAiDraftStreamParams = {
   messages: AiChatMessage[]
   message: MessageApi
   controllerRef: { current: AbortController | null }
+  streamAbortReasonRef: { current: 'user' | 'offline' | null }
+  activeStreamKindRef: { current: AiLocalInterruptedStreamKind | null }
   activeConversationIdRef: { current: number | null }
   baseVersionRef: { current: number }
   finalDraftRef: { current: QuestionnaireDraft | null }
@@ -52,6 +57,10 @@ type UseAiDraftStreamParams = {
   setStatus: React.Dispatch<React.SetStateAction<AiStreamStatus>>
   setMessages: React.Dispatch<React.SetStateAction<AiChatMessage[]>>
   setErrorMessage: React.Dispatch<React.SetStateAction<string | null>>
+  setLocalConnectionState: React.Dispatch<React.SetStateAction<AiLocalConnectionState>>
+  setLocalInterruptedStreamKind: React.Dispatch<
+    React.SetStateAction<AiLocalInterruptedStreamKind | null>
+  >
   setDraftPartial: React.Dispatch<React.SetStateAction<QuestionnaireDraft | null>>
   setFinalDraft: React.Dispatch<React.SetStateAction<QuestionnaireDraft | null>>
   setSummary: React.Dispatch<React.SetStateAction<DraftSummary | null>>
@@ -96,6 +105,8 @@ export const useAiDraftStream = ({
   messages,
   message,
   controllerRef,
+  streamAbortReasonRef,
+  activeStreamKindRef,
   activeConversationIdRef,
   baseVersionRef,
   finalDraftRef,
@@ -108,6 +119,8 @@ export const useAiDraftStream = ({
   setStatus,
   setMessages,
   setErrorMessage,
+  setLocalConnectionState,
+  setLocalInterruptedStreamKind,
   setDraftPartial,
   setFinalDraft,
   setSummary,
@@ -136,7 +149,11 @@ export const useAiDraftStream = ({
       isRetry = false,
       startStatus,
       assistantPlaceholder,
-      appendUserMessage
+      appendUserMessage,
+      overrideQuestionnaire,
+      overrideModel,
+      overrideFocusedComponentId,
+      overrideBaseVersion
     }: DraftStreamOptions) => {
       if (!instruction.trim()) return
 
@@ -149,11 +166,72 @@ export const useAiDraftStream = ({
       if (!hasConversation) return
 
       const questionnaire =
-        requestIntent === 'generate'
+        overrideQuestionnaire ||
+        (requestIntent === 'generate'
           ? buildCommittedQuestionnaireSnapshot()
-          : buildQuestionnaireSnapshot()
+          : buildQuestionnaireSnapshot())
       const baseHistory = getConversationHistory(messages).filter(item => item.content.trim())
       const processScenario = resolveProcessScenario(requestIntent)
+      const activeStreamKind: AiLocalInterruptedStreamKind =
+        requestIntent === 'generate' ? 'generate_draft' : 'edit_draft'
+      const requestBaseVersion = overrideBaseVersion ?? version
+      const requestModel = overrideModel || selectedModel
+      const requestFocusedComponentId = overrideFocusedComponentId || focusedComponentId
+      const clearLocalConnectionState = () => {
+        setLocalConnectionState('idle')
+        setLocalInterruptedStreamKind(null)
+      }
+      const markInterruptedRun = (reason: 'offline' | 'network') => {
+        const interruptedHint =
+          reason === 'offline'
+            ? '网络已断开，浏览器已停止接收实时结果。若服务端仍在继续处理，请在联网后恢复状态。'
+            : '连接已断开，AI 可能仍在后台继续生成，请使用状态区按钮恢复。'
+        const interruptedSummary =
+          reason === 'offline' ? '连接已断开，等待恢复' : '连接已断开，后台可能继续生成'
+        flushBufferedUiUpdates(true)
+        controllerRef.current = null
+        activeStreamKindRef.current = null
+        streamAbortReasonRef.current = null
+        if (requestIntent === 'generate') {
+          dispatchGenerateFlow({ type: 'fail' })
+        }
+        setErrorMessage(null)
+        setWarningMessage(interruptedHint)
+        setStatus('background_running')
+        setMessages(previousMessages =>
+          interruptProcessMessage(
+            replaceLastAssistantMessage(
+              previousMessages,
+              formatAssistantBubbleReply(rawReplyTextRef.current, interruptedHint)
+            ),
+            processScenario,
+            interruptedSummary
+          )
+        )
+        if (reason === 'offline') {
+          setLocalConnectionState('offline_interrupted')
+          setLocalInterruptedStreamKind(activeStreamKind)
+        } else {
+          clearLocalConnectionState()
+        }
+        void refreshConversationList(activeConversationIdRef.current)
+        message.warning(
+          reason === 'offline'
+            ? '网络已断开，请联网后点击“恢复状态”查看后台任务进度'
+            : '连接已中断，请点击“恢复状态”查看后台任务进度'
+        )
+      }
+      const isLikelyNetworkDisconnect = (error: any) => {
+        const nextMessage = String(error?.message || '')
+        return (
+          error?.name === 'TypeError' ||
+          nextMessage.includes('Failed to fetch') ||
+          nextMessage.includes('NetworkError') ||
+          nextMessage.includes('Load failed') ||
+          nextMessage.includes('network') ||
+          nextMessage.includes('fetch')
+        )
+      }
       let attempt = 0
       let successOrHandled = false
 
@@ -161,11 +239,15 @@ export const useAiDraftStream = ({
         attempt++
         const shouldReuseAssistant = isRetry || attempt > 1 || !appendUserMessage
         const controller = new AbortController()
+        let receivedTerminalEvent = false
+        streamAbortReasonRef.current = null
+        activeStreamKindRef.current = activeStreamKind
         controllerRef.current = controller
-        baseVersionRef.current = version
+        baseVersionRef.current = requestBaseVersion
         baseQuestionnaireRef.current = questionnaire
         generateDraftBaseRef.current = requestIntent === 'generate' ? questionnaire : null
 
+        clearLocalConnectionState()
         resetBufferedUiUpdates()
         setStatus(startStatus)
         setErrorMessage(null)
@@ -205,10 +287,12 @@ export const useAiDraftStream = ({
               intent: requestIntent,
               questionnaireId: Number(questionnaireId) || 0,
               conversationId: activeConversationIdRef.current || undefined,
-              baseVersion: version,
-              model: selectedModel || undefined,
+              baseVersion: requestBaseVersion,
+              model: requestModel || undefined,
               instruction,
-              ...(requestIntent === 'edit' && focusedComponentId ? { focusedComponentId } : {}),
+              ...(requestIntent === 'edit' && requestFocusedComponentId
+                ? { focusedComponentId: requestFocusedComponentId }
+                : {}),
               originalInstruction,
               history: baseHistory,
               questionnaire,
@@ -330,6 +414,7 @@ export const useAiDraftStream = ({
                     setWarningMessage(event.data.message)
                     break
                   case 'done':
+                    receivedTerminalEvent = true
                     flushBufferedUiUpdates(true)
                     controllerRef.current = null
                     if (requestIntent === 'generate') {
@@ -341,6 +426,7 @@ export const useAiDraftStream = ({
                     )
                     break
                   case 'error':
+                    receivedTerminalEvent = true
                     flushBufferedUiUpdates(true)
                     controllerRef.current = null
 
@@ -382,15 +468,29 @@ export const useAiDraftStream = ({
               }
             }
           )
+
+          if (!receivedTerminalEvent && !controller.signal.aborted) {
+            markInterruptedRun('network')
+          }
         } catch (error: any) {
           if (controller.signal.aborted) {
-            flushBufferedUiUpdates(true)
-            if (requestIntent === 'generate') {
-              dispatchGenerateFlow({ type: 'cancel' })
+            if (streamAbortReasonRef.current === 'offline') {
+              markInterruptedRun('offline')
+            } else {
+              clearLocalConnectionState()
+              flushBufferedUiUpdates(true)
+              if (requestIntent === 'generate') {
+                dispatchGenerateFlow({ type: 'cancel' })
+              }
+              setMessages(previousMessages =>
+                cancelProcessMessage(previousMessages, processScenario)
+              )
+              setStatus('cancelled')
             }
-            setMessages(previousMessages => cancelProcessMessage(previousMessages, processScenario))
-            setStatus('cancelled')
+          } else if (!receivedTerminalEvent && isLikelyNetworkDisconnect(error)) {
+            markInterruptedRun('network')
           } else {
+            clearLocalConnectionState()
             flushBufferedUiUpdates(true)
             if (requestIntent === 'generate') {
               dispatchGenerateFlow({ type: 'fail' })
@@ -407,6 +507,10 @@ export const useAiDraftStream = ({
           if (controllerRef.current === controller) {
             controllerRef.current = null
           }
+          if (activeStreamKindRef.current === activeStreamKind) {
+            activeStreamKindRef.current = null
+          }
+          streamAbortReasonRef.current = null
           if (requestIntent === 'generate') {
             generateDraftBaseRef.current = null
           }
@@ -428,6 +532,8 @@ export const useAiDraftStream = ({
       buildQuestionnaireSnapshot,
       bufferedUiUpdatesRef,
       controllerRef,
+      streamAbortReasonRef,
+      activeStreamKindRef,
       applyGeneratePageConfig,
       dispatchGenerateFlow,
       draftAppliedRef,
@@ -451,6 +557,8 @@ export const useAiDraftStream = ({
       setDraftPartial,
       setErrorMessage,
       setFinalDraft,
+      setLocalConnectionState,
+      setLocalInterruptedStreamKind,
       setMessages,
       setRequestId,
       setStatus,

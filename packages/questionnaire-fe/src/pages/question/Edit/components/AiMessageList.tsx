@@ -63,6 +63,8 @@ const ProcessMessageCard = React.memo(({ message }: { message: AiChatMessage }) 
                   ? 'bg-[#26A69A]'
                   : step.status === 'error'
                   ? 'bg-[#EF4444]'
+                  : step.status === 'paused'
+                  ? 'bg-[#F59E0B]'
                   : step.status === 'running'
                   ? 'bg-[#F59E0B]'
                   : 'bg-[#FCD34D]'
@@ -80,6 +82,8 @@ const ProcessMessageCard = React.memo(({ message }: { message: AiChatMessage }) 
                       ? '已完成'
                       : step.status === 'error'
                       ? '处理异常'
+                      : step.status === 'paused'
+                      ? '已暂停'
                       : step.status === 'running'
                       ? '进行中'
                       : '待处理'}
