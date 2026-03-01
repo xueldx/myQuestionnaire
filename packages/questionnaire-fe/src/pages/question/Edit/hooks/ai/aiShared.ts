@@ -1,9 +1,11 @@
 import { getComponentDefaultProps } from '@/utils/getComponentDefaultProps'
 import { normalizeQuestionnaireComponentList } from '@/utils/normalizeQuestionComponent'
 import {
+  AiConversationDetail,
   AiChatMessage,
   AiCopilotIntent,
   AiStreamStatus,
+  DraftSummary,
   QuestionnaireDraft
 } from '../../components/aiCopilotTypes'
 
@@ -71,10 +73,38 @@ export const buildPersistedDraft = (
 export const getConversationHistory = (messages: AiChatMessage[]) =>
   messages.filter(message => message.role === 'user' || message.role === 'assistant')
 
+export const resolveComposerInputWithBuffer = (
+  composerInput: string,
+  bufferedUiUpdates: BufferedUiUpdates
+) => {
+  if (bufferedUiUpdates.promptDelta) {
+    return bufferedUiUpdates.replacePrompt
+      ? bufferedUiUpdates.promptDelta
+      : `${composerInput}${bufferedUiUpdates.promptDelta}`
+  }
+
+  return bufferedUiUpdates.preservedPrompt || composerInput
+}
+
 export type DraftApplyPayload = {
   questionnaire: QuestionnaireDraft
   version: number
   successMessage: string
+}
+
+export type PersistConversationDraftStateOptions = {
+  silent?: boolean
+  failureMessage?: string
+}
+
+export type PersistConversationDraftStatePayload = {
+  lastInstruction?: string | null
+  latestDraft?: QuestionnaireDraft | null
+  latestSummary?: DraftSummary | null
+  latestBaseQuestionnaire?: AiConversationDetail['latestBaseQuestionnaire']
+  latestBatches?: AiConversationDetail['latestBatches']
+  lastRuntimeStatus?: AiConversationDetail['lastRuntimeStatus']
+  lastWorkflowStage?: AiConversationDetail['lastWorkflowStage']
 }
 
 export type DraftStreamOptions = {

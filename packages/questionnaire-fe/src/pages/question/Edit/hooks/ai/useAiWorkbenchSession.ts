@@ -1,6 +1,10 @@
 import { useCallback } from 'react'
 import apis from '@/apis'
 import { AiCopilotIntent, AiStreamStatus } from '../../components/aiCopilotTypes'
+import {
+  PersistConversationDraftStateOptions,
+  PersistConversationDraftStatePayload
+} from './aiShared'
 
 const ACTIVE_STREAM_STATUSES: AiStreamStatus[] = [
   'connecting',
@@ -32,15 +36,10 @@ type UseAiWorkbenchSessionParams = {
   setActiveConversationId: (value: number | null) => void
   resetConversationRuntimeState: (nextMode: AiCopilotIntent) => void
   resetBufferedUiUpdates: () => void
-  persistConversationDraftState: (payload: {
-    lastInstruction?: string | null
-    latestDraft?: unknown | null
-    latestSummary?: unknown | null
-    latestBaseQuestionnaire?: unknown | null
-    latestBatches?: unknown[] | null
-    lastRuntimeStatus?: AiStreamStatus | null
-    lastWorkflowStage?: 'polish' | 'generate' | 'edit' | null
-  }) => Promise<void>
+  persistConversationDraftState: (
+    payload: PersistConversationDraftStatePayload,
+    options?: PersistConversationDraftStateOptions
+  ) => Promise<boolean>
   clearPendingDraftState: () => void
   dispatchGenerateFlow: (action: any) => void
   setModeState: (value: AiCopilotIntent) => void
@@ -232,20 +231,26 @@ export const useAiWorkbenchSession = ({
     clearPendingDraftState()
 
     const nextPrompt = composerInput.trim()
-    void persistConversationDraftState({
-      lastInstruction: nextPrompt || null,
-      latestDraft: null,
-      latestSummary: null,
-      latestBaseQuestionnaire: null,
-      latestBatches: null,
-      lastRuntimeStatus:
-        mode === 'generate' && nextPrompt
-          ? 'awaiting_confirmation'
-          : messagesLength > 0
-          ? 'done'
-          : 'idle',
-      lastWorkflowStage: mode === 'generate' && nextPrompt ? 'polish' : mode
-    })
+    void persistConversationDraftState(
+      {
+        lastInstruction: nextPrompt || null,
+        latestDraft: null,
+        latestSummary: null,
+        latestBaseQuestionnaire: null,
+        latestBatches: null,
+        lastRuntimeStatus:
+          mode === 'generate' && nextPrompt
+            ? 'awaiting_confirmation'
+            : messagesLength > 0
+            ? 'done'
+            : 'idle',
+        lastWorkflowStage: mode === 'generate' && nextPrompt ? 'polish' : mode
+      },
+      {
+        silent: false,
+        failureMessage: '同步已放弃的 AI 结果状态失败，请刷新后确认。'
+      }
+    )
 
     if (mode === 'generate' && nextPrompt) {
       dispatchGenerateFlow({

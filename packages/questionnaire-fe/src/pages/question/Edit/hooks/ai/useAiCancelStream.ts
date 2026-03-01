@@ -7,7 +7,12 @@ import {
   DraftSummary,
   QuestionnaireDraft
 } from '../../components/aiCopilotTypes'
-import { BufferedUiUpdates } from './aiShared'
+import {
+  BufferedUiUpdates,
+  PersistConversationDraftStateOptions,
+  PersistConversationDraftStatePayload,
+  resolveComposerInputWithBuffer
+} from './aiShared'
 
 type UseAiCancelStreamParams = {
   mode: AiCopilotIntent
@@ -31,14 +36,10 @@ type UseAiCancelStreamParams = {
   setComposerInputState: (value: string) => void
   setDraftPartial: (value: QuestionnaireDraft | null) => void
   setFinalDraft: (value: QuestionnaireDraft | null) => void
-  persistConversationDraftState: (payload: {
-    lastInstruction?: string | null
-    latestDraft?: QuestionnaireDraft | null
-    latestSummary?: DraftSummary | null
-    latestBaseQuestionnaire?: QuestionnaireDraft | null
-    lastRuntimeStatus?: string | null
-    lastWorkflowStage?: 'polish' | 'generate' | 'edit' | null
-  }) => Promise<void>
+  persistConversationDraftState: (
+    payload: PersistConversationDraftStatePayload,
+    options?: PersistConversationDraftStateOptions
+  ) => Promise<boolean>
   refreshConversationList: (preferredConversationId?: number | null) => Promise<any[]>
   cancelLocalStream: (showMessage?: boolean) => void
 }
@@ -78,11 +79,10 @@ export const useAiCancelStream = ({
           : status === 'polishing' || status === 'awaiting_confirmation'
           ? 'polish'
           : 'generate'
-      const nextComposerInput = pendingBufferedUpdates.promptDelta
-        ? pendingBufferedUpdates.replacePrompt
-          ? pendingBufferedUpdates.promptDelta
-          : `${composerInput}${pendingBufferedUpdates.promptDelta}`
-        : pendingBufferedUpdates.preservedPrompt || composerInput
+      const nextComposerInput = resolveComposerInputWithBuffer(
+        composerInput,
+        pendingBufferedUpdates
+      )
       const preservedDraft =
         finalDraft || pendingBufferedUpdates.partialDraft || draftPartial || null
 
@@ -109,14 +109,20 @@ export const useAiCancelStream = ({
             conversationId: activeConversationId || undefined
           })
           .finally(() => {
-            void persistConversationDraftState({
-              lastInstruction: nextComposerInput.trim() || null,
-              latestDraft: preservedDraft,
-              latestSummary: finalDraft ? summary : null,
-              latestBaseQuestionnaire: baseQuestionnaireRef.current,
-              lastRuntimeStatus: 'cancelled',
-              lastWorkflowStage: persistedWorkflowStage
-            })
+            void persistConversationDraftState(
+              {
+                lastInstruction: nextComposerInput.trim() || null,
+                latestDraft: preservedDraft,
+                latestSummary: finalDraft ? summary : null,
+                latestBaseQuestionnaire: baseQuestionnaireRef.current,
+                lastRuntimeStatus: 'cancelled',
+                lastWorkflowStage: persistedWorkflowStage
+              },
+              {
+                silent: false,
+                failureMessage: '同步已停止的 AI 会话状态失败，请刷新后确认。'
+              }
+            )
             if (activeConversationId) {
               void refreshConversationList(activeConversationId)
             }

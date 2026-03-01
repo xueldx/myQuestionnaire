@@ -25,7 +25,9 @@ import {
   BufferedUiUpdates,
   DraftStreamOptions,
   getConversationHistory,
-  normalizeDraft
+  normalizeDraft,
+  PersistConversationDraftStatePayload,
+  PersistConversationDraftStateOptions
 } from './aiShared'
 import { resolveProcessScenario } from '../aiProcessHelpers'
 
@@ -78,14 +80,10 @@ type UseAiDraftStreamParams = {
   scheduleBufferedUiFlush: () => void
   flushBufferedUiUpdates: (immediate?: boolean) => void
   resetBufferedUiUpdates: () => void
-  persistConversationDraftState: (payload: {
-    lastInstruction?: string | null
-    latestDraft?: QuestionnaireDraft | null
-    latestSummary?: DraftSummary | null
-    latestBaseQuestionnaire?: QuestionnaireDraft | null
-    lastRuntimeStatus?: string | null
-    lastWorkflowStage?: 'polish' | 'generate' | 'edit' | null
-  }) => Promise<void>
+  persistConversationDraftState: (
+    payload: PersistConversationDraftStatePayload,
+    options?: PersistConversationDraftStateOptions
+  ) => Promise<boolean>
   syncRuntimeStatus: (
     nextStatus: Extract<
       AiStreamStatus,

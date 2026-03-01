@@ -4,9 +4,12 @@ import {
   AiConversationDetail,
   AiConversationSummary,
   AiCopilotIntent,
-  DraftSummary,
   QuestionnaireDraft
 } from '../../components/aiCopilotTypes'
+import {
+  PersistConversationDraftStateOptions,
+  PersistConversationDraftStatePayload
+} from './aiShared'
 
 type MessageApi = {
   warning: (content: string) => void
@@ -25,6 +28,7 @@ type ModalApi = {
 
 type UseAiConversationListParams = {
   questionnaireId: string
+  initialPreferredConversationId?: number | null
   message: MessageApi
   modal: ModalApi
   controllerRef: { current: AbortController | null }
@@ -35,8 +39,37 @@ type UseAiConversationListParams = {
   resetConversationState: () => void
 }
 
+type ResolveConversationHydrationTargetIdParams = {
+  preferredConversationId?: number | null
+  activeConversationId?: number | null
+  conversationList: AiConversationSummary[]
+}
+
+export const resolveConversationHydrationTargetId = ({
+  preferredConversationId,
+  activeConversationId,
+  conversationList
+}: ResolveConversationHydrationTargetIdParams) => {
+  const hasPreferredConversation =
+    typeof preferredConversationId === 'number' &&
+    conversationList.some(item => item.id === preferredConversationId)
+  if (hasPreferredConversation) {
+    return preferredConversationId || null
+  }
+
+  const hasActiveConversation =
+    typeof activeConversationId === 'number' &&
+    conversationList.some(item => item.id === activeConversationId)
+  if (hasActiveConversation) {
+    return activeConversationId || null
+  }
+
+  return conversationList[0]?.id ?? null
+}
+
 export const useAiConversationList = ({
   questionnaireId,
+  initialPreferredConversationId,
   message,
   modal,
   controllerRef,
@@ -53,10 +86,25 @@ export const useAiConversationList = ({
   const activeConversationIdRef = useRef<number | null>(null)
   const createConversationPromiseRef = useRef<Promise<AiConversationDetail | null> | null>(null)
   const refreshConversationListPromiseRef = useRef<Promise<AiConversationSummary[]> | null>(null)
+  const initialPreferredConversationIdRef = useRef<number | null>(
+    initialPreferredConversationId || null
+  )
+  const hasConsumedInitialPreferenceRef = useRef(false)
 
   useEffect(() => {
     activeConversationIdRef.current = activeConversationId
   }, [activeConversationId])
+
+  useEffect(() => {
+    setConversationList([])
+    setActiveConversationId(null)
+    activeConversationIdRef.current = null
+  }, [questionnaireId])
+
+  useEffect(() => {
+    initialPreferredConversationIdRef.current = initialPreferredConversationId || null
+    hasConsumedInitialPreferenceRef.current = false
+  }, [initialPreferredConversationId, questionnaireId])
 
   const loadConversationDetail = useCallback(
     async (conversationId: number) => {
@@ -104,8 +152,24 @@ export const useAiConversationList = ({
           const nextList = response.code === 1 && Array.isArray(response.data) ? response.data : []
           setConversationList(nextList)
 
-          const targetConversationId =
-            preferredConversationId ?? activeConversationIdRef.current ?? nextList[0]?.id ?? null
+          const defaultPreferredConversationId =
+            !hasConsumedInitialPreferenceRef.current && activeConversationIdRef.current === null
+              ? initialPreferredConversationIdRef.current
+              : null
+          const targetConversationId = resolveConversationHydrationTargetId({
+            preferredConversationId: preferredConversationId ?? defaultPreferredConversationId,
+            activeConversationId: activeConversationIdRef.current,
+            conversationList: nextList
+          })
+
+          hasConsumedInitialPreferenceRef.current = true
+          initialPreferredConversationIdRef.current = targetConversationId
+
+          if (!targetConversationId) {
+            activeConversationIdRef.current = null
+            setActiveConversationId(null)
+            return nextList
+          }
 
           if (
             options?.hydrateDetail &&
@@ -309,28 +373,30 @@ export const useAiConversationList = ({
   )
 
   const persistConversationDraftState = useCallback(
-    async (payload: {
-      lastInstruction?: string | null
-      latestDraft?: QuestionnaireDraft | null
-      latestSummary?: unknown | null
-      latestBaseQuestionnaire?: AiConversationDetail['latestBaseQuestionnaire']
-      latestBatches?: AiConversationDetail['latestBatches']
-      lastRuntimeStatus?: AiConversationDetail['lastRuntimeStatus']
-      lastWorkflowStage?: AiConversationDetail['lastWorkflowStage']
-    }) => {
+    async (
+      payload: PersistConversationDraftStatePayload,
+      options?: PersistConversationDraftStateOptions
+    ) => {
       const conversationId = activeConversationIdRef.current
-      if (!conversationId) return
+      if (!conversationId) return false
+      const nextOptions = options || {}
+      const failureMessage = nextOptions.failureMessage || '同步 AI 会话状态失败，请刷新后重试'
 
       try {
         await apis.aiApi.updateConversation(conversationId, {
           ...payload,
-          latestSummary: (payload.latestSummary as DraftSummary | null | undefined) ?? null
+          latestSummary: payload.latestSummary ?? null
         })
+        return true
       } catch (error) {
         console.warn('同步 AI 会话草稿状态失败:', error)
+        if (!nextOptions.silent) {
+          message.error(failureMessage)
+        }
+        return false
       }
     },
-    []
+    [message]
   )
 
   useEffect(() => {

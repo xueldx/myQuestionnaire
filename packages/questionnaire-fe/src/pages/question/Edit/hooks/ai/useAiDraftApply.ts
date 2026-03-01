@@ -4,11 +4,14 @@ import { resetPageConfig } from '@/store/modules/pageConfigSlice'
 import { normalizeQuestionnaireComponentList } from '@/utils/normalizeQuestionComponent'
 import {
   AiCopilotIntent,
-  DraftSummary,
   QuestionnaireDraft,
   QuestionnairePatchSet
 } from '../../components/aiCopilotTypes'
-import { DraftApplyPayload } from './aiShared'
+import {
+  DraftApplyPayload,
+  PersistConversationDraftStateOptions,
+  PersistConversationDraftStatePayload
+} from './aiShared'
 import { applyQuestionnairePatchSet, isPatchAppliedToQuestionnaire } from '../aiQuestionPatch'
 
 type MessageApi = {
@@ -45,15 +48,10 @@ type UseAiDraftApplyParams = {
   message: MessageApi
   modal: ModalApi
   clearDraftAfterApply: () => void
-  persistConversationDraftState: (payload: {
-    lastInstruction?: string | null
-    latestDraft?: QuestionnaireDraft | null
-    latestSummary?: DraftSummary | null
-    latestBaseQuestionnaire?: QuestionnaireDraft | null
-    latestBatches?: unknown[] | null
-    lastRuntimeStatus?: string | null
-    lastWorkflowStage?: 'polish' | 'generate' | 'edit' | null
-  }) => Promise<void>
+  persistConversationDraftState: (
+    payload: PersistConversationDraftStatePayload,
+    options?: PersistConversationDraftStateOptions
+  ) => Promise<boolean>
   onDraftApplied?: (payload: DraftApplyPayload) => Promise<void> | void
   setDraftApplied: (value: boolean) => void
 }
@@ -169,15 +167,21 @@ export const useAiDraftApply = ({
       setDraftApplied(allPatchChangesApplied)
 
       if (allPatchChangesApplied) {
-        void persistConversationDraftState({
-          lastInstruction: null,
-          latestDraft: null,
-          latestSummary: null,
-          latestBaseQuestionnaire: null,
-          latestBatches: null,
-          lastRuntimeStatus: 'done',
-          lastWorkflowStage: mode
-        })
+        void persistConversationDraftState(
+          {
+            lastInstruction: null,
+            latestDraft: null,
+            latestSummary: null,
+            latestBaseQuestionnaire: null,
+            latestBatches: null,
+            lastRuntimeStatus: 'done',
+            lastWorkflowStage: mode
+          },
+          {
+            silent: false,
+            failureMessage: '同步 AI 会话完成状态失败，请刷新后确认。'
+          }
+        )
       }
 
       const successMessage =
@@ -279,15 +283,21 @@ export const useAiDraftApply = ({
 
       setDraftApplied(true)
       clearDraftAfterApply()
-      void persistConversationDraftState({
-        lastInstruction: null,
-        latestDraft: null,
-        latestSummary: null,
-        latestBaseQuestionnaire: null,
-        latestBatches: null,
-        lastRuntimeStatus: 'done',
-        lastWorkflowStage: 'generate'
-      })
+      void persistConversationDraftState(
+        {
+          lastInstruction: null,
+          latestDraft: null,
+          latestSummary: null,
+          latestBaseQuestionnaire: null,
+          latestBatches: null,
+          lastRuntimeStatus: 'done',
+          lastWorkflowStage: 'generate'
+        },
+        {
+          silent: false,
+          failureMessage: '同步已应用的 AI 草稿状态失败，请刷新后确认。'
+        }
+      )
 
       if (onDraftApplied) {
         await onDraftApplied({
@@ -351,15 +361,21 @@ export const useAiDraftApply = ({
 
       setDraftApplied(true)
       clearDraftAfterApply()
-      void persistConversationDraftState({
-        lastInstruction: null,
-        latestDraft: null,
-        latestSummary: null,
-        latestBaseQuestionnaire: null,
-        latestBatches: null,
-        lastRuntimeStatus: 'done',
-        lastWorkflowStage: 'edit'
-      })
+      void persistConversationDraftState(
+        {
+          lastInstruction: null,
+          latestDraft: null,
+          latestSummary: null,
+          latestBaseQuestionnaire: null,
+          latestBatches: null,
+          lastRuntimeStatus: 'done',
+          lastWorkflowStage: 'edit'
+        },
+        {
+          silent: false,
+          failureMessage: '同步已应用的 AI 草稿状态失败，请刷新后确认。'
+        }
+      )
 
       if (onDraftApplied) {
         await onDraftApplied({

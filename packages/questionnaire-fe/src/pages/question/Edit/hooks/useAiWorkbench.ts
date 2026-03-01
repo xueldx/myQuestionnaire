@@ -1,5 +1,13 @@
 import { App } from 'antd'
-import { startTransition, useCallback, useEffect, useReducer, useRef, useState } from 'react'
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState
+} from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import apis from '@/apis'
 import { RootState } from '@/store'
@@ -30,11 +38,19 @@ import { useAiConversationList } from '@/pages/question/Edit/hooks/ai/useAiConve
 import { useAiDraftStream } from '@/pages/question/Edit/hooks/ai/useAiDraftStream'
 import { useAiInterruptedRunRecovery } from '@/pages/question/Edit/hooks/ai/useAiInterruptedRunRecovery'
 import { useAiPromptPolishStream } from '@/pages/question/Edit/hooks/ai/useAiPromptPolishStream'
+import {
+  AiWorkbenchSelectedModelSource,
+  resolveHydratedConversationDetail,
+  resolvePreferredAiModel,
+  useAiWorkbenchPersistence
+} from '@/pages/question/Edit/hooks/ai/useAiWorkbenchPersistence'
+import { useAiWorkbenchLeaveGuard } from '@/pages/question/Edit/hooks/ai/useAiWorkbenchLeaveGuard'
 import { useAiWorkbenchStateReset } from '@/pages/question/Edit/hooks/ai/useAiWorkbenchStateReset'
 import { useAiInstructionActions } from '@/pages/question/Edit/hooks/ai/useAiInstructionActions'
 import { useAiPatchReview } from '@/pages/question/Edit/hooks/ai/useAiPatchReview'
 import { useAiWorkbenchSession } from '@/pages/question/Edit/hooks/ai/useAiWorkbenchSession'
 import { useAiWorkbenchRuntime } from '@/pages/question/Edit/hooks/ai/useAiWorkbenchRuntime'
+import { readAiWorkbenchSessionSnapshot } from '@/pages/question/Edit/hooks/ai/aiWorkbenchSessionStorage'
 
 const useAiWorkbench = (
   questionnaireId: string,
@@ -49,13 +65,24 @@ const useAiWorkbench = (
   const selectedId = useSelector((state: RootState) => state.components.selectedId)
   const version = useSelector((state: RootState) => state.components.version)
   const pageConfig = useSelector((state: RootState) => state.pageConfig)
+  const restoredSessionSnapshot = useMemo(
+    () => readAiWorkbenchSessionSnapshot(questionnaireId),
+    [questionnaireId]
+  )
 
-  const [mode, setModeState] = useState<AiCopilotIntent>('generate')
+  const [mode, setModeState] = useState<AiCopilotIntent>(
+    restoredSessionSnapshot?.mode || 'generate'
+  )
   const [status, setStatus] = useState<AiStreamStatus>('idle')
   const [messages, setMessages] = useState<AiChatMessage[]>([])
   const [modelList, setModelList] = useState<AiModelOption[]>([])
-  const [selectedModel, setSelectedModel] = useState('')
-  const [composerInput, setComposerInputState] = useState('')
+  const [selectedModel, setSelectedModelState] = useState(
+    restoredSessionSnapshot?.selectedModel || ''
+  )
+  const [conversationPreferredModel, setConversationPreferredModel] = useState('')
+  const [composerInput, setComposerInputState] = useState(
+    restoredSessionSnapshot?.composerInput || ''
+  )
   const [draftPartial, setDraftPartial] = useState<QuestionnaireDraft | null>(null)
   const [finalDraft, setFinalDraft] = useState<QuestionnaireDraft | null>(null)
   const [summary, setSummary] = useState<DraftSummary | null>(null)
@@ -81,6 +108,9 @@ const useAiWorkbench = (
   const controllerRef = useRef<AbortController | null>(null)
   const streamAbortReasonRef = useRef<'user' | 'offline' | null>(null)
   const activeStreamKindRef = useRef<AiLocalInterruptedStreamKind | null>(null)
+  const selectedModelSourceRef = useRef<AiWorkbenchSelectedModelSource>(
+    restoredSessionSnapshot?.selectedModel ? 'restored' : 'default'
+  )
   const baseVersionRef = useRef(version)
   const modeRef = useRef<AiCopilotIntent>(mode)
   const rawReplyTextRef = useRef('')
@@ -88,12 +118,22 @@ const useAiWorkbench = (
   const draftAppliedRef = useRef(false)
   const baseQuestionnaireRef = useRef<QuestionnaireDraft | null>(null)
   const generateFlowRef = useRef<AiGenerateFlowState>(generateFlow)
+  const hasPolishInterruptedMarkerRef = useRef(false)
+  const previousQuestionnaireIdRef = useRef(questionnaireId)
   const hydrateConversationDetailHandlerRef = useRef<(detail: AiConversationDetail) => void>(
     detail => void detail
   )
   const resetConversationStateHandlerRef = useRef<() => void>(() => undefined)
   const rafFlushIdRef = useRef<number | null>(null)
   const generateDraftBaseRef = useRef<QuestionnaireDraft | null>(null)
+  const pendingRestoredConversationInputRef = useRef(
+    restoredSessionSnapshot?.activeConversationId && restoredSessionSnapshot.composerInput.trim()
+      ? {
+          conversationId: restoredSessionSnapshot.activeConversationId,
+          composerInput: restoredSessionSnapshot.composerInput
+        }
+      : null
+  )
   const bufferedUiUpdatesRef = useRef<BufferedUiUpdates>({
     promptDelta: '',
     replacePrompt: false,
@@ -125,6 +165,34 @@ const useAiWorkbench = (
   useEffect(() => {
     modeRef.current = mode
   }, [mode])
+
+  useEffect(() => {
+    selectedModelSourceRef.current = restoredSessionSnapshot?.selectedModel ? 'restored' : 'default'
+  }, [restoredSessionSnapshot?.selectedModel, questionnaireId])
+
+  useEffect(() => {
+    pendingRestoredConversationInputRef.current =
+      restoredSessionSnapshot?.activeConversationId && restoredSessionSnapshot.composerInput.trim()
+        ? {
+            conversationId: restoredSessionSnapshot.activeConversationId,
+            composerInput: restoredSessionSnapshot.composerInput
+          }
+        : null
+    setConversationPreferredModel('')
+  }, [questionnaireId, restoredSessionSnapshot])
+
+  const setSelectedModel = useCallback((nextModel: string) => {
+    selectedModelSourceRef.current = 'user'
+    setSelectedModelState(nextModel)
+  }, [])
+
+  const setSelectedModelFromSystem = useCallback(
+    (nextModel: string, source: Exclude<AiWorkbenchSelectedModelSource, 'user'>) => {
+      selectedModelSourceRef.current = source
+      setSelectedModelState(nextModel)
+    },
+    []
+  )
 
   const flushBufferedUiUpdates = useCallback((immediate = false) => {
     if (rafFlushIdRef.current !== null) {
@@ -207,12 +275,36 @@ const useAiWorkbench = (
     apis.aiApi.getModelList().then((response: any) => {
       if (response.code === 1 && Array.isArray(response.data)) {
         setModelList(response.data)
-        if (!selectedModel && response.data.length > 0) {
-          setSelectedModel(response.data[0].value)
-        }
       }
     })
   }, [])
+
+  useEffect(() => {
+    if (modelList.length === 0) return
+
+    const nextSelectedModel = resolvePreferredAiModel({
+      availableModels: modelList,
+      currentModel: selectedModel,
+      restoredModel: restoredSessionSnapshot?.selectedModel || '',
+      conversationModel: conversationPreferredModel,
+      source: selectedModelSourceRef.current
+    })
+
+    if (!nextSelectedModel.model) return
+
+    if (nextSelectedModel.model === selectedModel || nextSelectedModel.source === 'user') {
+      selectedModelSourceRef.current = nextSelectedModel.source
+      return
+    }
+
+    setSelectedModelFromSystem(nextSelectedModel.model, nextSelectedModel.source)
+  }, [
+    conversationPreferredModel,
+    modelList,
+    restoredSessionSnapshot?.selectedModel,
+    selectedModel,
+    setSelectedModelFromSystem
+  ])
 
   const {
     buildDraftFallback,
@@ -278,10 +370,32 @@ const useAiWorkbench = (
 
   const handleConversationDetailProxy = useCallback(
     (detail: AiConversationDetail) => {
+      const compatibleDetail = getCompatibleConversationDetail(detail)
+      const pendingRestoredConversationInput = pendingRestoredConversationInputRef.current
+      const shouldPreferRestoredComposerInput =
+        pendingRestoredConversationInput?.conversationId === compatibleDetail.id &&
+        pendingRestoredConversationInput.composerInput.trim()
+      const nextDetail = resolveHydratedConversationDetail({
+        detail: compatibleDetail,
+        restoredSessionSnapshot,
+        hasPolishInterruptedMarker: hasPolishInterruptedMarkerRef.current
+      })
+
       resetLocalConnectionState()
-      hydrateConversationDetailHandlerRef.current(getCompatibleConversationDetail(detail))
+      setConversationPreferredModel(compatibleDetail.lastModel || '')
+      hydrateConversationDetailHandlerRef.current(nextDetail)
+
+      if (shouldPreferRestoredComposerInput) {
+        pendingRestoredConversationInputRef.current = null
+      }
+
+      if (hasPolishInterruptedMarkerRef.current && nextDetail.lastWorkflowStage === 'polish') {
+        setWarningMessage(
+          currentWarningMessage => currentWarningMessage || '上次润色已中止，请重新发起。'
+        )
+      }
     },
-    [getCompatibleConversationDetail, resetLocalConnectionState]
+    [getCompatibleConversationDetail, resetLocalConnectionState, restoredSessionSnapshot]
   )
 
   const handleConversationResetProxy = useCallback(() => {
@@ -306,6 +420,7 @@ const useAiWorkbench = (
     persistConversationDraftState
   } = useAiConversationList({
     questionnaireId,
+    initialPreferredConversationId: restoredSessionSnapshot?.activeConversationId || null,
     message,
     modal,
     controllerRef,
@@ -314,6 +429,14 @@ const useAiWorkbench = (
     draftAppliedRef,
     hydrateConversationDetail: handleConversationDetailProxy,
     resetConversationState: handleConversationResetProxy
+  })
+
+  const { hasPolishInterruptedMarker, persistSessionSnapshot } = useAiWorkbenchPersistence({
+    questionnaireId,
+    activeConversationId,
+    mode,
+    composerInput,
+    selectedModel
   })
 
   const { clearDraftAfterApply, clearPendingDraftState, resetConversationRuntimeState } =
@@ -347,6 +470,44 @@ const useAiWorkbench = (
     hydrateConversationDetailHandlerRef.current = hydrateConversationDetail
     resetConversationStateHandlerRef.current = () => resetConversationRuntimeState(modeRef.current)
   }, [hydrateConversationDetail, resetConversationRuntimeState])
+
+  useEffect(() => {
+    hasPolishInterruptedMarkerRef.current = hasPolishInterruptedMarker
+  }, [hasPolishInterruptedMarker])
+
+  useEffect(() => {
+    if (previousQuestionnaireIdRef.current === questionnaireId) return
+
+    previousQuestionnaireIdRef.current = questionnaireId
+
+    const nextMode = restoredSessionSnapshot?.mode || 'generate'
+    resetConversationRuntimeState(nextMode)
+    setComposerInputState(restoredSessionSnapshot?.composerInput || '')
+    setSelectedModelState(restoredSessionSnapshot?.selectedModel || '')
+    setConversationPreferredModel('')
+  }, [questionnaireId, resetConversationRuntimeState, restoredSessionSnapshot])
+
+  useEffect(() => {
+    if (!hasPolishInterruptedMarker) return
+    if (conversationListLoading) return
+    if (conversationList.length > 0 || activeConversationId) return
+
+    setWarningMessage(
+      currentWarningMessage => currentWarningMessage || '上次润色已中止，请重新发起。'
+    )
+  }, [
+    activeConversationId,
+    conversationList.length,
+    conversationListLoading,
+    hasPolishInterruptedMarker
+  ])
+
+  useEffect(() => {
+    if (conversationListLoading) return
+    if (conversationList.length > 0 || activeConversationId) return
+
+    setConversationPreferredModel('')
+  }, [activeConversationId, conversationList.length, conversationListLoading])
 
   const cancelStream = useAiCancelStream({
     mode,
@@ -586,7 +747,7 @@ const useAiWorkbench = (
       setIsBrowserOffline,
       setLocalConnectionState,
       resetLocalConnectionState,
-      setSelectedModel,
+      setSelectedModel: nextModel => setSelectedModelFromSystem(nextModel, 'conversation'),
       setComposerInputState,
       loadConversationDetail,
       refreshConversationList,
@@ -635,15 +796,21 @@ const useAiWorkbench = (
       return
     }
 
-    void persistConversationDraftState({
-      lastInstruction: null,
-      latestDraft: null,
-      latestSummary: null,
-      latestBaseQuestionnaire: null,
-      latestBatches: null,
-      lastRuntimeStatus: 'done',
-      lastWorkflowStage: mode
-    })
+    void persistConversationDraftState(
+      {
+        lastInstruction: null,
+        latestDraft: null,
+        latestSummary: null,
+        latestBaseQuestionnaire: null,
+        latestBatches: null,
+        lastRuntimeStatus: 'done',
+        lastWorkflowStage: mode
+      },
+      {
+        silent: false,
+        failureMessage: '同步 AI 会话完成状态失败，请刷新后确认。'
+      }
+    )
   }, [
     hasUnhandledReviewablePatchChanges,
     mode,
@@ -651,6 +818,20 @@ const useAiWorkbench = (
     persistConversationDraftState,
     questionPatchSet
   ])
+
+  useAiWorkbenchLeaveGuard({
+    questionnaireId,
+    activeConversationId,
+    mode,
+    composerInput,
+    selectedModel,
+    status,
+    hasPendingAiResult,
+    activeStreamKindRef,
+    bufferedUiUpdatesRef,
+    flushBufferedUiUpdates,
+    persistSessionSnapshot
+  })
 
   const guardedSetMode = useCallback(
     (nextMode: AiCopilotIntent) => {
