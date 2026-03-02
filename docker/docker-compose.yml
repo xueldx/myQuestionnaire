@@ -42,6 +42,9 @@ services:
       - MODELSCOPE_QWEN3_MODEL=${MODELSCOPE_QWEN3_MODEL:-your_model_id_here}
       - MODELSCOPE_QWEN3_API_KEY=${MODELSCOPE_QWEN3_API_KEY:-your_modelscope_qwen3_api_key}
       - MODELSCOPE_QWEN3_BASE_URL=${MODELSCOPE_QWEN3_BASE_URL:-https://api-inference.modelscope.cn/v1}
+      - MODELSCOPE_QWEN3_PLUS_MODEL=${MODELSCOPE_QWEN3_PLUS_MODEL:-Qwen/Qwen3-Coder-480B-A35B-Instruct:DashScope}
+      - MODELSCOPE_QWEN3_PLUS_API_KEY=${MODELSCOPE_QWEN3_PLUS_API_KEY:-your_modelscope_qwen3_plus_api_key}
+      - MODELSCOPE_QWEN3_PLUS_BASE_URL=${MODELSCOPE_QWEN3_PLUS_BASE_URL:-https://api-inference.modelscope.cn/v1}
       - MODELSCOPE_GLM5_MODEL=${MODELSCOPE_GLM5_MODEL:-your_model_id_here}
       - MODELSCOPE_GLM5_API_KEY=${MODELSCOPE_GLM5_API_KEY:-your_modelscope_glm5_api_key}
       - MODELSCOPE_GLM5_BASE_URL=${MODELSCOPE_GLM5_BASE_URL:-https://api-inference.modelscope.cn/v1}

@@ -65,6 +65,7 @@ import {
 
 enum Model {
   ModelScopeQwen3 = 'modelscope-qwen3-235b',
+  ModelScopeQwen3Plus = 'modelscope-qwen3-plus',
   MinimaxM2_5 = 'minimax-m2.5',
   ModelScopeGLM5 = 'modelscope-glm-5',
   ModelScopeKimik2 = 'modelscope-kimi-k2.5',
@@ -87,6 +88,12 @@ const MODEL_INFO_MAP: Record<Model, ModelInfo> = {
     value: Model.ModelScopeQwen3,
     label: 'Qwen3',
     description: '魔搭社区 API Inference 接入的 Qwen3 235B 模型',
+  },
+  [Model.ModelScopeQwen3Plus]: {
+    value: Model.ModelScopeQwen3Plus,
+    label: 'Qwen3-Plus',
+    description:
+      '魔搭社区 API Inference 接入的 Qwen3-Coder-480B-A35B-Instruct:DashScope 模型',
   },
   [Model.MinimaxM2_5]: {
     value: Model.MinimaxM2_5,

@@ -98,6 +98,14 @@ describe('AiService', () => {
     const models = service.getAvailableModels();
     expect(Array.isArray(models)).toBe(true);
     expect(models.length).toBeGreaterThan(0);
+    expect(models).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          value: 'modelscope-qwen3-plus',
+          label: 'Qwen3-Plus',
+        }),
+      ]),
+    );
   });
 
   it('should not collect answer stats for generic edit requests', () => {
