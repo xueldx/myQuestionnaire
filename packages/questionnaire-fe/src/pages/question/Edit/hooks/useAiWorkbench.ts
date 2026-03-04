@@ -544,6 +544,7 @@ const useAiWorkbench = (
   } = useAiWorkbenchSession({
     mode,
     status,
+    requestId,
     composerInput,
     messagesLength: messages.length,
     hasQuestionnaireContent,
@@ -580,6 +581,7 @@ const useAiWorkbench = (
   const { applyDraft: applyDraftInternal, applyPatchSelection } = useAiDraftApply({
     mode,
     status,
+    requestId,
     version,
     selectedId,
     componentList,

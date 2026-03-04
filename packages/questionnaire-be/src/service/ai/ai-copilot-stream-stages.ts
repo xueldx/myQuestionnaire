@@ -14,8 +14,6 @@ import {
 } from '@/service/ai/utils/question-reference';
 import { validateDraft } from '@/service/ai/utils/draft-validator';
 import { buildDiffSummary } from '@/service/ai/utils/build-diff-summary';
-import { buildPromptPolishPrompt } from '@/service/ai/ai-prompt/build-prompt-polish-prompt';
-import { buildCopilotPrompt } from '@/service/ai/ai-prompt/build-copilot-prompt';
 import { SanitizedCopilotDto } from '@/service/ai/ai-copilot-sanitize';
 import {
   getWorkflowStage,
@@ -33,6 +31,12 @@ const isQuestionComponentChanged = (
     prev.type !== next.type ||
     JSON.stringify(prev.props || {}) !== JSON.stringify(next.props || {})
   );
+};
+
+const extractProviderUsage = (chunk: any) => {
+  const usage = chunk?.usage;
+  if (!usage || typeof usage !== 'object') return null;
+  return usage as Record<string, any>;
 };
 
 export const emitCopilotPhase = (
@@ -77,17 +81,20 @@ const emitAssistantReplyChunks = async (
 };
 
 export const streamPromptRefine = async (
-  dto: SanitizedCopilotDto,
+  prompt: string,
   client: OpenAI,
   modelConfig: ModelRuntimeConfig,
   abortController: AbortController,
   sink: CopilotEventSink,
-  toolContextText: string,
   shouldStop: () => boolean,
   shouldEmitChunks?: () => boolean,
-): Promise<{ refinedPrompt: string; reply: string } | null> => {
-  const prompt = buildPromptPolishPrompt(dto, toolContextText);
+): Promise<{
+  refinedPrompt: string;
+  reply: string;
+  providerUsage: Record<string, any> | null;
+} | null> => {
   let refinedPrompt = '';
+  let providerUsage: Record<string, any> | null = null;
   const currentPhaseRef: { current: CopilotRuntimePhase | null } = {
     current: null,
   };
@@ -109,6 +116,9 @@ export const streamPromptRefine = async (
           content: prompt,
         },
       ],
+      stream_options: {
+        include_usage: true,
+      },
     },
     {
       signal: abortController.signal,
@@ -118,6 +128,7 @@ export const streamPromptRefine = async (
   for await (const chunk of stream) {
     if (shouldStop()) break;
 
+    providerUsage = extractProviderUsage(chunk) || providerUsage;
     const content = chunk.choices[0]?.delta?.content || '';
     if (!content) continue;
 
@@ -149,16 +160,17 @@ export const streamPromptRefine = async (
   return {
     refinedPrompt: finalPrompt,
     reply,
+    providerUsage,
   };
 };
 
 export const streamDraftStage = async (
+  prompt: string,
   dto: SanitizedCopilotDto,
   client: OpenAI,
   modelConfig: ModelRuntimeConfig,
   abortController: AbortController,
   sink: CopilotEventSink,
-  toolContextText: string,
   shouldStop: () => boolean,
   options?: {
     onPhaseChange?: (phase: CopilotRuntimePhase) => Promise<void> | void;
@@ -171,13 +183,17 @@ export const streamDraftStage = async (
   reply: string;
   draft: QuestionnaireDraft;
   summary: DraftSummary;
+  warningCount: number;
+  providerUsage: Record<string, any> | null;
+  completionText: string;
 } | null> => {
-  const prompt = buildCopilotPrompt(dto, toolContextText);
   const workflowStage = getWorkflowStage(dto);
   let accumulatedContent = '';
   let lastAssistantReply = '';
   let lastDraftSignature = '';
   let lastWarningSignature = '';
+  let warningCount = 0;
+  let providerUsage: Record<string, any> | null = null;
   const currentPhaseRef: { current: CopilotRuntimePhase | null } = {
     current: null,
   };
@@ -212,6 +228,9 @@ export const streamDraftStage = async (
           content: prompt,
         },
       ],
+      stream_options: {
+        include_usage: true,
+      },
     },
     {
       signal: abortController.signal,
@@ -221,6 +240,7 @@ export const streamDraftStage = async (
   for await (const chunk of stream) {
     if (shouldStop()) break;
 
+    providerUsage = extractProviderUsage(chunk) || providerUsage;
     const content = chunk.choices[0]?.delta?.content || '';
     if (!content) continue;
 
@@ -383,6 +403,7 @@ export const streamDraftStage = async (
   );
 
   if (validationWarnings.length > 0) {
+    warningCount += validationWarnings.length;
     sink.emit('warning', {
       code: 'COMPONENT_VALIDATION_FILTERED',
       message: `${validationWarnings.length} 个组件未通过校验已自动跳过，其余组件仍可应用。`,
@@ -412,5 +433,8 @@ export const streamDraftStage = async (
     reply,
     draft: validatedDraft,
     summary,
+    warningCount: warningCount + parsed.warnings.length,
+    providerUsage,
+    completionText: accumulatedContent,
   };
 };

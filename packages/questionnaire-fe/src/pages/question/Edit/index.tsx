@@ -12,6 +12,7 @@ import RightPanel from '@/pages/question/Edit/components/RightPanel'
 import AiCopilotPanel from '@/pages/question/Edit/components/AiCopilotPanel'
 import AiInlineQuestionnairePreview from '@/pages/question/Edit/components/AiInlineQuestionnairePreview'
 import useAiWorkbench from '@/pages/question/Edit/hooks/useAiWorkbench'
+import { reportAiMetricOutcome } from '@/pages/question/Edit/hooks/ai/aiMetricOutcome'
 import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '@/store'
 import apis from '@/apis'
@@ -202,10 +203,16 @@ const Edit: React.FC = () => {
         })
 
         if (saveSuccess) {
+          void reportAiMetricOutcome(aiWorkbench.requestId, {
+            autoSaveSucceeded: true
+          })
           message.success(`${successMessage}，并已自动保存`)
           return
         }
 
+        void reportAiMetricOutcome(aiWorkbench.requestId, {
+          autoSaveFailed: true
+        })
         message.warning(`${successMessage}，但自动保存失败，请手动点击保存`)
       } finally {
         setApplyingDraft(false)

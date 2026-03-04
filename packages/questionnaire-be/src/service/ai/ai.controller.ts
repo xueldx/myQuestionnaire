@@ -27,6 +27,11 @@ import {
   CreateConversationDto,
   UpdateConversationDto,
 } from '@/service/ai/dto/conversation.dto';
+import {
+  AiMetricsQueryDto,
+  AiMetricTimeseriesQueryDto,
+  UpdateAiMetricOutcomeDto,
+} from '@/service/ai/dto/metrics.dto';
 
 @Controller('ai')
 export class AiController {
@@ -128,5 +133,37 @@ export class AiController {
       data,
       data.cancelled ? '取消成功' : '未找到进行中的会话',
     );
+  }
+
+  @Post('metrics/:requestId/outcome')
+  async updateMetricOutcome(
+    @Param('requestId') requestId: string,
+    @Body() dto: UpdateAiMetricOutcomeDto,
+    @currentUser() user: UserToken,
+  ) {
+    const updated = await this.aiService.updateMetricOutcome(
+      requestId,
+      dto,
+      user.userId,
+    );
+    return new ResponseBody(1, { updated }, '更新埋点结果成功');
+  }
+
+  @Get('metrics/summary')
+  async getMetricSummary(
+    @Query() query: AiMetricsQueryDto,
+    @currentUser() user: UserToken,
+  ) {
+    const data = await this.aiService.getMetricSummary(query, user.userId);
+    return new ResponseBody(1, data, '获取埋点汇总成功');
+  }
+
+  @Get('metrics/timeseries')
+  async getMetricTimeseries(
+    @Query() query: AiMetricTimeseriesQueryDto,
+    @currentUser() user: UserToken,
+  ) {
+    const data = await this.aiService.getMetricTimeseries(query, user.userId);
+    return new ResponseBody(1, data, '获取埋点趋势成功');
   }
 }

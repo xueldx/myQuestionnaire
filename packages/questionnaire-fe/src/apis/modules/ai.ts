@@ -138,6 +138,55 @@ const cancelCopilot = async (payload: { requestId?: string; conversationId?: num
     payload
   )
 
+const reportMetricOutcome = async (
+  requestId: string,
+  payload: {
+    draftApplied?: boolean
+    discarded?: boolean
+    autoSaveSucceeded?: boolean
+    autoSaveFailed?: boolean
+  }
+) =>
+  request.post<any, RespType<{ updated: boolean }>>(
+    `${prefix}/metrics/${requestId}/outcome`,
+    payload
+  )
+
+const getMetricSummary = async (params: {
+  questionnaireId?: number
+  from: string
+  to: string
+  contextStrategy?: string
+  modelKey?: string
+}) =>
+  request.get<any, RespType<any>>(
+    `${prefix}/metrics/summary?${new URLSearchParams(
+      Object.entries(params).reduce<Record<string, string>>((accumulator, [key, value]) => {
+        if (value === undefined || value === null || value === '') return accumulator
+        accumulator[key] = String(value)
+        return accumulator
+      }, {})
+    ).toString()}`
+  )
+
+const getMetricTimeseries = async (params: {
+  questionnaireId?: number
+  from: string
+  to: string
+  contextStrategy?: string
+  modelKey?: string
+  bucket?: 'day' | 'hour'
+}) =>
+  request.get<any, RespType<any>>(
+    `${prefix}/metrics/timeseries?${new URLSearchParams(
+      Object.entries(params).reduce<Record<string, string>>((accumulator, [key, value]) => {
+        if (value === undefined || value === null || value === '') return accumulator
+        accumulator[key] = String(value)
+        return accumulator
+      }, {})
+    ).toString()}`
+  )
+
 // 生成问卷，支持模型选择和题目数量
 const generateQuestionnaire = (theme: string, count = 10, model?: string) => {
   let url = `${prefix}/generate?theme=${theme}&count=${count}`
@@ -183,6 +232,9 @@ export default {
   updateConversation,
   deleteConversation,
   cancelCopilot,
+  reportMetricOutcome,
+  getMetricSummary,
+  getMetricTimeseries,
   generateQuestionnaire,
   analyzeQuestionnaire,
   copilotStream

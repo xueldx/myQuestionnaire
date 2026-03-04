@@ -22,6 +22,7 @@ import UserFavorite from '@/service/question/entities/user-favorite.entity';
 import AiConversation from '@/service/ai/entities/ai-conversation.entity';
 import AiMessage from '@/service/ai/entities/ai-message.entity';
 import AiAttachment from '@/service/ai/entities/ai-attachment.entity';
+import AiRequestMetric from '@/service/ai/entities/ai-request-metric.entity';
 
 // 自定义配置
 import configuration from '@/config';
@@ -62,6 +63,7 @@ import { EditorModule } from './service/editor/editor.module';
             AiConversation,
             AiMessage,
             AiAttachment,
+            AiRequestMetric,
           ],
         };
       },

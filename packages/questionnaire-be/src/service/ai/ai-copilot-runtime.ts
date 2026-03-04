@@ -23,12 +23,19 @@ import {
   buildToolContextBlock,
   collectToolContext,
   CopilotEventSink,
+  CopilotToolContextItem,
   CopilotToolRuntimeDeps,
 } from '@/service/ai/ai-copilot-tools';
 import {
   streamDraftStage,
   streamPromptRefine,
 } from '@/service/ai/ai-copilot-stream-stages';
+import { buildPromptPolishPrompt } from '@/service/ai/ai-prompt/build-prompt-polish-prompt';
+import { buildCopilotPrompt } from '@/service/ai/ai-prompt/build-copilot-prompt';
+import {
+  AiObservabilitySink,
+  DEFAULT_AI_CONTEXT_STRATEGY,
+} from '@/service/ai/observability/ai-observability.sink';
 
 type ExecuteCopilotStreamDeps = CopilotToolRuntimeDeps & {
   openai: OpenAI;
@@ -63,7 +70,29 @@ type ExecuteCopilotStreamDeps = CopilotToolRuntimeDeps & {
   }) => void;
   unregisterActiveRequest: (requestId: string) => void;
   saveConversation: (conversation: any) => Promise<any>;
+  observabilitySink: AiObservabilitySink;
 };
+
+const buildContextSnapshot = (
+  dto: SanitizedCopilotDto,
+  promptText: string,
+  toolContextText: string,
+  toolContextList: CopilotToolContextItem[],
+) => ({
+  historyMessageCount: dto.history.length,
+  questionnaireComponentCount: dto.questionnaire.components.length,
+  historyChars: dto.history.reduce(
+    (total, item) => total + String(item.content || '').length,
+    0,
+  ),
+  questionnaireChars: JSON.stringify(dto.questionnaire).length,
+  toolContextChars: toolContextText.length,
+  promptChars: promptText.length,
+  hasFocusedComponent: Boolean(dto.focusedComponentId),
+  hasAnswerStatsTool: toolContextList.some(
+    (item) => item.name === 'get_answer_statistics',
+  ),
+});
 
 export const executeCopilotStream = async (
   deps: ExecuteCopilotStreamDeps,
@@ -83,6 +112,13 @@ export const executeCopilotStream = async (
   let conversation: any | null = null;
   let workflowStage: CopilotWorkflowStage | undefined;
   let safeDto: SanitizedCopilotDto | null = null;
+  let requestStartedAt: Date | null = null;
+  let promptText = '';
+  let completionText = '';
+  let warningCount = 0;
+  let draftReady = false;
+  let draftComponentCount = 0;
+  let firstTokenMarked = false;
   const lifecycle = createCopilotRuntimeLifecycle({
     req,
     res,
@@ -100,6 +136,20 @@ export const executeCopilotStream = async (
   const { runtimeState } = lifecycle;
   const sink: CopilotEventSink = {
     emit: (event, data) => {
+      const shouldMarkFirstToken =
+        requestId &&
+        !firstTokenMarked &&
+        ['prompt_delta', 'assistant_delta', 'draft_partial'].includes(event);
+      if (shouldMarkFirstToken) {
+        firstTokenMarked = true;
+        void deps.observabilitySink.markFirstToken({
+          requestId,
+          firstTokenAt: new Date(),
+        });
+      }
+      if (event === 'warning') {
+        warningCount += Array.isArray(data?.details) ? data.details.length : 1;
+      }
       if (!runtimeState.clientConnected) return;
       if (res.writableEnded || res.destroyed) {
         runtimeState.clientConnected = false;
@@ -132,12 +182,20 @@ export const executeCopilotStream = async (
     const preparedContext = await prepareCopilotRequestContext(deps, dto, user);
     safeDto = preparedContext.safeDto;
     workflowStage = preparedContext.workflowStage;
+    const activeWorkflowStage =
+      workflowStage ||
+      (safeDto.intent === 'edit'
+        ? 'edit'
+        : safeDto.generateStage === 'polish'
+          ? 'polish'
+          : 'generate');
     lifecycle.attach();
 
     const { resolvedModel, client } = preparedContext;
     requestId = preparedContext.requestId;
     conversation = preparedContext.conversation;
     conversationId = conversation.id;
+    requestStartedAt = new Date();
     lifecycle.resumeBackgroundIfDetached();
     deps.registerActiveRequest({
       requestId,
@@ -178,17 +236,36 @@ export const executeCopilotStream = async (
     const toolContextText = buildToolContextBlock(deps, toolContextList);
 
     if (safeDto.intent === 'generate' && safeDto.generateStage === 'polish') {
+      promptText = buildPromptPolishPrompt(safeDto, toolContextText);
+      await deps.observabilitySink.startRequest({
+        requestId,
+        conversationId: conversation.id,
+        questionnaireId: safeDto.questionnaireId,
+        userId: user.userId,
+        intent: safeDto.intent,
+        workflowStage: activeWorkflowStage,
+        modelKey: resolvedModel.key,
+        providerBaseUrl: resolvedModel.config.baseURL,
+        contextStrategy: DEFAULT_AI_CONTEXT_STRATEGY,
+        startedAt: requestStartedAt || new Date(),
+        contextSnapshot: buildContextSnapshot(
+          safeDto,
+          promptText,
+          toolContextText,
+          toolContextList,
+        ),
+      });
       const polishResult = await streamPromptRefine(
-        safeDto,
+        promptText,
         client,
         resolvedModel.config,
         abortController,
         sink,
-        toolContextText,
         () => abortController.signal.aborted,
         () => abortController.signal.aborted,
       );
       if (polishResult) {
+        completionText = polishResult.refinedPrompt;
         lifecycle.clearDisconnectGraceTimeout();
         await finalizePromptPolishSuccess(deps, {
           conversation,
@@ -197,15 +274,49 @@ export const executeCopilotStream = async (
           reply: polishResult.reply,
           refinedPrompt: polishResult.refinedPrompt,
         });
+        await deps.observabilitySink.finishRequest({
+          requestId,
+          status: 'done',
+          stopReason: null,
+          finishedAt: new Date(),
+          promptText,
+          completionText,
+          providerUsage: polishResult.providerUsage,
+          usageSnapshot: {
+            stage: workflowStage,
+          },
+          parseWarningCount: 0,
+          draftReady: false,
+          draftComponentCount: 0,
+        });
       }
     } else {
+      promptText = buildCopilotPrompt(safeDto, toolContextText);
+      await deps.observabilitySink.startRequest({
+        requestId,
+        conversationId: conversation.id,
+        questionnaireId: safeDto.questionnaireId,
+        userId: user.userId,
+        intent: safeDto.intent,
+        workflowStage: activeWorkflowStage,
+        modelKey: resolvedModel.key,
+        providerBaseUrl: resolvedModel.config.baseURL,
+        contextStrategy: DEFAULT_AI_CONTEXT_STRATEGY,
+        startedAt: requestStartedAt || new Date(),
+        contextSnapshot: buildContextSnapshot(
+          safeDto,
+          promptText,
+          toolContextText,
+          toolContextList,
+        ),
+      });
       const draftResult = await streamDraftStage(
+        promptText,
         safeDto,
         client,
         resolvedModel.config,
         abortController,
         sink,
-        toolContextText,
         () => abortController.signal.aborted,
         {
           onPhaseChange: async (phase) => {
@@ -223,6 +334,10 @@ export const executeCopilotStream = async (
         },
       );
       if (draftResult) {
+        completionText = draftResult.completionText;
+        warningCount = draftResult.warningCount;
+        draftReady = true;
+        draftComponentCount = draftResult.draft.components.length;
         lifecycle.clearDisconnectGraceTimeout();
         lifecycle.setBackgroundRunning(false);
         await finalizeDraftStreamSuccess(deps, {
@@ -232,11 +347,28 @@ export const executeCopilotStream = async (
           requestId,
           draftResult,
         });
+        await deps.observabilitySink.finishRequest({
+          requestId,
+          status: 'done',
+          stopReason: null,
+          finishedAt: new Date(),
+          promptText,
+          completionText,
+          providerUsage: draftResult.providerUsage,
+          usageSnapshot: {
+            stage: workflowStage,
+            summary: draftResult.summary,
+          },
+          parseWarningCount: warningCount,
+          draftReady,
+          draftComponentCount,
+        });
       }
     }
   } catch (error: any) {
+    const stopReason = lifecycle.getStopReason();
     await handleCopilotStopOrError(deps, {
-      stopReason: lifecycle.getStopReason(),
+      stopReason,
       conversation,
       workflowStage,
       lifecycle,
@@ -248,6 +380,36 @@ export const executeCopilotStream = async (
       sink,
       res,
     });
+    if (requestId) {
+      await deps.observabilitySink.finishRequest({
+        requestId,
+        status:
+          stopReason === 'cancel' || stopReason === 'disconnect'
+            ? 'cancelled'
+            : stopReason === 'disconnect_timeout'
+              ? 'disconnect_timeout'
+              : timeoutTriggered || stopReason === 'timeout'
+                ? 'timeout'
+                : 'error',
+        stopReason:
+          stopReason === 'cancel' ||
+          stopReason === 'disconnect' ||
+          stopReason === 'disconnect_timeout' ||
+          stopReason === 'timeout'
+            ? stopReason
+            : null,
+        finishedAt: new Date(),
+        promptText,
+        completionText,
+        usageSnapshot: {
+          stage: workflowStage || null,
+          error: error?.message || 'unknown_error',
+        },
+        parseWarningCount: warningCount,
+        draftReady,
+        draftComponentCount,
+      });
+    }
     return;
   } finally {
     if (timeoutId) {

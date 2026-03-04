@@ -7,6 +7,8 @@ import AiAttachment from '@/service/ai/entities/ai-attachment.entity';
 import Question from '@/service/question/entities/question.entity';
 import { AnswerService } from '@/service/answer/answer.service';
 import { EditorService } from '@/service/editor/editor.service';
+import { AiObservabilitySink } from '@/service/ai/observability/ai-observability.sink';
+import { LocalMetricsSink } from '@/service/ai/observability/local-metrics.sink';
 
 describe('AiService', () => {
   let service: AiService;
@@ -30,6 +32,17 @@ describe('AiService', () => {
   let questionRepository: {
     findOneBy: jest.Mock;
   };
+  let observabilitySink: {
+    startRequest: jest.Mock;
+    markFirstToken: jest.Mock;
+    finishRequest: jest.Mock;
+    patchOutcome: jest.Mock;
+  };
+  let localMetricsSink: {
+    updateOutcome: jest.Mock;
+    getSummary: jest.Mock;
+    getTimeseries: jest.Mock;
+  };
 
   beforeEach(async () => {
     aiConversationRepository = {
@@ -51,6 +64,17 @@ describe('AiService', () => {
     };
     questionRepository = {
       findOneBy: jest.fn(),
+    };
+    observabilitySink = {
+      startRequest: jest.fn(),
+      markFirstToken: jest.fn(),
+      finishRequest: jest.fn(),
+      patchOutcome: jest.fn(),
+    };
+    localMetricsSink = {
+      updateOutcome: jest.fn(),
+      getSummary: jest.fn(),
+      getTimeseries: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -83,6 +107,14 @@ describe('AiService', () => {
         {
           provide: getRepositoryToken(Question),
           useValue: questionRepository,
+        },
+        {
+          provide: AiObservabilitySink,
+          useValue: observabilitySink,
+        },
+        {
+          provide: LocalMetricsSink,
+          useValue: localMetricsSink,
         },
       ],
     }).compile();
@@ -211,5 +243,87 @@ describe('AiService', () => {
     expect(() =>
       (service as any).resolveModelSelection('minimax-m2.5'),
     ).toThrow('模型 minimax-m2.5 缺少有效配置');
+  });
+
+  it('should delegate metric outcome updates to LocalMetricsSink', async () => {
+    localMetricsSink.updateOutcome.mockResolvedValue(true);
+
+    await expect(
+      service.updateMetricOutcome(
+        'req-1',
+        {
+          draftApplied: true,
+        },
+        7,
+      ),
+    ).resolves.toBe(true);
+
+    expect(localMetricsSink.updateOutcome).toHaveBeenCalledWith(
+      'req-1',
+      {
+        draftApplied: true,
+      },
+      7,
+    );
+  });
+
+  it('should delegate metric summary queries to LocalMetricsSink', async () => {
+    localMetricsSink.getSummary.mockResolvedValue({
+      requestCount: 2,
+    });
+
+    await expect(
+      service.getMetricSummary(
+        {
+          from: '2026-03-01T00:00:00.000Z',
+          to: '2026-03-31T00:00:00.000Z',
+        },
+        7,
+      ),
+    ).resolves.toEqual({
+      requestCount: 2,
+    });
+
+    expect(localMetricsSink.getSummary).toHaveBeenCalledWith(
+      {
+        from: '2026-03-01T00:00:00.000Z',
+        to: '2026-03-31T00:00:00.000Z',
+      },
+      7,
+    );
+  });
+
+  it('should delegate metric timeseries queries to LocalMetricsSink', async () => {
+    localMetricsSink.getTimeseries.mockResolvedValue([
+      {
+        bucket: '2026-03-29T00:00:00',
+        requestCount: 1,
+      },
+    ]);
+
+    await expect(
+      service.getMetricTimeseries(
+        {
+          from: '2026-03-01T00:00:00.000Z',
+          to: '2026-03-31T00:00:00.000Z',
+          bucket: 'day',
+        },
+        7,
+      ),
+    ).resolves.toEqual([
+      {
+        bucket: '2026-03-29T00:00:00',
+        requestCount: 1,
+      },
+    ]);
+
+    expect(localMetricsSink.getTimeseries).toHaveBeenCalledWith(
+      {
+        from: '2026-03-01T00:00:00.000Z',
+        to: '2026-03-31T00:00:00.000Z',
+        bucket: 'day',
+      },
+      7,
+    );
   });
 });

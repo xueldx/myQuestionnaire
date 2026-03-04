@@ -13,6 +13,7 @@ import {
   PersistConversationDraftStatePayload
 } from './aiShared'
 import { applyQuestionnairePatchSet, isPatchAppliedToQuestionnaire } from '../aiQuestionPatch'
+import { reportAiMetricOutcome } from './aiMetricOutcome'
 
 type MessageApi = {
   warning: (content: string) => void
@@ -33,6 +34,7 @@ type ModalApi = {
 type UseAiDraftApplyParams = {
   mode: AiCopilotIntent
   status: 'draft_ready' | 'done' | 'cancelled' | string
+  requestId: string | null
   version: number
   selectedId: string
   componentList: QuestionnaireDraft['components']
@@ -59,6 +61,7 @@ type UseAiDraftApplyParams = {
 export const useAiDraftApply = ({
   mode,
   status,
+  requestId,
   version,
   selectedId,
   componentList,
@@ -165,6 +168,9 @@ export const useAiDraftApply = ({
       )
 
       setDraftApplied(allPatchChangesApplied)
+      void reportAiMetricOutcome(requestId, {
+        draftApplied: true
+      })
 
       if (allPatchChangesApplied) {
         void persistConversationDraftState(
@@ -220,6 +226,7 @@ export const useAiDraftApply = ({
       onDraftApplied,
       questionPatchSet,
       rejectedPatchIds,
+      requestId,
       resolveNextSelectedId,
       selectedId,
       setDraftApplied,
@@ -283,6 +290,9 @@ export const useAiDraftApply = ({
 
       setDraftApplied(true)
       clearDraftAfterApply()
+      void reportAiMetricOutcome(requestId, {
+        draftApplied: true
+      })
       void persistConversationDraftState(
         {
           lastInstruction: null,
@@ -319,6 +329,7 @@ export const useAiDraftApply = ({
       onDraftApplied,
       pageConfig,
       persistConversationDraftState,
+      requestId,
       resolveNextSelectedId,
       setDraftApplied,
       mode,
@@ -361,6 +372,9 @@ export const useAiDraftApply = ({
 
       setDraftApplied(true)
       clearDraftAfterApply()
+      void reportAiMetricOutcome(requestId, {
+        draftApplied: true
+      })
       void persistConversationDraftState(
         {
           lastInstruction: null,
@@ -395,6 +409,7 @@ export const useAiDraftApply = ({
       message,
       onDraftApplied,
       persistConversationDraftState,
+      requestId,
       resolveNextSelectedId,
       setDraftApplied,
       version

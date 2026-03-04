@@ -5,6 +5,7 @@ import {
   PersistConversationDraftStateOptions,
   PersistConversationDraftStatePayload
 } from './aiShared'
+import { reportAiMetricOutcome } from './aiMetricOutcome'
 
 const ACTIVE_STREAM_STATUSES: AiStreamStatus[] = [
   'connecting',
@@ -17,6 +18,7 @@ const ACTIVE_STREAM_STATUSES: AiStreamStatus[] = [
 type UseAiWorkbenchSessionParams = {
   mode: AiCopilotIntent
   status: AiStreamStatus
+  requestId: string | null
   composerInput: string
   messagesLength: number
   hasQuestionnaireContent: boolean
@@ -61,6 +63,7 @@ type UseAiWorkbenchSessionParams = {
 export const useAiWorkbenchSession = ({
   mode,
   status,
+  requestId,
   composerInput,
   messagesLength,
   hasQuestionnaireContent,
@@ -229,6 +232,9 @@ export const useAiWorkbenchSession = ({
 
   const discardDraft = useCallback(() => {
     clearPendingDraftState()
+    void reportAiMetricOutcome(requestId, {
+      discarded: true
+    })
 
     const nextPrompt = composerInput.trim()
     void persistConversationDraftState(
@@ -272,6 +278,7 @@ export const useAiWorkbenchSession = ({
     messagesLength,
     mode,
     persistConversationDraftState,
+    requestId,
     setStatus,
     status
   ])

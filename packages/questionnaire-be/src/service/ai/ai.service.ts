@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Inject, Injectable, ForbiddenException } from '@nestjs/common';
 import { Request, Response } from 'express';
 import OpenAI from 'openai';
 import { Observable } from 'rxjs';
@@ -25,6 +25,11 @@ import {
   CreateConversationDto,
   UpdateConversationDto,
 } from '@/service/ai/dto/conversation.dto';
+import {
+  AiMetricsQueryDto,
+  AiMetricTimeseriesQueryDto,
+  UpdateAiMetricOutcomeDto,
+} from '@/service/ai/dto/metrics.dto';
 import { promises as fs } from 'fs';
 import { join } from 'path';
 import { executeCopilotStream } from '@/service/ai/ai-copilot-runtime';
@@ -37,6 +42,8 @@ import {
   SanitizedCopilotDto,
   sanitizeCopilotDto,
 } from '@/service/ai/ai-copilot-sanitize';
+import { AiObservabilitySink } from '@/service/ai/observability/ai-observability.sink';
+import { LocalMetricsSink } from '@/service/ai/observability/local-metrics.sink';
 import {
   createConversation,
   createConversationFromCopilotRequest,
@@ -149,6 +156,9 @@ export class AiService {
     private readonly aiAttachmentRepository: Repository<AiAttachment>,
     @InjectRepository(Question)
     private readonly questionRepository: Repository<Question>,
+    @Inject(AiObservabilitySink)
+    private readonly observabilitySink: AiObservabilitySink,
+    private readonly localMetricsSink: LocalMetricsSink,
   ) {
     // 初始化 OpenAI 客户端，配置在使用时动态设置
     const defaultModelConfig = this.resolveModelSelection(
@@ -437,6 +447,22 @@ export class AiService {
     };
   }
 
+  async updateMetricOutcome(
+    requestId: string,
+    dto: UpdateAiMetricOutcomeDto,
+    userId: number,
+  ) {
+    return this.localMetricsSink.updateOutcome(requestId, dto, userId);
+  }
+
+  async getMetricSummary(query: AiMetricsQueryDto, userId: number) {
+    return this.localMetricsSink.getSummary(query, userId);
+  }
+
+  async getMetricTimeseries(query: AiMetricTimeseriesQueryDto, userId: number) {
+    return this.localMetricsSink.getTimeseries(query, userId);
+  }
+
   private async findPreferredConversation(
     questionnaireId: number,
     userId: number,
@@ -653,6 +679,7 @@ export class AiService {
         unregisterActiveRequest: this.unregisterActiveCopilotRequest.bind(this),
         saveConversation: (conversation: AiConversation) =>
           this.aiConversationRepository.save(conversation),
+        observabilitySink: this.observabilitySink,
       },
       dto,
       user,
