@@ -13,6 +13,7 @@ import {
   QuestionnaireDraft,
 } from '@/service/ai/dto/copilot-stream.dto';
 import { SanitizedCopilotDto } from '@/service/ai/ai-copilot-sanitize';
+import { BASELINE_CONTEXT_STRATEGY } from '@/service/ai/context/context-strategy';
 
 export type AiMessageRole = 'user' | 'assistant' | 'tool';
 export type AiMessageKind = 'chat' | 'tool_call' | 'tool_result';
@@ -218,6 +219,8 @@ export const createConversation = async (
     user_id: userId,
     title: deps.pickConversationTitle(dto.title),
     intent: dto.intent === 'edit' ? 'edit' : 'generate',
+    context_strategy: BASELINE_CONTEXT_STRATEGY,
+    summary_message_count: 0,
     latest_activity_at: new Date(),
   });
 
@@ -345,6 +348,8 @@ export const createConversationFromCopilotRequest = async (
     intent: dto.intent,
     last_model: deps.resolveModelKey(dto.model),
     last_instruction: dto.instruction,
+    context_strategy: BASELINE_CONTEXT_STRATEGY,
+    summary_message_count: 0,
     latest_activity_at: new Date(),
   });
 

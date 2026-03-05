@@ -5,6 +5,8 @@ app:
   domain: 'http://localhost'
   port: 8879
   prefix: '/api'
+  ai:
+    copilotContextStrategyDefault: 'baseline_v1'
   jwt:
     secret: 'change_me_jwt_secret'
     expiresIn: '1d'

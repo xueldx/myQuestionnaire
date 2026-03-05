@@ -1,6 +1,10 @@
 import { CopilotToolName } from '@/service/ai/dto/copilot-stream.dto';
 import { SanitizedCopilotDto } from '@/service/ai/ai-copilot-sanitize';
 import {
+  CopilotContextStrategy,
+  WINDOW_SUMMARY_OUTLINE_CONTEXT_STRATEGY,
+} from '@/service/ai/context/context-strategy';
+import {
   AiMessageKind,
   AiMessageRole,
 } from '@/service/ai/ai-conversation-helpers';
@@ -140,9 +144,10 @@ export const collectToolContext = async (
     conversationId: number;
     sink: CopilotEventSink;
     shouldStop: () => boolean;
+    contextStrategy?: CopilotContextStrategy;
   },
 ) => {
-  const { dto, conversationId, sink, shouldStop } = params;
+  const { dto, conversationId, sink, shouldStop, contextStrategy } = params;
   const toolContextList: CopilotToolContextItem[] = [];
 
   const runTool = async (
@@ -189,18 +194,20 @@ export const collectToolContext = async (
     }
   };
 
-  await runTool(
-    'get_questionnaire_snapshot',
-    '读取当前编辑器中的问卷快照',
-    async () => ({
-      questionnaireId: dto.questionnaireId,
-      title: dto.questionnaire.title,
-      description: dto.questionnaire.description,
-      footerText: dto.questionnaire.footerText,
-      componentCount: dto.questionnaire.components.length,
-      components: dto.questionnaire.components,
-    }),
-  );
+  if (contextStrategy !== WINDOW_SUMMARY_OUTLINE_CONTEXT_STRATEGY) {
+    await runTool(
+      'get_questionnaire_snapshot',
+      '读取当前编辑器中的问卷快照',
+      async () => ({
+        questionnaireId: dto.questionnaireId,
+        title: dto.questionnaire.title,
+        description: dto.questionnaire.description,
+        footerText: dto.questionnaire.footerText,
+        componentCount: dto.questionnaire.components.length,
+        components: dto.questionnaire.components,
+      }),
+    );
+  }
 
   await runTool(
     'get_component_catalog',

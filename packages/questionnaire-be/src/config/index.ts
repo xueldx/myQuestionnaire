@@ -118,6 +118,11 @@ const applyEnvironmentOverrides = (baseConfig: Record<string, any>) => {
   config.app.domain = getStringEnv('APP_DOMAIN') || config.app.domain;
   config.app.port = parseNumber(process.env.APP_PORT, config.app.port || 8879);
   config.app.prefix = getStringEnv('APP_PREFIX') || config.app.prefix;
+  config.app.ai = config.app.ai || {};
+  config.app.ai.copilotContextStrategyDefault =
+    getStringEnv('COPILOT_CONTEXT_STRATEGY_DEFAULT') ||
+    config.app.ai.copilotContextStrategyDefault ||
+    'baseline_v1';
   config.app.jwt = config.app.jwt || {};
   config.app.jwt.secret = getStringEnv('JWT_SECRET') || config.app.jwt.secret;
   config.app.jwt.expiresIn =

@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -10,6 +11,7 @@ import AiMessage from '@/service/ai/entities/ai-message.entity';
 import AiAttachment from '@/service/ai/entities/ai-attachment.entity';
 
 @Entity()
+@Index(['questionnaire_id', 'user_id'])
 class AiConversation {
   @PrimaryGeneratedColumn()
   id: number;
@@ -43,6 +45,24 @@ class AiConversation {
 
   @Column({ type: 'simple-json', nullable: true })
   latest_base_questionnaire: Record<string, any> | null;
+
+  @Column({ length: 40, default: 'baseline_v1' })
+  context_strategy: string;
+
+  @Column({ type: 'text', nullable: true })
+  conversation_summary: string | null;
+
+  @Column({ type: 'simple-json', nullable: true })
+  decision_memory: Record<string, any> | null;
+
+  @Column({ type: 'simple-json', nullable: true })
+  latest_questionnaire_outline: Record<string, any> | null;
+
+  @Column({ default: 0 })
+  summary_message_count: number;
+
+  @Column({ type: 'datetime', nullable: true })
+  summary_updated_at: Date | null;
 
   @Column({ type: 'simple-json', nullable: true })
   latest_batches: Record<string, any>[] | null;

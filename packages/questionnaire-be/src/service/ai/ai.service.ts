@@ -69,6 +69,7 @@ import {
   getEnhancedStats as runEnhancedStats,
   extractOptionsFromComponent as extractLegacyOptionsFromComponent,
 } from '@/service/ai/ai-legacy/ai-legacy-helpers';
+import { resolveCopilotContextStrategy } from '@/service/ai/context/context-strategy';
 
 enum Model {
   ModelScopeQwen3 = 'modelscope-qwen3-235b',
@@ -91,16 +92,16 @@ interface ModelRuntimeConfig {
 }
 
 const MODEL_INFO_MAP: Record<Model, ModelInfo> = {
-  [Model.ModelScopeQwen3]: {
-    value: Model.ModelScopeQwen3,
-    label: 'Qwen3',
-    description: '魔搭社区 API Inference 接入的 Qwen3 235B 模型',
-  },
   [Model.ModelScopeQwen3Plus]: {
     value: Model.ModelScopeQwen3Plus,
     label: 'Qwen3-Plus',
     description:
       '魔搭社区 API Inference 接入的 Qwen3-Coder-480B-A35B-Instruct:DashScope 模型',
+  },
+  [Model.ModelScopeQwen3]: {
+    value: Model.ModelScopeQwen3,
+    label: 'Qwen3',
+    description: '魔搭社区 API Inference 接入的 Qwen3 235B 模型',
   },
   [Model.MinimaxM2_5]: {
     value: Model.MinimaxM2_5,
@@ -367,8 +368,13 @@ export class AiService {
         role: message.role as 'user' | 'assistant',
         content: this.ensureString(message.content),
       }))
-      .filter((message) => message.content)
-      .slice(-12);
+      .filter((message) => message.content);
+  }
+
+  private resolveCopilotContextStrategy() {
+    return resolveCopilotContextStrategy(
+      configuration().app?.ai?.copilotContextStrategyDefault,
+    );
   }
 
   private async ensureQuestionnaireAccess(
@@ -518,6 +524,19 @@ export class AiService {
       this.getConversationHelperDeps(),
       conversationId,
     );
+  }
+
+  private async loadConversationContext(conversationId: number) {
+    return this.aiConversationRepository.findOneBy({
+      id: conversationId,
+    });
+  }
+
+  private async updateConversationContext(
+    conversationId: number,
+    payload: Record<string, any>,
+  ) {
+    await this.aiConversationRepository.update(conversationId, payload);
   }
 
   private async persistConversationMessage(params: {
@@ -679,6 +698,9 @@ export class AiService {
         unregisterActiveRequest: this.unregisterActiveCopilotRequest.bind(this),
         saveConversation: (conversation: AiConversation) =>
           this.aiConversationRepository.save(conversation),
+        loadConversationContext: this.loadConversationContext.bind(this),
+        updateConversationContext: this.updateConversationContext.bind(this),
+        resolveContextStrategy: this.resolveCopilotContextStrategy.bind(this),
         observabilitySink: this.observabilitySink,
       },
       dto,

@@ -32,10 +32,14 @@ import {
 } from '@/service/ai/ai-copilot-stream-stages';
 import { buildPromptPolishPrompt } from '@/service/ai/ai-prompt/build-prompt-polish-prompt';
 import { buildCopilotPrompt } from '@/service/ai/ai-prompt/build-copilot-prompt';
+import { AiObservabilitySink } from '@/service/ai/observability/ai-observability.sink';
 import {
-  AiObservabilitySink,
-  DEFAULT_AI_CONTEXT_STRATEGY,
-} from '@/service/ai/observability/ai-observability.sink';
+  buildConversationPromptContext,
+  persistConversationContextAfterSuccess,
+} from '@/service/ai/context/conversation-context-manager';
+import { CopilotContextStrategy } from '@/service/ai/context/context-strategy';
+import { buildWindowedPromptPolishPrompt } from '@/service/ai/ai-prompt/build-windowed-prompt-polish-prompt';
+import { buildWindowedCopilotPrompt } from '@/service/ai/ai-prompt/build-windowed-copilot-prompt';
 
 type ExecuteCopilotStreamDeps = CopilotToolRuntimeDeps & {
   openai: OpenAI;
@@ -70,18 +74,25 @@ type ExecuteCopilotStreamDeps = CopilotToolRuntimeDeps & {
   }) => void;
   unregisterActiveRequest: (requestId: string) => void;
   saveConversation: (conversation: any) => Promise<any>;
+  loadConversationContext: (conversationId: number) => Promise<any | null>;
+  updateConversationContext: (
+    conversationId: number,
+    payload: Record<string, any>,
+  ) => Promise<void>;
+  resolveContextStrategy: () => CopilotContextStrategy;
   observabilitySink: AiObservabilitySink;
 };
 
 const buildContextSnapshot = (
+  history: Array<{ role: 'user' | 'assistant'; content: string }>,
   dto: SanitizedCopilotDto,
   promptText: string,
   toolContextText: string,
   toolContextList: CopilotToolContextItem[],
 ) => ({
-  historyMessageCount: dto.history.length,
+  historyMessageCount: history.length,
   questionnaireComponentCount: dto.questionnaire.components.length,
-  historyChars: dto.history.reduce(
+  historyChars: history.reduce(
     (total, item) => total + String(item.content || '').length,
     0,
   ),
@@ -119,6 +130,9 @@ export const executeCopilotStream = async (
   let draftReady = false;
   let draftComponentCount = 0;
   let firstTokenMarked = false;
+  let contextStrategy: CopilotContextStrategy | null = null;
+  let promptContext: ReturnType<typeof buildConversationPromptContext> | null =
+    null;
   const lifecycle = createCopilotRuntimeLifecycle({
     req,
     res,
@@ -196,6 +210,12 @@ export const executeCopilotStream = async (
     conversation = preparedContext.conversation;
     conversationId = conversation.id;
     requestStartedAt = new Date();
+    contextStrategy = deps.resolveContextStrategy();
+    promptContext = buildConversationPromptContext({
+      contextStrategy,
+      dto: safeDto,
+      conversation,
+    });
     lifecycle.resumeBackgroundIfDetached();
     deps.registerActiveRequest({
       requestId,
@@ -232,11 +252,37 @@ export const executeCopilotStream = async (
       conversationId: conversation.id,
       sink,
       shouldStop: () => abortController.signal.aborted,
+      contextStrategy,
     });
     const toolContextText = buildToolContextBlock(deps, toolContextList);
 
+    const persistConversationContext = () => {
+      if (!contextStrategy || !conversation || !safeDto) return;
+      void persistConversationContextAfterSuccess({
+        contextStrategy,
+        conversation,
+        dto: safeDto,
+        client,
+        model: resolvedModel.config.model,
+        loadConversationHistory: deps.loadConversationHistory,
+        sanitizeConversationHistory: deps.sanitizeConversationHistory,
+        loadConversationContext: deps.loadConversationContext,
+        updateConversationContext: deps.updateConversationContext,
+        onError: (error) => {
+          console.error('copilot context persistence failed:', error);
+        },
+      });
+    };
+
     if (safeDto.intent === 'generate' && safeDto.generateStage === 'polish') {
-      promptText = buildPromptPolishPrompt(safeDto, toolContextText);
+      promptText =
+        contextStrategy === 'window_summary_outline_v1' && promptContext
+          ? buildWindowedPromptPolishPrompt({
+              dto: safeDto,
+              toolContextText,
+              context: promptContext,
+            })
+          : buildPromptPolishPrompt(safeDto, toolContextText);
       await deps.observabilitySink.startRequest({
         requestId,
         conversationId: conversation.id,
@@ -246,9 +292,10 @@ export const executeCopilotStream = async (
         workflowStage: activeWorkflowStage,
         modelKey: resolvedModel.key,
         providerBaseUrl: resolvedModel.config.baseURL,
-        contextStrategy: DEFAULT_AI_CONTEXT_STRATEGY,
+        contextStrategy: contextStrategy || 'baseline_v1',
         startedAt: requestStartedAt || new Date(),
         contextSnapshot: buildContextSnapshot(
+          promptContext?.recentMessages || safeDto.history.slice(-12),
           safeDto,
           promptText,
           toolContextText,
@@ -289,9 +336,24 @@ export const executeCopilotStream = async (
           draftReady: false,
           draftComponentCount: 0,
         });
+        persistConversationContext();
       }
     } else {
-      promptText = buildCopilotPrompt(safeDto, toolContextText);
+      promptText =
+        contextStrategy === 'window_summary_outline_v1' && promptContext
+          ? buildWindowedCopilotPrompt({
+              dto: safeDto,
+              toolContextText,
+              context: promptContext,
+            })
+          : buildCopilotPrompt(
+              {
+                ...safeDto,
+                history:
+                  promptContext?.recentMessages || safeDto.history.slice(-12),
+              },
+              toolContextText,
+            );
       await deps.observabilitySink.startRequest({
         requestId,
         conversationId: conversation.id,
@@ -301,9 +363,10 @@ export const executeCopilotStream = async (
         workflowStage: activeWorkflowStage,
         modelKey: resolvedModel.key,
         providerBaseUrl: resolvedModel.config.baseURL,
-        contextStrategy: DEFAULT_AI_CONTEXT_STRATEGY,
+        contextStrategy: contextStrategy || 'baseline_v1',
         startedAt: requestStartedAt || new Date(),
         contextSnapshot: buildContextSnapshot(
+          promptContext?.recentMessages || safeDto.history.slice(-12),
           safeDto,
           promptText,
           toolContextText,
@@ -363,6 +426,7 @@ export const executeCopilotStream = async (
           draftReady,
           draftComponentCount,
         });
+        persistConversationContext();
       }
     }
   } catch (error: any) {
