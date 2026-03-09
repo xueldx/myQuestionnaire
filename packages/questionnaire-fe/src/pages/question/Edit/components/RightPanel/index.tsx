@@ -1,3 +1,8 @@
+/**
+ * 编辑页右侧配置面板。
+ * 这个文件属于页面配置 UI，负责在“题目配置 / 页面配置”之间切换。
+ * AI 对话输入不应该让右侧配置区跟着重渲染，所以这里直接用 memo 隔离来自父页面的无关刷新。
+ */
 import React, { useState } from 'react'
 import { Tabs } from 'antd'
 import ComponentConfig from './ComponentConfig'
@@ -42,4 +47,4 @@ const RightPanel: React.FC = () => {
   )
 }
 
-export default RightPanel
+export default React.memo(RightPanel)

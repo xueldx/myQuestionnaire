@@ -1,6 +1,11 @@
+/**
+ * 编辑页主入口。
+ * 这个文件位于页面编排层，负责把左侧功能面板、中间编辑/AI 预览区和右侧配置区组合成完整编辑工作台。
+ * AI 工作台输入属于高频状态，但中间预览和右侧配置不应该因为每次按键都重新执行，所以这里需要显式稳定关键 props。
+ */
 import { LeftOutlined, SendOutlined } from '@ant-design/icons'
 import { Alert, Button, Tooltip, App } from 'antd'
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import EditorButtonGroup from '@/pages/question/Edit/components/EditorButtonGroup'
 import { operationType } from '@/pages/question/Edit/components/type'
@@ -53,6 +58,15 @@ const Edit: React.FC = () => {
   const previousLeftPanelKeyRef = React.useRef(leftPanelActiveKey)
 
   const copyExecutedRef = React.useRef(false)
+  const currentQuestionnaire = useMemo(
+    () => ({
+      title: pageConfig.title,
+      description: pageConfig.description,
+      footerText: pageConfig.footerText,
+      components: componentList
+    }),
+    [componentList, pageConfig.description, pageConfig.footerText, pageConfig.title]
+  )
 
   useEffect(() => {
     const copyFrom = searchParams.get('copyFrom')
@@ -314,6 +328,21 @@ const Edit: React.FC = () => {
   }
 
   const isAiWorkbenchActive = leftPanelActiveKey === 'ai'
+  const handleAiSelectComponent = useCallback(
+    (feId: string) => {
+      dispatch(setSelectedId(feId))
+    },
+    [dispatch]
+  )
+  const handleAiBack = useCallback(() => {
+    setLeftPanelActiveKey(lastNonAiPanelKey || 'market')
+  }, [lastNonAiPanelKey])
+  const handleAiApplyPatch = useCallback(
+    (patchId: string) => {
+      void aiWorkbench.applyPatchById(patchId)
+    },
+    [aiWorkbench.applyPatchById]
+  )
 
   return (
     <div className="w-full min-w-[1440px] h-screen overflow-x-auto overflow-y-hidden bg-gradient-to-br from-[#E8F5F3] to-[#F1F8E9] flex flex-col relative">
@@ -458,12 +487,7 @@ const Edit: React.FC = () => {
                     status={aiWorkbench.status}
                     localConnectionState={aiWorkbench.localConnectionState}
                     localInterruptedStreamKind={aiWorkbench.localInterruptedStreamKind}
-                    currentQuestionnaire={{
-                      title: pageConfig.title,
-                      description: pageConfig.description,
-                      footerText: pageConfig.footerText,
-                      components: componentList
-                    }}
+                    currentQuestionnaire={currentQuestionnaire}
                     selectedId={selectedId}
                     draftPartial={aiWorkbench.draftPartial}
                     finalDraft={aiWorkbench.finalDraft}
@@ -474,15 +498,13 @@ const Edit: React.FC = () => {
                     warningMessage={aiWorkbench.warningMessage}
                     draftApplied={aiWorkbench.draftApplied}
                     isApplyingDraft={applyingDraft}
-                    onSelectComponent={feId => dispatch(setSelectedId(feId))}
+                    onSelectComponent={handleAiSelectComponent}
                     onApply={aiWorkbench.applyDraft}
                     onDiscard={aiWorkbench.discardDraft}
-                    onBack={() => setLeftPanelActiveKey(lastNonAiPanelKey || 'market')}
+                    onBack={handleAiBack}
                     onSelectAllPatches={aiWorkbench.selectAllPatches}
                     onClearPatchSelection={aiWorkbench.clearPatchSelection}
-                    onApplyPatch={patchId => {
-                      void aiWorkbench.applyPatchById(patchId)
-                    }}
+                    onApplyPatch={handleAiApplyPatch}
                     onRejectPatch={aiWorkbench.rejectPatchById}
                   />
                 ) : (

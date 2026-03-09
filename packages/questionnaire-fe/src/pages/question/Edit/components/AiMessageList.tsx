@@ -1,3 +1,8 @@
+/**
+ * AI 对话消息列表。
+ * 这个文件属于左侧会话区的消息展示层，负责渲染用户消息、助手消息和过程卡片，并维护滚动跟随。
+ * 输入框的高频输入不应该反复拖着整段消息列表一起重渲染，所以这里额外用 memo 把消息区和输入区隔离开。
+ */
 import React, { useEffect, useRef, useState } from 'react'
 import { Alert, Button, Tag } from 'antd'
 import { DownOutlined, RightOutlined } from '@ant-design/icons'
@@ -227,4 +232,4 @@ const AiMessageList: React.FC<AiMessageListProps> = ({ mode, messages, status, e
   )
 }
 
-export default AiMessageList
+export default React.memo(AiMessageList)

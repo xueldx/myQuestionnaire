@@ -1,3 +1,8 @@
+/**
+ * AI 内联问卷预览页。
+ * 这个文件属于编辑页预览 UI 的主容器，负责拼装头部、告警、上下文提示和题卡列表。
+ * 当前实现继续沿用普通列表渲染方式，只在此处接入自动跟随所需的容器与卡片引用。
+ */
 import React, { useMemo } from 'react'
 import { Alert, Button, Empty } from 'antd'
 import {
@@ -429,4 +434,4 @@ const AiInlineQuestionnairePreview: React.FC<AiInlineQuestionnairePreviewProps> 
   )
 }
 
-export default AiInlineQuestionnairePreview
+export default React.memo(AiInlineQuestionnairePreview)

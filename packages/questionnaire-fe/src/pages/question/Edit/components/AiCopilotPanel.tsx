@@ -1,4 +1,9 @@
-import React from 'react'
+/**
+ * AI 工作台左侧面板。
+ * 这个文件位于 AI 会话展示层，负责组合会话头部、状态提示、消息区和输入区。
+ * 这里额外维护一层本地输入态，让打字先只更新面板自身，再批量同步给工作台，避免每个按键都把整个编辑页带着重渲染。
+ */
+import React, { startTransition, useCallback, useEffect, useRef, useState } from 'react'
 import { Button, Empty, Input, Modal, Tag, Tooltip } from 'antd'
 import {
   CheckCircleOutlined,
@@ -20,6 +25,12 @@ import {
   AiModelOption,
   AiStreamStatus
 } from './aiCopilotTypes'
+
+const COMPOSER_INPUT_SYNC_DEBOUNCE_MS = 120
+const MODE_LABELS = {
+  generate: '生成',
+  edit: '修改'
+} as const
 
 interface AiCopilotPanelProps {
   mode: AiCopilotIntent
@@ -90,13 +101,19 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
   onStopBackgroundRun,
   onDiscardInterruptedRun
 }) => {
-  const [isComposerExpanded, setIsComposerExpanded] = React.useState(false)
-  const [isHistoryModalOpen, setIsHistoryModalOpen] = React.useState(false)
-  const [renameTarget, setRenameTarget] = React.useState<AiConversationSummary | null>(null)
-  const [renameValue, setRenameValue] = React.useState('')
-  const [renameSubmitting, setRenameSubmitting] = React.useState(false)
-  const [switchingConversationId, setSwitchingConversationId] = React.useState<number | null>(null)
-  const [actionConversationId, setActionConversationId] = React.useState<number | null>(null)
+  const [isComposerExpanded, setIsComposerExpanded] = useState(false)
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
+  const [renameTarget, setRenameTarget] = useState<AiConversationSummary | null>(null)
+  const [renameValue, setRenameValue] = useState('')
+  const [renameSubmitting, setRenameSubmitting] = useState(false)
+  const [switchingConversationId, setSwitchingConversationId] = useState<number | null>(null)
+  const [actionConversationId, setActionConversationId] = useState<number | null>(null)
+  const [localComposerInput, setLocalComposerInput] = useState(composerInput)
+  const composerInputSyncTimeoutRef = useRef<number | null>(null)
+  const localComposerInputRef = useRef(localComposerInput)
+  const isComposerFocusedRef = useRef(false)
+  const isComposerComposingRef = useRef(false)
+  const lastCommittedComposerInputRef = useRef(composerInput)
   const hasFocusedComponent = typeof focusedComponentOrder === 'number'
   const isStreaming =
     localConnectionState === 'idle' &&
@@ -110,6 +127,113 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
     localConnectionState !== 'idle' ||
     status === 'background_running' ||
     status === 'resume_available'
+
+  const commitComposerInput = useCallback(
+    (nextValue: string) => {
+      lastCommittedComposerInputRef.current = nextValue
+      startTransition(() => {
+        onComposerInputChange(nextValue)
+      })
+    },
+    [onComposerInputChange]
+  )
+
+  const clearComposerInputSyncTimer = useCallback(() => {
+    if (composerInputSyncTimeoutRef.current === null) return
+    window.clearTimeout(composerInputSyncTimeoutRef.current)
+    composerInputSyncTimeoutRef.current = null
+  }, [])
+
+  const flushComposerInputSync = useCallback(
+    (nextValue?: string) => {
+      const resolvedValue = nextValue ?? localComposerInputRef.current
+      clearComposerInputSyncTimer()
+      commitComposerInput(resolvedValue)
+    },
+    [clearComposerInputSyncTimer, commitComposerInput]
+  )
+
+  const scheduleComposerInputSync = useCallback(
+    (nextValue: string) => {
+      clearComposerInputSyncTimer()
+      composerInputSyncTimeoutRef.current = window.setTimeout(() => {
+        composerInputSyncTimeoutRef.current = null
+        commitComposerInput(nextValue)
+      }, COMPOSER_INPUT_SYNC_DEBOUNCE_MS)
+    },
+    [clearComposerInputSyncTimer, commitComposerInput]
+  )
+
+  const handleComposerInputChange = useCallback(
+    (nextValue: string) => {
+      localComposerInputRef.current = nextValue
+      setLocalComposerInput(nextValue)
+      if (isComposerComposingRef.current) return
+      scheduleComposerInputSync(nextValue)
+    },
+    [scheduleComposerInputSync]
+  )
+
+  const handleComposerFocus = useCallback(() => {
+    isComposerFocusedRef.current = true
+  }, [])
+
+  const handleComposerBlur = useCallback(() => {
+    isComposerFocusedRef.current = false
+    if (isComposerComposingRef.current) return
+    flushComposerInputSync()
+  }, [flushComposerInputSync])
+
+  const handleComposerCompositionStart = useCallback(() => {
+    isComposerComposingRef.current = true
+    clearComposerInputSyncTimer()
+  }, [clearComposerInputSyncTimer])
+
+  const handleComposerCompositionEnd = useCallback(
+    (nextValue: string) => {
+      isComposerComposingRef.current = false
+      localComposerInputRef.current = nextValue
+      setLocalComposerInput(nextValue)
+      flushComposerInputSync(nextValue)
+    },
+    [flushComposerInputSync]
+  )
+
+  useEffect(() => {
+    localComposerInputRef.current = localComposerInput
+  }, [localComposerInput])
+
+  useEffect(() => {
+    if (composerInput === localComposerInputRef.current) {
+      lastCommittedComposerInputRef.current = composerInput
+      return
+    }
+
+    // 输入框聚焦时，本地输入态才是最新来源。
+    // 这里如果把上层延迟同步回来的值再灌回输入框，光标很容易跳到末尾，尤其是在中间位置连续改数字时。
+    if (isComposerFocusedRef.current) {
+      return
+    }
+
+    const isDelayedSelfEchoWhileLocalInputIsNewer =
+      composerInput === lastCommittedComposerInputRef.current &&
+      composerInput !== localComposerInputRef.current
+
+    if (isDelayedSelfEchoWhileLocalInputIsNewer) {
+      return
+    }
+
+    clearComposerInputSyncTimer()
+    lastCommittedComposerInputRef.current = composerInput
+    localComposerInputRef.current = composerInput
+    setLocalComposerInput(composerInput)
+  }, [clearComposerInputSyncTimer, composerInput])
+
+  useEffect(() => {
+    return () => {
+      clearComposerInputSyncTimer()
+    }
+  }, [clearComposerInputSyncTimer])
 
   const statusInfo = (() => {
     if (localConnectionState === 'reconnected_refreshing') {
@@ -359,13 +483,42 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
     }
   }
 
-  const handleSend = async (instruction: string) => {
-    if (isComposerExpanded) {
-      setIsComposerExpanded(false)
-    }
+  const handleSend = useCallback(
+    async (instruction: string) => {
+      flushComposerInputSync(instruction)
+      if (isComposerExpanded) {
+        setIsComposerExpanded(false)
+      }
 
-    return onSend(instruction)
-  }
+      return onSend(instruction)
+    },
+    [flushComposerInputSync, isComposerExpanded, onSend]
+  )
+
+  const handlePolish = useCallback(
+    async (instruction?: string) => {
+      const nextInstruction = instruction ?? localComposerInputRef.current
+      flushComposerInputSync(nextInstruction)
+      return onPolish?.(nextInstruction)
+    },
+    [flushComposerInputSync, onPolish]
+  )
+
+  const handleToggleComposerExpanded = useCallback(
+    (nextExpanded: boolean) => {
+      flushComposerInputSync()
+      setIsComposerExpanded(nextExpanded)
+    },
+    [flushComposerInputSync]
+  )
+
+  const openComposerExpanded = useCallback(() => {
+    handleToggleComposerExpanded(true)
+  }, [handleToggleComposerExpanded])
+
+  const closeComposerExpanded = useCallback(() => {
+    handleToggleComposerExpanded(false)
+  }, [handleToggleComposerExpanded])
 
   return (
     <div className="relative flex h-full flex-col overflow-hidden bg-white/30">
@@ -613,24 +766,25 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
       {!isComposerExpanded && (
         <div className="flex min-h-[200px] shrink-0 flex-col p-4 pt-0">
           <AiComposer
-            value={composerInput}
+            value={localComposerInput}
             isStreaming={isStreaming}
             placeholder={placeholder}
             mode={mode}
-            modeLabels={{
-              generate: '生成',
-              edit: '修改'
-            }}
+            modeLabels={MODE_LABELS}
             modelList={modelList}
             selectedModel={selectedModel}
-            onChange={onComposerInputChange}
+            onChange={handleComposerInputChange}
             onModelChange={onModelChange}
             onModeChange={onModeChange}
             onSubmit={handleSend}
-            onPolish={mode === 'generate' ? onPolish : undefined}
+            onPolish={mode === 'generate' ? handlePolish : undefined}
             onCancel={onCancel}
+            onFocus={handleComposerFocus}
+            onBlur={handleComposerBlur}
+            onCompositionStart={handleComposerCompositionStart}
+            onCompositionEnd={handleComposerCompositionEnd}
             isExpanded={false}
-            onToggleExpanded={() => setIsComposerExpanded(true)}
+            onToggleExpanded={openComposerExpanded}
           />
         </div>
       )}
@@ -639,28 +793,29 @@ const AiCopilotPanel: React.FC<AiCopilotPanelProps> = ({
         <>
           <div
             className="absolute inset-0 z-20 bg-white/45 backdrop-blur-[2px]"
-            onClick={() => setIsComposerExpanded(false)}
+            onClick={closeComposerExpanded}
           />
           <div className="absolute inset-4 z-30 flex min-h-0 flex-col">
             <AiComposer
-              value={composerInput}
+              value={localComposerInput}
               isStreaming={isStreaming}
               placeholder={placeholder}
               mode={mode}
-              modeLabels={{
-                generate: '生成',
-                edit: '修改'
-              }}
+              modeLabels={MODE_LABELS}
               modelList={modelList}
               selectedModel={selectedModel}
-              onChange={onComposerInputChange}
+              onChange={handleComposerInputChange}
               onModelChange={onModelChange}
               onModeChange={onModeChange}
               onSubmit={handleSend}
-              onPolish={mode === 'generate' ? onPolish : undefined}
+              onPolish={mode === 'generate' ? handlePolish : undefined}
               onCancel={onCancel}
+              onFocus={handleComposerFocus}
+              onBlur={handleComposerBlur}
+              onCompositionStart={handleComposerCompositionStart}
+              onCompositionEnd={handleComposerCompositionEnd}
               isExpanded
-              onToggleExpanded={() => setIsComposerExpanded(false)}
+              onToggleExpanded={closeComposerExpanded}
             />
           </div>
         </>

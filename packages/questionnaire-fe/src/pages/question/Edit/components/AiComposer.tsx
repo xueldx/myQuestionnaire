@@ -1,5 +1,10 @@
+/**
+ * AI 指令输入框。
+ * 这个文件属于左侧 AI 面板的输入 UI，只负责文本输入、模型/模式切换和发送/润色动作的交互呈现。
+ * 为了保证输入跟手，这里只消费面板层传入的本地输入值，不再要求每个按键都同步驱动整页重渲染。
+ */
 import React from 'react'
-import { Button, Input, Select, Tooltip, Space, Typography } from 'antd'
+import { Button, Input, Select, Tooltip } from 'antd'
 import {
   FullscreenExitOutlined,
   FullscreenOutlined,
@@ -10,7 +15,6 @@ import {
 import { AiCopilotIntent, AiModelOption } from './aiCopilotTypes'
 
 const { TextArea } = Input
-const { Text } = Typography
 
 interface AiComposerProps {
   value: string
@@ -28,6 +32,10 @@ interface AiComposerProps {
   onCancel: () => void
   isExpanded?: boolean
   onToggleExpanded?: () => void
+  onFocus?: () => void
+  onBlur?: () => void
+  onCompositionStart?: () => void
+  onCompositionEnd?: (value: string) => void
 }
 
 const AiComposer: React.FC<AiComposerProps> = ({
@@ -45,7 +53,11 @@ const AiComposer: React.FC<AiComposerProps> = ({
   onPolish,
   onCancel,
   isExpanded = false,
-  onToggleExpanded
+  onToggleExpanded,
+  onFocus,
+  onBlur,
+  onCompositionStart,
+  onCompositionEnd
 }) => {
   const handleSubmit = async () => {
     const trimmed = value.trim()
@@ -143,6 +155,10 @@ const AiComposer: React.FC<AiComposerProps> = ({
             className="ai-composer-textarea w-full"
             value={value}
             onChange={event => onChange(event.target.value)}
+            onFocus={onFocus}
+            onBlur={onBlur}
+            onCompositionStart={onCompositionStart}
+            onCompositionEnd={event => onCompositionEnd?.(event.currentTarget.value)}
             placeholder={placeholder}
             autoSize={false}
             style={{
@@ -257,4 +273,4 @@ const AiComposer: React.FC<AiComposerProps> = ({
   )
 }
 
-export default AiComposer
+export default React.memo(AiComposer)
