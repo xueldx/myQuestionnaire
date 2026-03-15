@@ -21,6 +21,9 @@ export default defineConfig(({ mode }) => {
     base: '/',
     // 配置模块解析选项
     resolve: {
+      // pnpm workspace 下同一个依赖可能通过不同路径被解析。
+      // 对 React 做去重，避免源码和三方库分别拿到不同的运行时实例，触发 hooks dispatcher 为空的问题。
+      dedupe: ['react', 'react-dom'],
       alias: {
         // 配置 '@' 别名指向 src 目录
         '@': path.resolve(__dirname, 'src')
