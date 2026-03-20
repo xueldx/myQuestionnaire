@@ -1,4 +1,4 @@
-# 问卷小筑
+# 问卷小筑（AIForm）
 
 
 <div align="center">
@@ -168,10 +168,10 @@ Copy-Item packages/questionnaire-be/src/config/dev.example.yml packages/question
 
 更完整的配置说明见 [docs/configuration.md](./docs/configuration.md)。
 
-AI Key 推荐配置在后端 `dev.local.yml` 或根目录 `.env` 中。若你使用魔搭社区 API Inference，可参考官方文档：
+AI Key 推荐配置在后端 `dev.local.yml` 或根目录 `.env` 中。若使用魔搭社区 API Inference，可参考官方文档：
 [API推理介绍 · 文档中心](https://www.modelscope.cn/docs/model-service/API-Inference/intro)
 
-如果你在 macOS 或 Linux 上使用 Husky，首次需要补权限：
+如果在 macOS 或 Linux 上使用 Husky，首次需要补权限：
 
 ```bash
 chmod +x .husky/*
@@ -191,7 +191,7 @@ chmod +x .husky/*
 docker-compose up -d mysql mongo redis
 ```
 
-如果你想一次性把三端都跑起来，也可以直接：
+如果想一次性把三端都跑起来，也可以直接：
 
 ```bash
 docker-compose up --build
@@ -211,7 +211,7 @@ MongoDB 如需插入默认问卷数据，可手动执行：
 node packages/questionnaire-client/scripts/init-db.ts
 ```
 
-如果本地 Node 不能直接执行 `.ts`，请改为使用你自己的 TypeScript 执行方式，或者参考脚本内容手动插入数据。
+如果本地 Node 不能直接执行 `.ts`，请改为使用自己的 TypeScript 执行方式，或者参考脚本内容手动插入数据。
 
 ### 5. 启动各应用
 
@@ -327,7 +327,7 @@ pnpm -F @questionnaire/be test
 docker-compose up --build -d
 ```
 
-如果你要部署到服务器，至少需要检查并替换以下配置：
+如果要部署到服务器，至少需要检查并替换以下配置：
 
 - 数据库账号密码
 - 邮箱服务账号
@@ -342,7 +342,7 @@ docker-compose up --build -d
 - 业务配置中已有开发环境与 Docker 环境区分，新增配置建议沿用这一模式
 - AI、邮件、数据库、镜像仓库等敏感信息不要直接提交到仓库，统一放在本地配置文件或 CI Secret
 - 填写端与后端都依赖 Mongo 数据结构，改题型或字段时要同步检查两边适配逻辑
-- 初始化 SQL 现在是脱敏后的 schema 文件，不再包含真实用户和生产数据
+- 初始化 SQL 不包含真实用户和生产数据
 
 ## License
 

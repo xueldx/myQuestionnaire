@@ -54,7 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 title="email"
               >
                 <span className="text-default-600">问卷小筑&copy;2025-present.Maintained by</span>
-                <p className="text-primary">project maintainer</p>
+                <p className="text-primary">xueldx</p>
               </Link>
             </footer>
           </div>
