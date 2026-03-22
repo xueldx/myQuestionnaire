@@ -1,20 +1,130 @@
 ﻿import path from 'path'
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, normalizePath } from 'vite'
 import react from '@vitejs/plugin-react-swc'
 import { createSvgIconsPlugin } from 'vite-plugin-svg-icons'
 import { ViteImageOptimizer } from 'vite-plugin-image-optimizer'
 import removeConsole from 'vite-plugin-remove-console'
+import { visualizer } from 'rollup-plugin-visualizer'
 import pkg from './package.json'
 
 // 提取package.json中的版本号
 const { version } = pkg
 
+const getPackageNameFromModuleId = (moduleId: string) => {
+  const normalizedId = normalizePath(moduleId)
+
+  if (!normalizedId.includes('/node_modules/')) {
+    return null
+  }
+
+  const pnpmMatch = normalizedId.match(
+    /\/node_modules\/\.pnpm\/[^/]+\/node_modules\/(@[^/]+\/[^/]+|[^/]+)/
+  )
+  if (pnpmMatch?.[1]) {
+    return pnpmMatch[1]
+  }
+
+  const defaultMatch = normalizedId.match(/\/node_modules\/(@[^/]+\/[^/]+|[^/]+)/)
+  return defaultMatch?.[1] || null
+}
+
+const resolveVendorChunkName = (moduleId: string) => {
+  const packageName = getPackageNameFromModuleId(moduleId)
+  if (!packageName) {
+    return null
+  }
+
+  if (
+    [
+      'react',
+      'react-dom',
+      'react-router',
+      'react-router-dom',
+      'react-redux',
+      'ahooks',
+      '@reduxjs/toolkit',
+      'scheduler',
+      'history',
+      'use-sync-external-store'
+    ].includes(packageName)
+  ) {
+    return 'framework-core'
+  }
+
+  if (
+    packageName === 'antd' ||
+    packageName === 'dayjs' ||
+    packageName.startsWith('@ant-design/') ||
+    packageName.startsWith('@rc-component/') ||
+    packageName.startsWith('@emotion/') ||
+    packageName.startsWith('rc-')
+  ) {
+    return 'framework-core'
+  }
+
+  if (packageName.startsWith('@dnd-kit/')) {
+    return 'editor-core'
+  }
+
+  if (
+    packageName === '@antv/g2' ||
+    packageName.startsWith('@antv/') ||
+    packageName.startsWith('d3-')
+  ) {
+    return 'chart-core'
+  }
+
+  if (
+    packageName === 'react-markdown' ||
+    packageName === 'unified' ||
+    packageName.startsWith('remark-') ||
+    packageName.startsWith('rehype-') ||
+    packageName.startsWith('micromark') ||
+    packageName.startsWith('mdast-') ||
+    packageName.startsWith('hast-') ||
+    packageName.startsWith('unist-')
+  ) {
+    return 'ai-core'
+  }
+
+  if (
+    packageName === 'gsap' ||
+    packageName === '@gsap/react' ||
+    packageName === 'lottie-react' ||
+    packageName === 'lottie-web'
+  ) {
+    return 'motion-core'
+  }
+
+  if (
+    packageName === 'axios' ||
+    packageName === 'qs' ||
+    packageName.startsWith('@babel/runtime')
+  ) {
+    return 'framework-core'
+  }
+
+  return 'vendor-misc'
+}
+
 // 导出一个定义Vite配置的函数
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
+  const shouldAnalyze = mode === 'analyze' || env.BUILD_ANALYZE === 'true'
   const devPort = Number(env.VITE_DEV_PORT || 8877)
+  const previewPort = Number(env.VITE_PREVIEW_PORT || devPort)
   const apiProxyTarget = env.VITE_API_PROXY_TARGET || 'http://localhost:8879'
   const clientProxyTarget = env.VITE_CLIENT_URL || 'http://localhost:8878'
+  const proxyConfig = {
+    '/api': {
+      target: apiProxyTarget,
+      changeOrigin: true
+    },
+    '/client': {
+      target: clientProxyTarget,
+      changeOrigin: true
+    }
+  }
 
   return {
     // 设置项目的基路径
@@ -31,22 +141,15 @@ export default defineConfig(({ mode }) => {
     },
     // 配置开发服务器
     server: {
-      proxy: {
-        // 代理 /api 请求到本地 mock 服务器
-        '/api': {
-          // target: 'https://xmquestionnaire.cn',
-          target: apiProxyTarget,
-          changeOrigin: true
-        },
-        '/client': {
-          target: clientProxyTarget,
-          changeOrigin: true
-        }
-      },
+      proxy: proxyConfig,
       // 开发端口支持本地 .env.local 覆盖，便于并行跑多套服务
       port: devPort,
       // 启动时自动打开浏览器
       open: true
+    },
+    preview: {
+      proxy: proxyConfig,
+      port: previewPort
     },
     // 配置插件列表
     plugins: [
@@ -62,8 +165,17 @@ export default defineConfig(({ mode }) => {
       // 使用图片优化插件
       ViteImageOptimizer(),
       // 使用 removeConsole 插件
-      removeConsole()
-    ],
+      removeConsole(),
+      shouldAnalyze
+        ? visualizer({
+            filename: path.resolve(__dirname, 'dist', 'bundle-analysis.html'),
+            template: 'treemap',
+            gzipSize: true,
+            brotliSize: true,
+            open: false
+          })
+        : null
+    ].filter(Boolean),
     // 配置 CSS 相关选项
     css: {
       preprocessorOptions: {
@@ -96,7 +208,7 @@ export default defineConfig(({ mode }) => {
           // 手动分割代码块
           manualChunks(id) {
             if (id.includes('node_modules')) {
-              return id.toString().split('node_modules/')[1].split('/')[0].toString()
+              return resolveVendorChunkName(id)
             }
           }
         }

@@ -1,7 +1,7 @@
 import apis from '@/apis'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useRequest } from 'ahooks'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { resetComponents } from '@/store/modules/componentsSlice'
 import useRequestSuccessChecker from '@/hooks/useRequestSuccessChecker'
@@ -16,6 +16,7 @@ function useLoadQuestionData() {
   const { isRequestSuccess } = useRequestSuccessChecker()
   const pageConfig = useSelector((state: RootState) => state.pageConfig)
   const questionnaireId = id || searchParams.get('id') || ''
+  const [hasInitialized, setHasInitialized] = useState(false)
 
   // 加载问卷数据
   const { loading, data, error, run } = useRequest(
@@ -33,6 +34,7 @@ function useLoadQuestionData() {
   useEffect(() => {
     if (!questionnaireId) return
     if (searchParams.get('copyFrom')) return
+    setHasInitialized(false)
     run(questionnaireId)
   }, [questionnaireId, run, searchParams])
 
@@ -60,9 +62,10 @@ function useLoadQuestionData() {
         footerText: data.data?.footer_text || ''
       })
     )
+    setHasInitialized(true)
   }, [data])
 
-  return { loading, error }
+  return { loading, error, hasInitialized }
 }
 
 export default useLoadQuestionData

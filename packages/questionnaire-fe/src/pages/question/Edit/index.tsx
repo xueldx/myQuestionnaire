@@ -5,7 +5,7 @@
  */
 import { LeftOutlined, SendOutlined } from '@ant-design/icons'
 import { Alert, Button, Tooltip, App } from 'antd'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import EditorButtonGroup from '@/pages/question/Edit/components/EditorButtonGroup'
 import { operationType } from '@/pages/question/Edit/components/type'
@@ -14,8 +14,6 @@ import useLoadQuestionData from '@/hooks/useLoadQuestionData'
 import CustomSpin from '@/components/CustomSpin/CustomSpin'
 import LeftPanel from '@/pages/question/Edit/components/LeftPanel'
 import RightPanel from '@/pages/question/Edit/components/RightPanel'
-import AiCopilotPanel from '@/pages/question/Edit/components/AiCopilotPanel'
-import AiInlineQuestionnairePreview from '@/pages/question/Edit/components/AiInlineQuestionnairePreview'
 import useAiWorkbench from '@/pages/question/Edit/hooks/useAiWorkbench'
 import { reportAiMetricOutcome } from '@/pages/question/Edit/hooks/ai/aiMetricOutcome'
 import { useSelector, useDispatch } from 'react-redux'
@@ -34,6 +32,24 @@ import { resetPageConfig } from '@/store/modules/pageConfigSlice'
 import useRequestSuccessChecker from '@/hooks/useRequestSuccessChecker'
 import { getUserInfoFromStorage } from '@/utils'
 import { normalizeQuestionnaireComponentList } from '@/utils/normalizeQuestionComponent'
+import { recordBaselineMetricAfterNextPaint } from '@/utils/performanceBaseline'
+
+const AiCopilotPanel = lazy(() => import('@/pages/question/Edit/components/AiCopilotPanel'))
+const AiInlineQuestionnairePreview = lazy(
+  () => import('@/pages/question/Edit/components/AiInlineQuestionnairePreview')
+)
+
+const aiPanelFallback = (
+  <div className="flex items-center justify-center min-h-[320px] rounded-2xl bg-white/60 text-custom-text-200">
+    AI 工作台加载中...
+  </div>
+)
+
+const aiPreviewFallback = (
+  <div className="flex items-center justify-center h-full rounded-[22px] border border-custom-bg-200 bg-white/75 text-custom-text-200 shadow-sm">
+    AI 预览模块加载中...
+  </div>
+)
 
 const Edit: React.FC = () => {
   const navigate = useNavigate()
@@ -42,7 +58,7 @@ const Edit: React.FC = () => {
   const [submitting, setSubmitting] = useState(false)
   const [applyingDraft, setApplyingDraft] = useState(false)
   const [leftPanelActiveKey, setLeftPanelActiveKey] = useState('market')
-  const { loading } = useLoadQuestionData()
+  const { loading, hasInitialized } = useLoadQuestionData()
   const componentList = useSelector((state: RootState) => state.components.componentList)
   const pageConfig = useSelector((state: RootState) => state.pageConfig)
   const version = useSelector((state: RootState) => state.components.version)
@@ -56,6 +72,7 @@ const Edit: React.FC = () => {
   const { message, modal } = App.useApp()
   const [lastNonAiPanelKey, setLastNonAiPanelKey] = useState('market')
   const previousLeftPanelKeyRef = React.useRef(leftPanelActiveKey)
+  const editMetricRecordedRef = React.useRef(false)
 
   const copyExecutedRef = React.useRef(false)
   const currentQuestionnaire = useMemo(
@@ -241,6 +258,13 @@ const Edit: React.FC = () => {
   }, [leftPanelActiveKey])
 
   useEffect(() => {
+    if (loading || !hasInitialized || editMetricRecordedRef.current) return
+
+    editMetricRecordedRef.current = true
+    return recordBaselineMetricAfterNextPaint('edit_first_usable')
+  }, [hasInitialized, loading])
+
+  useEffect(() => {
     const previousKey = previousLeftPanelKeyRef.current
     previousLeftPanelKeyRef.current = leftPanelActiveKey
 
@@ -416,54 +440,56 @@ const Edit: React.FC = () => {
               activeKey={leftPanelActiveKey}
               onActiveChange={setLeftPanelActiveKey}
               aiTabContent={
-                <AiCopilotPanel
-                  mode={aiWorkbench.mode}
-                  status={aiWorkbench.status}
-                  localConnectionState={aiWorkbench.localConnectionState}
-                  localInterruptedStreamKind={aiWorkbench.localInterruptedStreamKind}
-                  messages={aiWorkbench.messages}
-                  conversationList={aiWorkbench.conversationList}
-                  activeConversationId={aiWorkbench.activeConversationId}
-                  conversationLoading={aiWorkbench.conversationLoading}
-                  conversationListLoading={aiWorkbench.conversationListLoading}
-                  modelList={aiWorkbench.modelList}
-                  selectedModel={aiWorkbench.selectedModel}
-                  composerInput={aiWorkbench.composerInput}
-                  errorMessage={aiWorkbench.errorMessage}
-                  hasPendingAiResult={aiWorkbench.hasPendingAiResult}
-                  focusedComponentTitle={selectedComponent?.title}
-                  focusedComponentOrder={selectedComponent ? selectedIndex + 1 : null}
-                  hasGenerateBase={
-                    componentList.length > 0 ||
-                    Boolean(
-                      aiWorkbench.finalDraft?.components?.length ||
-                        aiWorkbench.draftPartial?.components?.length
-                    )
-                  }
-                  onModeChange={aiWorkbench.setMode}
-                  onModelChange={aiWorkbench.setSelectedModel}
-                  onComposerInputChange={aiWorkbench.setComposerInput}
-                  onCreateConversation={() => aiWorkbench.openNewConversation()}
-                  onSelectConversation={conversationId =>
-                    aiWorkbench.selectConversation(conversationId)
-                  }
-                  onRenameConversation={(conversationId, title) => {
-                    return aiWorkbench.renameConversation(conversationId, title)
-                  }}
-                  onToggleConversationPin={conversationId => {
-                    return aiWorkbench.toggleConversationPin(conversationId)
-                  }}
-                  onDeleteConversation={conversationId => {
-                    return aiWorkbench.removeConversation(conversationId)
-                  }}
-                  onSend={aiWorkbench.sendInstruction}
-                  onPolish={aiWorkbench.polishInstruction}
-                  onCancel={aiWorkbench.cancelStream}
-                  onRecoverInterruptedRun={aiWorkbench.recoverInterruptedRun}
-                  onRefreshBackgroundRunStatus={aiWorkbench.refreshBackgroundRunStatus}
-                  onStopBackgroundRun={aiWorkbench.stopBackgroundRun}
-                  onDiscardInterruptedRun={aiWorkbench.discardDraft}
-                />
+                <Suspense fallback={aiPanelFallback}>
+                  <AiCopilotPanel
+                    mode={aiWorkbench.mode}
+                    status={aiWorkbench.status}
+                    localConnectionState={aiWorkbench.localConnectionState}
+                    localInterruptedStreamKind={aiWorkbench.localInterruptedStreamKind}
+                    messages={aiWorkbench.messages}
+                    conversationList={aiWorkbench.conversationList}
+                    activeConversationId={aiWorkbench.activeConversationId}
+                    conversationLoading={aiWorkbench.conversationLoading}
+                    conversationListLoading={aiWorkbench.conversationListLoading}
+                    modelList={aiWorkbench.modelList}
+                    selectedModel={aiWorkbench.selectedModel}
+                    composerInput={aiWorkbench.composerInput}
+                    errorMessage={aiWorkbench.errorMessage}
+                    hasPendingAiResult={aiWorkbench.hasPendingAiResult}
+                    focusedComponentTitle={selectedComponent?.title}
+                    focusedComponentOrder={selectedComponent ? selectedIndex + 1 : null}
+                    hasGenerateBase={
+                      componentList.length > 0 ||
+                      Boolean(
+                        aiWorkbench.finalDraft?.components?.length ||
+                          aiWorkbench.draftPartial?.components?.length
+                      )
+                    }
+                    onModeChange={aiWorkbench.setMode}
+                    onModelChange={aiWorkbench.setSelectedModel}
+                    onComposerInputChange={aiWorkbench.setComposerInput}
+                    onCreateConversation={() => aiWorkbench.openNewConversation()}
+                    onSelectConversation={conversationId =>
+                      aiWorkbench.selectConversation(conversationId)
+                    }
+                    onRenameConversation={(conversationId, title) => {
+                      return aiWorkbench.renameConversation(conversationId, title)
+                    }}
+                    onToggleConversationPin={conversationId => {
+                      return aiWorkbench.toggleConversationPin(conversationId)
+                    }}
+                    onDeleteConversation={conversationId => {
+                      return aiWorkbench.removeConversation(conversationId)
+                    }}
+                    onSend={aiWorkbench.sendInstruction}
+                    onPolish={aiWorkbench.polishInstruction}
+                    onCancel={aiWorkbench.cancelStream}
+                    onRecoverInterruptedRun={aiWorkbench.recoverInterruptedRun}
+                    onRefreshBackgroundRunStatus={aiWorkbench.refreshBackgroundRunStatus}
+                    onStopBackgroundRun={aiWorkbench.stopBackgroundRun}
+                    onDiscardInterruptedRun={aiWorkbench.discardDraft}
+                  />
+                </Suspense>
               }
             />
           </div>
@@ -482,31 +508,33 @@ const Edit: React.FC = () => {
                 }}
               >
                 {isAiWorkbenchActive ? (
-                  <AiInlineQuestionnairePreview
-                    mode={aiWorkbench.mode}
-                    status={aiWorkbench.status}
-                    localConnectionState={aiWorkbench.localConnectionState}
-                    localInterruptedStreamKind={aiWorkbench.localInterruptedStreamKind}
-                    currentQuestionnaire={currentQuestionnaire}
-                    selectedId={selectedId}
-                    draftPartial={aiWorkbench.draftPartial}
-                    finalDraft={aiWorkbench.finalDraft}
-                    questionPatchSet={aiWorkbench.questionPatchSet}
-                    selectedPatchIds={aiWorkbench.selectedPatchIds}
-                    rejectedPatchIds={aiWorkbench.rejectedPatchIds}
-                    errorMessage={aiWorkbench.errorMessage}
-                    warningMessage={aiWorkbench.warningMessage}
-                    draftApplied={aiWorkbench.draftApplied}
-                    isApplyingDraft={applyingDraft}
-                    onSelectComponent={handleAiSelectComponent}
-                    onApply={aiWorkbench.applyDraft}
-                    onDiscard={aiWorkbench.discardDraft}
-                    onBack={handleAiBack}
-                    onSelectAllPatches={aiWorkbench.selectAllPatches}
-                    onClearPatchSelection={aiWorkbench.clearPatchSelection}
-                    onApplyPatch={handleAiApplyPatch}
-                    onRejectPatch={aiWorkbench.rejectPatchById}
-                  />
+                  <Suspense fallback={aiPreviewFallback}>
+                    <AiInlineQuestionnairePreview
+                      mode={aiWorkbench.mode}
+                      status={aiWorkbench.status}
+                      localConnectionState={aiWorkbench.localConnectionState}
+                      localInterruptedStreamKind={aiWorkbench.localInterruptedStreamKind}
+                      currentQuestionnaire={currentQuestionnaire}
+                      selectedId={selectedId}
+                      draftPartial={aiWorkbench.draftPartial}
+                      finalDraft={aiWorkbench.finalDraft}
+                      questionPatchSet={aiWorkbench.questionPatchSet}
+                      selectedPatchIds={aiWorkbench.selectedPatchIds}
+                      rejectedPatchIds={aiWorkbench.rejectedPatchIds}
+                      errorMessage={aiWorkbench.errorMessage}
+                      warningMessage={aiWorkbench.warningMessage}
+                      draftApplied={aiWorkbench.draftApplied}
+                      isApplyingDraft={applyingDraft}
+                      onSelectComponent={handleAiSelectComponent}
+                      onApply={aiWorkbench.applyDraft}
+                      onDiscard={aiWorkbench.discardDraft}
+                      onBack={handleAiBack}
+                      onSelectAllPatches={aiWorkbench.selectAllPatches}
+                      onClearPatchSelection={aiWorkbench.clearPatchSelection}
+                      onApplyPatch={handleAiApplyPatch}
+                      onRejectPatch={aiWorkbench.rejectPatchById}
+                    />
+                  </Suspense>
                 ) : (
                   <div className="h-full overflow-hidden rounded-[22px] border border-custom-bg-200 bg-white/75 shadow-sm isolate">
                     <EditCanvas />

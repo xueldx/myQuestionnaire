@@ -1,10 +1,11 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MANAGE_PERSONAL_PATH } from '@/router'
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
 import { Button } from 'antd'
 import SvgIcon from '@/components/Common/SvgIcon'
+import { recordBaselineMetricAfterNextPaint } from '@/utils/performanceBaseline'
 // import LottieAnimation from '@/components/Common/LottieAnimation'
 // import aiTransform from '@/assets/lottie/aiTransform.json'
 // import report from '@/assets/lottie/report.json'
@@ -13,6 +14,10 @@ import SvgIcon from '@/components/Common/SvgIcon'
 
 const Home: React.FC = () => {
   const nav = useNavigate()
+
+  useEffect(() => {
+    return recordBaselineMetricAfterNextPaint('home_first_usable')
+  }, [])
 
   // 配置 GSAP 动画
   useGSAP(() => {

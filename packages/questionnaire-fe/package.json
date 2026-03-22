@@ -31,6 +31,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:analyze": "vite build --mode analyze",
     "preview": "vite preview",
     "lint": "eslint \"src/**/*.+(js|ts|jsx|tsx)\"",
     "lint:fix": "eslint \"src/**/*.+(js|ts|jsx|tsx)\" --fix",
@@ -71,6 +72,7 @@
     "postcss": "^8.4.47",
     "prettier": "^2.8.3",
     "sass": "^1.75.0",
+    "rollup-plugin-visualizer": "^5.12.0",
     "sharp": "^0.33.5",
     "svgo": "^3.3.2",
     "tailwindcss": "^3.4.14",
