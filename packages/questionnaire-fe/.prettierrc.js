@@ -3,7 +3,7 @@ module.exports = {
   arrowParens: 'avoid',
   // 括号内部不要出现空格
   bracketSpacing: true,
-  // 行结束符使用 Unix 格式
+  // 保持现有文件的换行风格，避免 Windows 下 lint/fix 反复刷出整包 diff
   endOfLine: 'auto',
   // 行宽
   printWidth: 100,
